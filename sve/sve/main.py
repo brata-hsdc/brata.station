@@ -183,7 +183,14 @@ class VibrationManager:
 
             sleep(1)
          except Exception, e:
-            logging.critical("Exception occurred: " + e.args[0])
+            # JIA TODO BEGIN change
+            #logging.critical("Exception occurred: " + e.args[0])
+            # JIA TODO UPDATE change
+            exType, ex, tb = sys.exc_info()
+            logging.critical("Exception occurred of type " + exType.__name__)
+            logging.critical(str(e))
+            traceback.print_tb(tb)
+            # JIA TODO END change
       """
 
 

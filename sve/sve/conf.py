@@ -100,6 +100,27 @@ class ConnectionManagerConfig:
    # ---------------------------------------------------------------------------
    def __init__(self):
       logger.debug('Constructing Connection Manager config')
+      self.MasterServerProtocol = 'http'
+      self.MasterServerHost = 'localhost'
+      self.MasterServerPort = '9876'
+      self.MasterServerBasePath = '/ms/1.0.0'
+
+      self.Connect = 'connect'
+
+   # ---------------------------------------------------------------------------
+   @property
+   def BaseUrl(self):
+      result = "%s://%s:%s%s" % (self.MasterServerProtocol,
+                                 self.MasterServerHost,
+                                 self.MasterServerPort,
+                                 self.MasterServerBasePath)
+      return result
+
+   # ---------------------------------------------------------------------------
+   @property
+   def ConnectUrl(self):
+      result = "%s/%s" % (self.BaseUrl, self.Connect)
+      return result
 # JIA TODO END addition
 
 
