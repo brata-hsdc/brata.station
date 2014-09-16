@@ -18,9 +18,21 @@ class SveConfig:
       self.HardwareModuleName = 'sve.console'
       #self.HardwareModuleName = 'sve.hw'
 
+      # JIA TODO BEGIN addition
+      #---
+      # Enable one of the following for the connection. TODO Blah blah blah.
+      #---
+      #self.ConnectionModuleName = 'sve.console'
+      self.ConnectionModuleName = 'sve.connection'
+      # JIA TODO END addition
+
 #TODO Delete      self.PushButtonClassName = 'PushButton'
       self.LedClassName = 'Led'
       self.VibrationMotorClassName = 'VibrationMotor'
+
+      # JIA TODO BEGIN addition
+      self.ConnectionManagerClassName = 'ConnectionManager'
+      # JIA TODO END addition
 
       # period = 1.0 sec
       # want motor 1 to be on 1/5 of the time, off remainder
@@ -43,6 +55,10 @@ class SveConfig:
       ]
 
 #TODO Delete      self.PushButton = PushButtonConfig()
+
+      # JIA TODO BEGIN addition
+      self.ConnectionManager = ConnectionManagerConfig()
+      # JIA TODO END addition
 
 
 # ------------------------------------------------------------------------------
@@ -76,6 +92,16 @@ class VibrationMotorConfig:
       logger.debug('Constructing vibration motor %s config', self.Name)
       self.OnDuration_s = onDuration_s
       self.OffDuration_s = offDuration_s
+
+# JIA TODO BEGIN addition
+# ------------------------------------------------------------------------------
+class ConnectionManagerConfig:
+
+   # ---------------------------------------------------------------------------
+   def __init__(self):
+      logger.debug('Constructing Connection Manager config')
+# JIA TODO END addition
+
 
 # ------------------------------------------------------------------------------
 # Module Initialization

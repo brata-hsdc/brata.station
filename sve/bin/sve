@@ -8,6 +8,9 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(sys.argv[0]), os.pardir))
 from sve.conf import SveConfig
 from sve.main import Sve
+# JIA TODO BEGIN addition
+import traceback
+# JIA TODO END addition
 
 
 app = None
@@ -73,8 +76,14 @@ if __name__ == "__main__":
 
       main(sys.argv)
    except Exception, e:
-      logging.critical("Exception occurred: " + e.args[0])
+      # JIA TODO BEGIN change
+      #logging.critical("Exception occurred: " + e.args[0])
+      # JIA TODO UPDATE change
+      exType, ex, tb = sys.exc_info()
+      logging.critical("Exception occurred of type " + exType.__name__)
+      logging.critical(str(e))
+      traceback.print_tb(tb)
+      # JIA TODO END change
       sys.exit(1)
 
 sys.exit(0)
-

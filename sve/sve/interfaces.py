@@ -58,6 +58,26 @@ class IVibrationMotor:
    def stop(self):
       pass
 
+# JIA TODO BEGIN addition
+# ------------------------------------------------------------------------------
+class IConnectionManager:
+   __metaclass__ = ABCMeta
+
+   # ---------------------------------------------------------------------------
+   @abstractmethod
+   def run(self):
+      pass
+
+   # ---------------------------------------------------------------------------
+   @abstractmethod
+   def startListening(self):
+      pass
+
+   # ---------------------------------------------------------------------------
+   @abstractmethod
+   def stopListening(self):
+      pass
+# JIA TODO END addition
 
 # ------------------------------------------------------------------------------
 # Module Initialization

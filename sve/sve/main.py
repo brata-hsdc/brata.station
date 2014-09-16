@@ -1,6 +1,9 @@
 from importlib import import_module
 import logging
 import logging.handlers
+# JIA TODO BEGIN addition
+# TODO - Is the ILed import needed?
+# JIA TODO END addition
 from sve.interfaces import ILed
 #TODO Delete from sve.interfaces import IPushButton
 from sve.state import State
@@ -39,6 +42,17 @@ class Sve:
       for i in config.Leds:
          self._leds.append(
             ledClass(i.Name, i))
+
+      # JIA TODO BEGIN addition
+      connectionModuleName = config.ConnectionModuleName
+      connectionManagerClassName = config.ConnectionManagerClassName
+
+      connectionModule = import_module(connectionModuleName)
+      connectionManagerClass = getattr(connectionModule,
+                                       connectionManagerClassName)
+
+      self._connectionManager = connectionManagerClass(config.ConnectionManager)
+      # JIA TODO END addition
 
 
    # ---------------------------------------------------------------------------
@@ -90,6 +104,10 @@ class Sve:
       self.State = State.READY
 #TODO Delete      self._button.startListening()
 
+      # JIA TODO BEGIN addition
+      self._connectionManager.startListening()
+      # JIA TODO END addition
+
       while True:
          time.sleep(1)
 
@@ -102,6 +120,10 @@ class Sve:
 
       for motor in self._vibrationMotors:
          motor.stop()
+
+      # JIA TODO BEGIN addition
+      self._connectionManager.stopListening()
+      # JIA TODO END addition
 
    # ---------------------------------------------------------------------------
    def buttonPressed():
@@ -148,7 +170,6 @@ class VibrationManager:
 
    # ---------------------------------------------------------------------------
    def run(self):
-      # TODO Start thread for web service?
       # TODO: Delete? clean up imports?
       """
       logger.debug('Starting key press thread for push button')
