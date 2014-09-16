@@ -1,0 +1,11 @@
+#!/bin/bash
+
+DIRNAME=/usr/bin/dirname
+PYTHON=/usr/bin/python
+
+PROGPATH="`${DIRNAME} ${0}`"
+
+startdir=${PROGPATH}/..
+${PYTHON} -B -m unittest discover --verbose --start-directory ${startdir}
+
+exit $?
