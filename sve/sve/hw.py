@@ -32,69 +32,6 @@ class Led(ILed):
       pass
 
 
-#TODO Delete dead code, clean up imports
-## ------------------------------------------------------------------------------
-#class PushButton(IPushButton):
-#
-#   # ---------------------------------------------------------------------------
-#   def __init__(self,
-#                buttonPressHandler,
-#                config):
-#      logger.debug('Constructing push button')
-#      self._listening = False
-#      self._timeToExit = False
-#      self._handler = buttonPressHandler
-#      self._thread = Thread(target = self.run)
-#      self._thread.daemon = True
-#      self._thread.start()
-#
-#   # ---------------------------------------------------------------------------
-#   def __enter__(self):
-#      logger.debug('Entering push button')
-#      return self
-#
-#   # ---------------------------------------------------------------------------
-#   def __exit__(self, type, value, traceback):
-#      logger.debug('Exiting push button')
-#      stopListening(self)
-#      self._timeToExit = True
-#      self._thread.join()
-#
-#   # ---------------------------------------------------------------------------
-#   def run(self):
-#      with NonBlockingConsole() as nbc:
-#         logger.debug('Starting key press thread for push button')
-#
-#         while not self._timeToExit:
-#            try:
-#               if self._listening:
-#
-#                  # TODO
-#                  pass
-#
-#               sleep(1)
-#            except Exception, e:
-#               # JIA TODO BEGIN change
-#               #logging.critical("Exception occurred: " + e.args[0])
-#               # JIA TODO UPDATE change
-#               exType, ex, tb = sys.exc_info()
-#               logging.critical("Exception occurred of type " + exType.__name__)
-#               logging.critical(str(e))
-#               traceback.print_tb(tb)
-#               # JIA TODO END change
-#
-#   # ---------------------------------------------------------------------------
-#   def startListening(self):
-#      logger.debug('Starting listening for push button')
-#      # TODO
-#      self._listening = True
-#
-#   # ---------------------------------------------------------------------------
-#   def stopListening(self):
-#      logger.debug('Stopping listening for push button')
-#      self._listening = False
-
-
 # ------------------------------------------------------------------------------
 class VibrationMotor(IVibrationMotor):
 

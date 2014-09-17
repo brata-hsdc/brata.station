@@ -1,4 +1,3 @@
-# JIA TODO BEGIN addition
 from sve.interfaces import IConnectionManager
 from sve.state import HttpMethod
 import json
@@ -75,14 +74,10 @@ class ConnectionManager(IConnectionManager):
 
             sleep(1)
          except Exception, e:
-            # JIA TODO BEGIN change
-            #logging.critical("Exception occurred: " + e.args[0])
-            # JIA TODO UPDATE change
             exType, ex, tb = sys.exc_info()
             logging.critical("Exception occurred of type " + exType.__name__)
             logging.critical(str(e))
             traceback.print_tb(tb)
-            # JIA TODO END change
 
    # ---------------------------------------------------------------------------
    def startListening(self):
@@ -124,4 +119,3 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG) # TODO - delete
 handler = logging.handlers.SysLogHandler(address = '/dev/log')
 logger.addHandler(handler)
-# JIA TODO END addition

@@ -23,27 +23,6 @@ class ILed:
       pass
 
 
-#TODO Delete dead code, clean up imports
-## ------------------------------------------------------------------------------
-#class IPushButton:
-#   __metaclass__ = ABCMeta
-#
-#   # ---------------------------------------------------------------------------
-#   @abstractmethod
-#   def run(self):
-#      pass
-#
-#   # ---------------------------------------------------------------------------
-#   @abstractmethod
-#   def startListening(self):
-#      pass
-#
-#   # ---------------------------------------------------------------------------
-#   @abstractmethod
-#   def stopListening(self):
-#      pass
-
-
 # ------------------------------------------------------------------------------
 class IVibrationMotor:
    __metaclass__ = ABCMeta
@@ -58,7 +37,6 @@ class IVibrationMotor:
    def stop(self):
       pass
 
-# JIA TODO BEGIN addition
 # ------------------------------------------------------------------------------
 class IConnectionManager:
    __metaclass__ = ABCMeta
@@ -77,7 +55,6 @@ class IConnectionManager:
    @abstractmethod
    def stopListening(self):
       pass
-# JIA TODO END addition
 
 # ------------------------------------------------------------------------------
 # Module Initialization

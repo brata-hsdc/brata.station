@@ -1,11 +1,8 @@
 from importlib import import_module
 import logging
 import logging.handlers
-# JIA TODO BEGIN addition
 # TODO - Is the ILed import needed?
-# JIA TODO END addition
 from sve.interfaces import ILed
-#TODO Delete from sve.interfaces import IPushButton
 from sve.state import State
 from threading import Thread
 import time
@@ -20,17 +17,14 @@ class Sve:
       logger.debug('Constructing SVE')
 
       hwModuleName = config.HardwareModuleName
-#TODO Delete      pushButtonClassName = config.PushButtonClassName
       ledClassName = config.LedClassName
       vibrationMotorClassName = config.VibrationMotorClassName
 
       hwModule = import_module(hwModuleName)
-#TODO Delete      pushButtonClass = getattr(hwModule, pushButtonClassName)
       ledClass = getattr(hwModule, ledClassName)
       vibrationMotorClass = getattr(hwModule, vibrationMotorClassName)
 
       self._state = None
-#TODO Delete      self._button = pushButtonClass(self.buttonPressed, config.PushButton)
       self._vibrationMotors = []
 
       for i in config.VibrationMotors:
@@ -43,7 +37,6 @@ class Sve:
          self._leds.append(
             ledClass(i.Name, i))
 
-      # JIA TODO BEGIN addition
       connectionModuleName = config.ConnectionModuleName
       connectionManagerClassName = config.ConnectionManagerClassName
 
@@ -52,7 +45,6 @@ class Sve:
                                        connectionManagerClassName)
 
       self._connectionManager = connectionManagerClass(config.ConnectionManager)
-      # JIA TODO END addition
 
 
    # ---------------------------------------------------------------------------
@@ -102,11 +94,8 @@ class Sve:
       logger.info('Starting SVE.')
 
       self.State = State.READY
-#TODO Delete      self._button.startListening()
 
-      # JIA TODO BEGIN addition
       self._connectionManager.startListening()
-      # JIA TODO END addition
 
       while True:
          time.sleep(1)
@@ -116,14 +105,10 @@ class Sve:
 
       logger.info('Received signal "%s". Stopping SVE.', signal)
 
-#TODO Delete      self._button.stopListening()
-
       for motor in self._vibrationMotors:
          motor.stop()
 
-      # JIA TODO BEGIN addition
       self._connectionManager.stopListening()
-      # JIA TODO END addition
 
    # ---------------------------------------------------------------------------
    def buttonPressed():
@@ -183,14 +168,10 @@ class VibrationManager:
 
             sleep(1)
          except Exception, e:
-            # JIA TODO BEGIN change
-            #logging.critical("Exception occurred: " + e.args[0])
-            # JIA TODO UPDATE change
             exType, ex, tb = sys.exc_info()
             logging.critical("Exception occurred of type " + exType.__name__)
             logging.critical(str(e))
             traceback.print_tb(tb)
-            # JIA TODO END change
       """
 
 
