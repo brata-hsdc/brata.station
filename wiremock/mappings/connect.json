@@ -1,0 +1,18 @@
+{
+   "request": {
+      "method": "POST",
+      "url": "/ms/1.0.0/connect",
+      "headers": {
+         "Accept": {
+            "equalTo": "application/json"
+         }
+      }
+   },
+   "response": {
+      "status": 200,
+      "headers": {
+         "Content-Type": "application/json"
+      },
+      "body": ""
+   }
+}

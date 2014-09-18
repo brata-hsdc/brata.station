@@ -1,11 +1,54 @@
+This document provides a quick description of how to build, install, and
+run the application.
+
+#---
+# Build
+#---
+
+This is a Python application. So far, there is nothing to build.
+
+
+#---
+# Install
+#---
+
+You should be able to set this up on a Raspberry Pi station by following
+the steps in the Pi Setup document. To get the code from the repository
+into a standard location, run the following
+
+   $ sudo mkdir /opt/designchallenge2015
+   $ sudo chown pi:pi /opt/designchallenge2015
+   $ cd /opt/designchallenge2015
+   $ git clone https://code.google.com/p/brata.station/
+
+
+#---
+# Run
+#---
+
+To run unit tests:
+
+   $ cd /opt/designchallenge2015/brata.station/sve/bin
+   $ ./runtests
+
+To run the SVE application for the HMB:
+
+   $ cd /opt/designchallenge2015/brata.station/sve/bin
+   $ ./sve
+
+To monitor SVE log output in another terminal window:
+
+   $ tail -f /var/log/syslog
+
+To mock the MS, see the README.txt file in the wiremock subdirectory.
+
+
 TODO. This document needs to be written.
 
 Random thoughts: This started as just a single application for the
 HMB Raspberry Pi unit; however, current thoughts are on combining
 it with the other station(s) into a single application. Let's see
 if this works.
-
-For now, you should be able to go into the sve/bin folder and run the executables under there. (The executables are simple scripts, so you can look at them in a text editor as well.)
 
 Unless someone has a reason not to, we can run Python with the -B option so the directory doesn't get cluttered with *.pyc files.
 

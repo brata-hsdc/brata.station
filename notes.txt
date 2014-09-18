@@ -27,12 +27,23 @@ Clean-up Install Archives:
 
    $ sudo apt-get clean
 
-# JIA TODO BEGIN addition
 Install Python Requests
 
    $ sudo apt-get install python-requests
-# JIA TODO END addition
 
+Install Wiremock
+
+   $ sudo mkdir /opt/wiremock-1.48
+   $ sudo chown pi:pi /opt/wiremock-1.48
+   $ sudo ln -s wiremock-1.48 /opt/wiremock
+   $ cd /opt/wiremock
+   $ wget 'http://repo1.maven.org/maven2/com/github/tomakehurst/wiremock/1.48/wiremock-1.48-standalone.jar'
+   $ chmod 444 wiremock-1.48-standalone.jar
+
+Notes for MS/HMB ICD:
+   Change connect example: "connect_hmb" to "connect".
+
+<strike>
 ConfigGen:
 
    $ sudo apt-get install mono-runtime libmono-system-core4.0-cil liblog4net1.2-cil
@@ -48,4 +59,5 @@ ConfigGen:
    $ sudo mv log4net.dll orig
    $ sudo ln -s /usr/lib/cli/log4net-1.2/log4net.dll
    $ ./cfg.exe
+</strike>
 

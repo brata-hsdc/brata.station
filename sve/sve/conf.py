@@ -83,7 +83,7 @@ class ConnectionManagerConfig:
       logger.debug('Constructing Connection Manager config')
       self.MasterServerProtocol = 'http'
       self.MasterServerHost = 'localhost'
-      self.MasterServerPort = '9876'
+      self.MasterServerPort = '8080'
       self.MasterServerBasePath = '/ms/1.0.0'
 
       self.Connect = 'connect'

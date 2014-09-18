@@ -98,8 +98,8 @@ class ConnectionManager(IConnectionManager):
                    args):
       logger.debug('Calling service with HTTP method %s, endpoint URL %s, and args %s' % (httpMethod, endpointUrl, args))
       data = json.dumps(args)
+      response = requests.post(endpointUrl, data)
       # TODO[WE ARE HERE]
-      #response = requests.post(endpointUrl, data)
       ##response = requests.post(endpointUrl, data, auth=('user', '*****'))
       #
       #logger.debug('Service response: %s' % (response.json))
