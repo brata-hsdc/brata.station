@@ -43,6 +43,12 @@ Install Wiremock
 Notes for MS/HMB ICD:
    Change connect example: "connect_hmb" to "connect".
 
+
+Install Flask
+
+   $ sudo apt-get install python-flask
+
+
 <strike>
 ConfigGen:
 

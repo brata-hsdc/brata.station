@@ -8,12 +8,18 @@ import sys
 from threading import Thread
 from time import sleep
 import traceback
+from flask import Flask
 ## TODO Delete
 #import pprint
+from gevent import pywsgi
+
+
+app = Flask(__name__)
 
 
 # ------------------------------------------------------------------------------
 class ConnectionManager(IConnectionManager):
+
 
    # ---------------------------------------------------------------------------
    def __init__(self,
@@ -27,6 +33,10 @@ class ConnectionManager(IConnectionManager):
       """
 
       logger.debug('Constructing connection manager')
+      logger.debug('Flask debugging? %s' % (app.config['DEBUG']))
+      logger.debug('Flask testing? %s' % (app.config['TESTING']))
+      logger.debug('Flask logger? %s' % (app.config['LOGGER_NAME']))
+      logger.debug('Flask server? %s' % (app.config['SERVER_NAME']))
       self._connectUrl = config.ConnectUrl
       self._connected = False
       self._listening = False
@@ -71,6 +81,10 @@ class ConnectionManager(IConnectionManager):
                   self.connect()
                   self._connected = True
 
+                  # TODO named constant
+                  port = 5000
+                  server = pywsgi.WSGIServer(('', port), app)
+                  server.serve_forever()
                # TODO
                #pass
 
@@ -92,6 +106,11 @@ class ConnectionManager(IConnectionManager):
       logger.debug('Stopping listening for connection manager')
       self._listening = False
       self._connected = False
+
+   # ---------------------------------------------------------------------------
+   @app.route('/station/1.0.0/connect2', methods=['POST'])
+   def connect2():
+      return "hello world"
 
    # ---------------------------------------------------------------------------
    def callService(self,
