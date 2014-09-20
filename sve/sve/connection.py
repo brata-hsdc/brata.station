@@ -8,6 +8,8 @@ import sys
 from threading import Thread
 from time import sleep
 import traceback
+## TODO Delete
+#import pprint
 
 
 # ------------------------------------------------------------------------------
@@ -101,8 +103,14 @@ class ConnectionManager(IConnectionManager):
       response = requests.post(endpointUrl, data)
       # TODO[WE ARE HERE]
       ##response = requests.post(endpointUrl, data, auth=('user', '*****'))
-      #
-      #logger.debug('Service response: %s' % (response.json))
+
+      #logger.debug('Service response: %s' % (response))
+      #logger.debug('Service response: %s' % (vars(response)))
+      #pprint.pprint(vars(response))
+      #logger.debug('Service response.text: %s' % (response.text))
+      logger.debug('Service response status_code: %s' % (response.status_code))
+      logger.debug('Service response.name1: %s' % (response.json['name1']))
+      logger.debug('Service response.name2: %s' % (response.json['name2']))
 
 
    # ---------------------------------------------------------------------------
