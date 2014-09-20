@@ -81,12 +81,17 @@ class ConnectionManagerConfig:
    # ---------------------------------------------------------------------------
    def __init__(self):
       logger.debug('Constructing Connection Manager config')
+      self.StationInstanceId = '01'
+      self.StationType = 'HMB'
+
       self.MasterServerProtocol = 'http'
       self.MasterServerHost = 'localhost'
       self.MasterServerPort = '8080'
       self.MasterServerBasePath = '/ms/1.0.0'
 
       self.Connect = 'connect'
+      self.Disconnect = 'disconnect'
+      self.TimeExpired = 'time_expired'
 
    # ---------------------------------------------------------------------------
    @property
@@ -101,6 +106,18 @@ class ConnectionManagerConfig:
    @property
    def ConnectUrl(self):
       result = "%s/%s" % (self.BaseUrl, self.Connect)
+      return result
+
+   # ---------------------------------------------------------------------------
+   @property
+   def DisconnectUrl(self):
+      result = "%s/%s" % (self.BaseUrl, self.Disconnect)
+      return result
+
+   # ---------------------------------------------------------------------------
+   @property
+   def TimeExpiredUrl(self):
+      result = "%s/%s" % (self.BaseUrl, self.TimeExpired)
       return result
 
 
