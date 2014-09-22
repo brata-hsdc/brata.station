@@ -9,8 +9,8 @@ sys.path.append(os.path.join(os.path.dirname(sys.argv[0]), os.pardir))
 from sve.conf import SveConfig
 from sve.main import Sve
 import traceback
-#TODO Disabled due to seg fault on Raspbian
-#from gevent import monkey
+#TODO Delete Disabled due to seg fault on Raspbian
+#TODO Delete from gevent import monkey
 
 
 app = None
@@ -74,8 +74,8 @@ if __name__ == "__main__":
       signal.signal(signal.SIGTERM, clean_termination)
       signal.signal(signal.SIGABRT, clean_termination)
 
-      #TODO Disabled due to seg fault on Raspbian
-      #monkey.patch_all()
+      #TODO Delete Disabled due to seg fault on Raspbian
+      #TODO Delete monkey.patch_all()
       main(sys.argv)
    except Exception, e:
       exType, ex, tb = sys.exc_info()

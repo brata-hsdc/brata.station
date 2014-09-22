@@ -14,7 +14,10 @@ import traceback
 from flask import Flask
 ## TODO Delete
 #import pprint
-from gevent import pywsgi
+#TODO Delete from gevent import pywsgi
+from tornado.wsgi import WSGIContainer
+from tornado.httpserver import HTTPServer
+from tornado.ioloop import IOLoop
 import httplib
 
 
@@ -91,9 +94,12 @@ class ConnectionManager(IConnectionManager):
 
                   # TODO named constant
                   port = 5000
-                  # TODO Disabled due to monkey seg fault on Raspbian
-                  #server = pywsgi.WSGIServer(('', port), app)
-                  #server.serve_forever()
+                  # TODO Delete Disabled due to monkey seg fault on Raspbian
+                  #TODO Delete server = pywsgi.WSGIServer(('', port), app)
+                  #TODO Delete server.serve_forever()
+                  server = HTTPServer(WSGIContainer(app))
+                  server.listen(port)
+                  IOLoop.instance().start()
                # TODO
                #pass
 
@@ -160,21 +166,24 @@ class ConnectionManager(IConnectionManager):
 
    # ---------------------------------------------------------------------------
    @app.route('/station/1.0.0/reset', methods=['POST'])
-   def reset(self):
+   def reset():
+      # TODO can't pass-in self - how to get handle to self?
       logger.debug('Master server requesting station reset')
       return "TODO hello world"
 
 
    # ---------------------------------------------------------------------------
    @app.route('/station/1.0.0/activate', methods=['POST'])
-   def activate(self):
+   def activate():
+      # TODO can't pass-in self - how to get handle to self?
       logger.debug('Master server requesting station activate')
       return "TODO hello world"
 
 
    # ---------------------------------------------------------------------------
    @app.route('/station/1.0.0/submit', methods=['POST'])
-   def submit(self):
+   def submit():
+      # TODO can't pass-in self - how to get handle to self?
       logger.debug('Master server submitting user answer to station')
       return "TODO hello world"
 

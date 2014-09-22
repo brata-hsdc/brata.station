@@ -44,9 +44,9 @@ Notes for MS/HMB ICD:
    Change connect example: "connect_hmb" to "connect".
 
 
-Install Flask
+Install Flask and Tornado WSGI
 
-   $ sudo apt-get install python-flask
+   $ sudo apt-get install python-flask python-tornado
 
 
 <strike>
