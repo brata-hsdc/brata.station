@@ -91,8 +91,9 @@ class ConnectionManager(IConnectionManager):
 
                   # TODO named constant
                   port = 5000
-                  server = pywsgi.WSGIServer(('', port), app)
-                  server.serve_forever()
+                  # TODO Disabled due to monkey seg fault on Raspbian
+                  #server = pywsgi.WSGIServer(('', port), app)
+                  #server.serve_forever()
                # TODO
                #pass
 
