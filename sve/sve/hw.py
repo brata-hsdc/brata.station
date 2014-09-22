@@ -1,3 +1,5 @@
+from interfaces import ILed
+from interfaces import IVibrationMotor
 import logging
 import logging.handlers
 

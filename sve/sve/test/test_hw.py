@@ -20,15 +20,15 @@ class LedTestCase(unittest.TestCase):
 
 
    # ---------------------------------------------------------------------------
-   def test_setOn(self):
+   def test_turnOn(self):
 
-      self.Target.setOn()
+      self.Target.turnOn()
 
 
    # ---------------------------------------------------------------------------
-   def test_setOff(self):
+   def test_turnOff(self):
 
-      self.Target.setOff()
+      self.Target.turnOff()
 
 
    # ---------------------------------------------------------------------------
