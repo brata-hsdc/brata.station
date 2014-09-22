@@ -97,6 +97,12 @@ class ConnectionManager(IConnectionManager):
                #pass
 
             sleep(1)
+         except requests.ConnectionError, e:
+            logging.critical(str(e))
+            # TODO nothing to do - cannot connect because remote end is not up;
+            # just wait and try again later
+            # TODO configurable sleep time...
+            sleep(3)
          except Exception, e:
             exType, ex, tb = sys.exc_info()
             logging.critical("Exception occurred of type " + exType.__name__)
