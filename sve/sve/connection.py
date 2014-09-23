@@ -12,6 +12,8 @@ from time import time
 from datetime import datetime
 import traceback
 from flask import Flask
+from flask import request
+from flask import jsonify
 ## TODO Delete
 #import pprint
 #TODO Delete from gevent import pywsgi
@@ -167,25 +169,101 @@ class ConnectionManager(IConnectionManager):
    # ---------------------------------------------------------------------------
    @app.route('/station/1.0.0/reset', methods=['POST'])
    def reset():
-      # TODO can't pass-in self - how to get handle to self?
-      logger.debug('Master server requesting station reset')
-      return "TODO hello world"
+
+      # TODO...
+      if not request.json:
+      #if not request.json or not 'title' in request.json:
+         #TODO abort(400)
+         logger.debug('return 400?')
+
+      # TODO - To test:
+      # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "PIN": "13579"}' 'http://localhost:5000/station/1.0.0/reset'
+
+      message_version = request.json['message_version']
+      message_timestamp = request.json['message_timestamp']
+      pin = request.json['PIN']
+
+      # TODO Delete
+      #'title': request.json['title'],
+      #'description': request.json.get('description', ""),
+
+      logger.debug('Master server requesting station reset (ver %s) at %s with pin "%s"' % (message_version, message_timestamp, pin))
+
+      # TODO implement method body
+
+      # TODO can't pass-in self - how to get handle to self? is it needed?
+
+      # TODO
+      resp = jsonify({'foo': 'bar'})
+      resp.status_code = 200
+      return resp
 
 
    # ---------------------------------------------------------------------------
    @app.route('/station/1.0.0/activate', methods=['POST'])
    def activate():
-      # TODO can't pass-in self - how to get handle to self?
-      logger.debug('Master server requesting station activate')
-      return "TODO hello world"
+
+      # TODO...
+      if not request.json:
+      #if not request.json or not 'title' in request.json:
+         #TODO abort(400)
+         logger.debug('return 400?')
+
+      # TODO - To test:
+      # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59"}' 'http://localhost:5000/station/1.0.0/activate'
+
+      message_version = request.json['message_version']
+      message_timestamp = request.json['message_timestamp']
+
+      # TODO Delete
+      #'title': request.json['title'],
+      #'description': request.json.get('description', ""),
+
+      logger.debug('Master server requesting station activate (ver %s) at %s' % (message_version, message_timestamp))
+
+      # TODO implement method body
+
+      # TODO can't pass-in self - how to get handle to self? is it needed?
+
+      # TODO
+      resp = jsonify({'foo': 'bar'})
+      resp.status_code = 200
+      return resp
+
 
 
    # ---------------------------------------------------------------------------
    @app.route('/station/1.0.0/submit', methods=['POST'])
    def submit():
-      # TODO can't pass-in self - how to get handle to self?
-      logger.debug('Master server submitting user answer to station')
-      return "TODO hello world"
+
+      # TODO...
+      if not request.json:
+      #if not request.json or not 'title' in request.json:
+         #TODO abort(400)
+         logger.debug('return 400?')
+
+      # TODO - To test:
+      # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "submitted_answer": "42", "is_correct": "True"}' 'http://localhost:5000/station/1.0.0/submit'
+
+      message_version = request.json['message_version']
+      message_timestamp = request.json['message_timestamp']
+      submitted_answer = request.json['submitted_answer']
+      is_correct = request.json['is_correct']
+
+      # TODO Delete
+      #'title': request.json['title'],
+      #'description': request.json.get('description', ""),
+
+      logger.debug('Master server submitting (ver %s) user answer to station at %s. Answer "%s" is correct? %s' % (message_version, message_timestamp, submitted_answer, is_correct))
+
+      # TODO implement method body
+
+      # TODO can't pass-in self - how to get handle to self? is it needed?
+
+      # TODO
+      resp = jsonify({'foo': 'bar'})
+      resp.status_code = 200
+      return resp
 
 
    # ---------------------------------------------------------------------------
