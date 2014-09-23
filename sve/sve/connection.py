@@ -23,12 +23,10 @@ from tornado.ioloop import IOLoop
 import httplib
 
 
-app = Flask(__name__)
-
-
 # ------------------------------------------------------------------------------
 class ConnectionManager(IConnectionManager):
 
+   _app = Flask(__name__)
 
    # ---------------------------------------------------------------------------
    def __init__(self,
@@ -42,10 +40,10 @@ class ConnectionManager(IConnectionManager):
       """
 
       logger.debug('Constructing connection manager')
-      logger.debug('Flask debugging? %s' % (app.config['DEBUG']))
-      logger.debug('Flask testing? %s' % (app.config['TESTING']))
-      logger.debug('Flask logger? %s' % (app.config['LOGGER_NAME']))
-      logger.debug('Flask server? %s' % (app.config['SERVER_NAME']))
+      logger.debug('Flask debugging? %s' % (self._app.config['DEBUG']))
+      logger.debug('Flask testing? %s' % (self._app.config['TESTING']))
+      logger.debug('Flask logger? %s' % (self._app.config['LOGGER_NAME']))
+      logger.debug('Flask server? %s' % (self._app.config['SERVER_NAME']))
       self._connectUrl = config.ConnectUrl
       self._disconnectUrl = config.DisconnectUrl
       self._timeExpiredUrl = config.TimeExpiredUrl
@@ -97,9 +95,9 @@ class ConnectionManager(IConnectionManager):
                   # TODO named constant
                   port = 5000
                   # TODO Delete Disabled due to monkey seg fault on Raspbian
-                  #TODO Delete server = pywsgi.WSGIServer(('', port), app)
+                  #TODO Delete server = pywsgi.WSGIServer(('', port), self._app)
                   #TODO Delete server.serve_forever()
-                  server = HTTPServer(WSGIContainer(app))
+                  server = HTTPServer(WSGIContainer(self._app))
                   server.listen(port)
                   IOLoop.instance().start()
                # TODO
@@ -167,7 +165,7 @@ class ConnectionManager(IConnectionManager):
 
 
    # ---------------------------------------------------------------------------
-   @app.route('/station/1.0.0/reset', methods=['POST'])
+   @_app.route('/station/1.0.0/reset', methods=['POST'])
    def reset():
 
       # TODO...
@@ -200,7 +198,7 @@ class ConnectionManager(IConnectionManager):
 
 
    # ---------------------------------------------------------------------------
-   @app.route('/station/1.0.0/activate', methods=['POST'])
+   @_app.route('/station/1.0.0/activate', methods=['POST'])
    def activate():
 
       # TODO...
@@ -233,7 +231,7 @@ class ConnectionManager(IConnectionManager):
 
 
    # ---------------------------------------------------------------------------
-   @app.route('/station/1.0.0/submit', methods=['POST'])
+   @_app.route('/station/1.0.0/submit', methods=['POST'])
    def submit():
 
       # TODO...
