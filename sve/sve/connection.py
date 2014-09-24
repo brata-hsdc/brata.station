@@ -128,14 +128,14 @@ class ConnectionManager(IConnectionManager):
             sleep(1)
             logger.debug('Connection manager sleep end; time to exit? %s' % (self._timeToExit))
          except requests.ConnectionError, e:
-            logging.critical(str(e))
+            logger.critical(str(e))
             # TODO nothing to do - cannot connect because remote end is not up;
             # just wait and try again later
             # TODO configurable sleep time...
             sleep(3)
          except Exception, e:
             exType, ex, tb = sys.exc_info()
-            logging.critical("Exception occurred of type %s: %s" % (exType.__name__, str(e)))
+            logger.critical("Exception occurred of type %s: %s" % (exType.__name__, str(e)))
             traceback.print_tb(tb)
 
       self.disconnect()

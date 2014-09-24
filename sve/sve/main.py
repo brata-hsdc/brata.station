@@ -7,6 +7,8 @@ from sve.state import State
 import sys
 from threading import Thread
 import time
+import traceback
+from time import sleep
 
 
 # ------------------------------------------------------------------------------
@@ -190,7 +192,7 @@ class VibrationManager:
             logger.debug('Vibration manager %s sleep end; time to exit? %s' % (self.Name, self._timeToExit))
          except Exception, e:
             exType, ex, tb = sys.exc_info()
-            logging.critical("Exception occurred of type %s in vibration manager %s: %s" % (exType.__name__, self.Name, str(e)))
+            logger.critical("Exception occurred of type %s in vibration manager %s: %s" % (exType.__name__, self.Name, str(e)))
             traceback.print_tb(tb)
 
          logger.debug('Vibration manager %s next iteration' % (self.Name))
