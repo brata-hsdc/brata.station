@@ -9,7 +9,7 @@ import time
 
 
 # ------------------------------------------------------------------------------
-class Sve:
+class Sve(object):
 
    # ---------------------------------------------------------------------------
    def __init__(self,
@@ -31,11 +31,10 @@ class Sve:
          self._vibrationMotors.append(
             VibrationManager(i.Name, i, vibrationMotorClass))
 
-      self._leds = []
+      self._leds = {}
 
       for i in config.Leds:
-         self._leds.append(
-            ledClass(i.Name, i))
+         self._leds[i.Name] = ledClass(i.Name, i)
 
       connectionModuleName = config.ConnectionModuleName
       connectionManagerClassName = config.ConnectionManagerClassName
@@ -44,7 +43,8 @@ class Sve:
       connectionManagerClass = getattr(connectionModule,
                                        connectionManagerClassName)
 
-      self._connectionManager = connectionManagerClass(config.ConnectionManager)
+      self._connectionManager = connectionManagerClass(self,
+                                                       config.ConnectionManager)
 
 
    # ---------------------------------------------------------------------------
@@ -54,35 +54,36 @@ class Sve:
 
    @State.setter
    def State(self, value):
+      logger.debug('State transition from %s to %s' % (self._state, value))
       self._state = value
 
       if value == State.READY:
          for motor in self._vibrationMotors:
             motor.stop()
-         for led in self._leds:
-            led.turnOff()
+         for name in self._leds.keys():
+            self._leds[name].turnOff()
       elif value == State.PROCESSING:
          for motor in self._vibrationMotors:
             motor.start()
-         for led in self._leds:
-            led.turnOff()
+         for name in self._leds.keys():
+            self._leds[name].turnOff()
          self._leds['yellow'].turnOn()
       elif value == State.FAILED:
          for motor in self._vibrationMotors:
             motor.stop()
-         for led in self._leds:
-            led.turnOff()
+         for name in self._leds.keys():
+            self._leds[name].turnOff()
          self._leds['red'].turnOn()
       elif value == State.PASSED:
          for motor in self._vibrationMotors:
             motor.stop()
-         for led in self._leds:
-            led.turnOff()
+         for name in self._leds.keys():
+            self._leds[name].turnOff()
          self._leds['green'].turnOn()
       else:
          logger.critical('Unexpected state %s encountered', value)
-         for led in self._leds:
-            led.setFlashing()
+         for name in self._leds.keys():
+            self._leds[name].setFlashing()
 
    @State.deleter
    def State(self):

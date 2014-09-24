@@ -21,15 +21,19 @@ from tornado.wsgi import WSGIContainer
 from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
 import httplib
+from sve.state import State
 
 
 # ------------------------------------------------------------------------------
 class ConnectionManager(IConnectionManager):
 
    _app = Flask(__name__)
+   _callback = None
+
 
    # ---------------------------------------------------------------------------
    def __init__(self,
+                sve,
                 config):
 
       # TODO?
@@ -52,7 +56,23 @@ class ConnectionManager(IConnectionManager):
       self._connected = False
       self._listening = False
       self._timeToExit = False
+
+      self._callback = sve
       #TODO? self._handler = todoHandler
+
+      self._app.add_url_rule('/station/1.0.0/reset',
+                             'reset',
+                             self.reset,
+                             methods=['POST'])
+      self._app.add_url_rule('/station/1.0.0/activate',
+                             'activate',
+                             self.activate,
+                             methods=['POST'])
+      self._app.add_url_rule('/station/1.0.0/submit',
+                             'submit',
+                             self.submit,
+                             methods=['POST'])
+
       self._thread = Thread(target = self.run)
       self._thread.daemon = True
       self._thread.start()
@@ -165,8 +185,8 @@ class ConnectionManager(IConnectionManager):
 
 
    # ---------------------------------------------------------------------------
-   @_app.route('/station/1.0.0/reset', methods=['POST'])
-   def reset():
+   # TODO Delete @_app.route('/station/1.0.0/reset', methods=['POST'])
+   def reset(self):
 
       # TODO...
       if not request.json:
@@ -188,6 +208,7 @@ class ConnectionManager(IConnectionManager):
       logger.debug('Master server requesting station reset (ver %s) at %s with pin "%s"' % (message_version, message_timestamp, pin))
 
       # TODO implement method body
+      self._callback.State = State.READY
 
       # TODO can't pass-in self - how to get handle to self? is it needed?
 
@@ -198,8 +219,8 @@ class ConnectionManager(IConnectionManager):
 
 
    # ---------------------------------------------------------------------------
-   @_app.route('/station/1.0.0/activate', methods=['POST'])
-   def activate():
+   # TODO: Delete @_app.route('/station/1.0.0/activate', methods=['POST'])
+   def activate(self):
 
       # TODO...
       if not request.json:
@@ -220,6 +241,7 @@ class ConnectionManager(IConnectionManager):
       logger.debug('Master server requesting station activate (ver %s) at %s' % (message_version, message_timestamp))
 
       # TODO implement method body
+      self._callback.State = State.PROCESSING
 
       # TODO can't pass-in self - how to get handle to self? is it needed?
 
@@ -231,8 +253,8 @@ class ConnectionManager(IConnectionManager):
 
 
    # ---------------------------------------------------------------------------
-   @_app.route('/station/1.0.0/submit', methods=['POST'])
-   def submit():
+   # TODO: Delete @_app.route('/station/1.0.0/submit', methods=['POST'])
+   def submit(self):
 
       # TODO...
       if not request.json:
@@ -255,6 +277,8 @@ class ConnectionManager(IConnectionManager):
       logger.debug('Master server submitting (ver %s) user answer to station at %s. Answer "%s" is correct? %s' % (message_version, message_timestamp, submitted_answer, is_correct))
 
       # TODO implement method body
+      if True: # TODO
+         self._callback.State = State.PASSED
 
       # TODO can't pass-in self - how to get handle to self? is it needed?
 
@@ -295,6 +319,9 @@ class ConnectionManager(IConnectionManager):
    # ---------------------------------------------------------------------------
    def timeExpired(self):
       logger.debug('Station informing master server that time for challenge has expired')
+
+      self._callback.State = State.FAILED
+
       (status, response) = self.callService(
          HttpMethod.POST, self._timeExpiredUrl,
          {'message_version':     0,
