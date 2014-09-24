@@ -102,10 +102,11 @@ class ConnectionManager(IConnectionManager):
 
    # ---------------------------------------------------------------------------
    def run(self):
-      logger.debug('Starting TODO thread for connection manager')
+      logger.info('Starting TODO thread for connection manager')
 
       while not self._timeToExit:
          try:
+            logger.debug('Loop begin for connection manager')
             if self._listening:
 
                if (not self._connected):
@@ -123,7 +124,9 @@ class ConnectionManager(IConnectionManager):
                # TODO
                #pass
 
+            logger.debug('Connection manager sleep begin')
             sleep(1)
+            logger.debug('Connection manager sleep end; time to exit? %s' % (self._timeToExit))
          except requests.ConnectionError, e:
             logging.critical(str(e))
             # TODO nothing to do - cannot connect because remote end is not up;
@@ -132,11 +135,11 @@ class ConnectionManager(IConnectionManager):
             sleep(3)
          except Exception, e:
             exType, ex, tb = sys.exc_info()
-            logging.critical("Exception occurred of type " + exType.__name__)
-            logging.critical(str(e))
+            logging.critical("Exception occurred of type %s: %s" % (exType.__name__, str(e)))
             traceback.print_tb(tb)
 
       self.disconnect()
+      logger.info('Stopping TODO thread for connection manager')
 
    # ---------------------------------------------------------------------------
    def startListening(self):
