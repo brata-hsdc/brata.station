@@ -9,6 +9,7 @@ from threading import Thread
 import time
 import traceback
 from time import sleep
+from time import time
 
 
 # ------------------------------------------------------------------------------
@@ -102,7 +103,7 @@ class Sve(object):
       self._connectionManager.startListening()
 
       while True:
-         time.sleep(1)
+         sleep(1)
 
    # ---------------------------------------------------------------------------
    def stop(self, signal):
@@ -164,38 +165,59 @@ class VibrationManager:
    def run(self):
       logger.info('Starting thread for vibration manager %s' % (self.Name))
 
-      logger.debug('Vibration manager %s time to exit? %s' % (self.Name, self._timeToExit))
+      lastNotedTime_s = 0
+      isVibrating = False
+
       while not self._timeToExit:
          try:
-            logger.debug('Loop begin for vibration manager %s' % (self.Name))
-            if self._currentlyStarted:
-               if self._transitionToStarted:
+            #TODO logger.debug('Loop begin for vibration manager %s: currently started? %s, transition to started? %s' % (self.Name, self._currentlyStarted, self._transitionToStarted))
+
+            if self._transitionToStarted:
+               if self._currentlyStarted:
                   # no transition - still started
                   pass
                else:
-                  logger.info('Vibration manager %s transition to stopped' %
-                              (self.Name))
-                  # TODO
-                  pass
-            else:
-               if self._transitionToStarted:
                   logger.info('Vibration manager %s transition to started' %
                               (self.Name))
-                  # TODO
-                  pass
+                  self._currentlyStarted = True
+                  lastNotedTime_s = time()
+                  self._vibrationMotor.start()
+                  isVibrating = True
+
+               # started just now or still going
+               configDuration_s = self.OffDuration_s
+               motorToggle = self._vibrationMotor.stop
+
+               if isVibrating:
+                  configDuration_s = self.OnDuration_s
+                  motorToggle = self._vibrationMotor.start
+
+               currentTime_s = time()
+
+               if lastNotedTime_s + configDuration_s >= currentTime_s:
+                  lastNotedTime_s = time()
+                  motorToggle()
+
+            else:
+               if self._currentlyStarted:
+                  logger.info('Vibration manager %s transition to stopped' %
+                              (self.Name))
+                  self._currentlyStarted = False
+                  lastNotedTime_s = 0
+                  self._vibrationMotor.stop()
+                  isVibrating = False
                else:
                   # no transition - still not started
                   pass
 
-            logger.debug('Vibration manager %s sleep begin' % (self.Name))
+               # stopped just now or still stopped - nothing to do
+
             sleep(1)
-            logger.debug('Vibration manager %s sleep end; time to exit? %s' % (self.Name, self._timeToExit))
          except Exception, e:
             exType, ex, tb = sys.exc_info()
             logger.critical("Exception occurred of type %s in vibration manager %s: %s" % (exType.__name__, self.Name, str(e)))
             traceback.print_tb(tb)
 
-         logger.debug('Vibration manager %s next iteration' % (self.Name))
       logger.info('Stopping thread for vibration manager %s' % (self.Name))
 
 

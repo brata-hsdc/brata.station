@@ -124,9 +124,7 @@ class ConnectionManager(IConnectionManager):
                # TODO
                #pass
 
-            logger.debug('Connection manager sleep begin')
             sleep(1)
-            logger.debug('Connection manager sleep end; time to exit? %s' % (self._timeToExit))
          except requests.ConnectionError, e:
             logger.critical(str(e))
             # TODO nothing to do - cannot connect because remote end is not up;
