@@ -1,6 +1,6 @@
 import unittest
-from sve.conf import SveConfig
-from sve.main import Sve
+from station.conf import SveConfig
+from station.main import Sve
 
 ## ------------------------------------------------------------------------------
 #class SveTestCase(unittest.TestCase):

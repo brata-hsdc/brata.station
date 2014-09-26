@@ -1,6 +1,6 @@
 #TODO clean up imports
-from sve.interfaces import IConnectionManager
-from sve.state import HttpMethod
+from station.interfaces import IConnectionManager
+from station.state import HttpMethod
 import json
 import logging
 import logging.handlers
@@ -21,7 +21,7 @@ from tornado.wsgi import WSGIContainer
 from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
 import httplib
-from sve.state import State
+from station.state import State
 
 
 # ------------------------------------------------------------------------------

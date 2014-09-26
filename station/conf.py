@@ -15,14 +15,14 @@ class SveConfig:
       # button will be simulated by the space bar, and LEDs and vibration motor
       # status will be printed to the logs.
       #---
-      self.HardwareModuleName = 'sve.console'
-      #self.HardwareModuleName = 'sve.hw'
+      self.HardwareModuleName = 'station.console'
+      #self.HardwareModuleName = 'station.hw'
 
       #---
       # Enable one of the following for the connection. TODO Blah blah blah.
       #---
-      #self.ConnectionModuleName = 'sve.console'
-      self.ConnectionModuleName = 'sve.connection'
+      #self.ConnectionModuleName = 'station.console'
+      self.ConnectionModuleName = 'station.connection'
 
       self.LedClassName = 'Led'
       self.VibrationMotorClassName = 'VibrationMotor'

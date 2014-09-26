@@ -2,8 +2,8 @@ from importlib import import_module
 import logging
 import logging.handlers
 # TODO - Is the ILed import needed?
-from sve.interfaces import ILed
-from sve.state import State
+from station.interfaces import ILed
+from station.state import State
 import sys
 from threading import Thread
 import time

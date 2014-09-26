@@ -1,6 +1,6 @@
 import unittest
-from sve.hw import Led
-from sve.hw import VibrationMotor
+from station.hw import Led
+from station.hw import VibrationMotor
 
 # ------------------------------------------------------------------------------
 class LedTestCase(unittest.TestCase):

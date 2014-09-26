@@ -6,8 +6,8 @@ import os
 import signal
 import sys
 sys.path.append(os.path.join(os.path.dirname(sys.argv[0]), os.pardir))
-from sve.conf import SveConfig
-from sve.main import Sve
+from station.conf import SveConfig
+from station.main import Sve
 import traceback
 #TODO Delete Disabled due to seg fault on Raspbian
 #TODO Delete from gevent import monkey
