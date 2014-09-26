@@ -11,9 +11,8 @@ class StationConfig:
 
       #---
       # Enable one of the following for the hardware. The console module
-      # simulates the hardware using console functions. This means the push
-      # button will be simulated by the space bar, and LEDs and vibration motor
-      # status will be printed to the logs.
+      # simulates the hardware using console functions. This means the LEDs and
+      # vibration motor status will be printed to the logs.
       #---
       self.HardwareModuleName = 'station.console'
       #self.HardwareModuleName = 'station.hw'
