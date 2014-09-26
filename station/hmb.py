@@ -101,6 +101,7 @@ class Station(IStation):
       for name in self._leds.keys():
          self._leds[name].setFlashing()
 
+
 # ------------------------------------------------------------------------------
 class VibrationManager:
 
