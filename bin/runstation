@@ -6,8 +6,8 @@ import os
 import signal
 import sys
 sys.path.append(os.path.join(os.path.dirname(sys.argv[0]), os.pardir))
-from station.conf import SveConfig
-from station.main import Sve
+from station.conf import StationConfig
+from station.main import Station
 import traceback
 #TODO Delete Disabled due to seg fault on Raspbian
 #TODO Delete from gevent import monkey
@@ -38,8 +38,8 @@ def main(argv):
 
    if len(argv) == 1:
       # TODO - log
-      config = SveConfig()
-      app = Sve(config)
+      config = StationConfig()
+      app = Station(config)
       app.start()
    else:
       usage(argv[0])

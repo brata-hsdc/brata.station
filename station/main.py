@@ -13,12 +13,12 @@ from time import time
 
 
 # ------------------------------------------------------------------------------
-class Sve(object):
+class Station(object):
 
    # ---------------------------------------------------------------------------
    def __init__(self,
                 config):
-      logger.debug('Constructing SVE')
+      logger.debug('Constructing Station')
 
       hwModuleName = config.HardwareModuleName
       ledClassName = config.LedClassName
@@ -96,7 +96,7 @@ class Sve(object):
    # ---------------------------------------------------------------------------
    def start(self):
 
-      logger.info('Starting SVE.')
+      logger.info('Starting Station.')
 
       self.State = State.READY
 
@@ -108,7 +108,7 @@ class Sve(object):
    # ---------------------------------------------------------------------------
    def stop(self, signal):
 
-      logger.info('Received signal "%s". Stopping SVE.', signal)
+      logger.info('Received signal "%s". Stopping Station.', signal)
 
       for motor in self._vibrationMotors:
          motor.stop()

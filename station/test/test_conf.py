@@ -1,7 +1,7 @@
 import unittest
 
 # ------------------------------------------------------------------------------
-class SveConfigTestCase(unittest.TestCase):
+class StationConfigTestCase(unittest.TestCase):
 
    def __init__(self):
 

@@ -33,7 +33,7 @@ class ConnectionManager(IConnectionManager):
 
    # ---------------------------------------------------------------------------
    def __init__(self,
-                sve,
+                station,
                 config):
 
       # TODO?
@@ -57,7 +57,7 @@ class ConnectionManager(IConnectionManager):
       self._listening = False
       self._timeToExit = False
 
-      self._callback = sve
+      self._callback = station
       #TODO? self._handler = todoHandler
 
       self._app.add_url_rule('/station/1.0.0/reset',

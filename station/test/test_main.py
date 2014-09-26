@@ -1,21 +1,21 @@
 import unittest
-from station.conf import SveConfig
-from station.main import Sve
+from station.conf import StationConfig
+from station.main import Station
 
 ## ------------------------------------------------------------------------------
-#class SveTestCase(unittest.TestCase):
+#class StationTestCase(unittest.TestCase):
 #
 #   def setUp(self):
 #
-#      self.config = SveConfig()
+#      self.config = StationConfig()
 #
 #   def test_init(self):
 #
-#      target = Sve(self.config)
+#      target = Station(self.config)
 #
 #   def test_start(self):
 #
-#      target = Sve(self.config)
+#      target = Station(self.config)
 #      target.start()
 #
 #if __name__ == '__main__':

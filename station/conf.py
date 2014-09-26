@@ -3,11 +3,11 @@ import logging.handlers
 
 
 # ------------------------------------------------------------------------------
-class SveConfig:
+class StationConfig:
 
    # ---------------------------------------------------------------------------
    def __init__(self):
-      logger.debug('Constructing SVE config')
+      logger.debug('Constructing Station config')
 
       #---
       # Enable one of the following for the hardware. The console module
