@@ -1,8 +1,7 @@
 from importlib import import_module
 import logging
 import logging.handlers
-# TODO - Is the ILed import needed?
-from station.interfaces import ILed
+from station.interfaces import IStation
 from station.state import State
 import sys
 from threading import Thread
@@ -13,13 +12,13 @@ from time import time
 
 
 # ------------------------------------------------------------------------------
-class Hmb():
+class Station(IStation):
 
    # ---------------------------------------------------------------------------
    def __init__(self,
                 config,
                 hwModule):
-      logger.debug('Constructing Hmb')
+      logger.debug('Constructing HMB')
 
       ledClassName = config.LedClassName
       vibrationMotorClassName = config.VibrationMotorClassName
@@ -42,14 +41,14 @@ class Hmb():
    # ---------------------------------------------------------------------------
    def start(self):
 
-      logger.info('Starting Hmb.')
+      logger.info('Starting HMB.')
 
       self.State = State.READY
 
    # ---------------------------------------------------------------------------
    def stop(self, signal):
 
-      logger.info('Received signal "%s". Stopping Hmb.', signal)
+      logger.info('Received signal "%s". Stopping HMB.', signal)
 
       for motor in self._vibrationMotors:
          motor.stop()

@@ -30,6 +30,16 @@ class StationConfig:
       #self.HardwareModuleName = 'station.hw'
 
 
+      #---
+      # Enable one of the following modules to select the station type. The
+      # module is expected to define a class named the value of
+      # StationClassName. This is the starting point for a station.
+      #---
+      self.StationType = 'station.hmb'
+      #self.StationType = 'station.cpa'
+
+
+      self.StationClassName = 'Station'
       self.StationTypeConfig = StationTypeConfig()
 
 

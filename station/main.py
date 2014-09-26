@@ -3,7 +3,6 @@ import logging
 import logging.handlers
 from time import sleep
 # TODO Run pylint
-from hmb import Hmb # TODO Delete
 
 
 # ------------------------------------------------------------------------------
@@ -27,7 +26,13 @@ class StationLoader(object):
       hwModuleName = config.HardwareModuleName
       hwModule = import_module(hwModuleName)
 
-      self._station = Hmb(config.StationTypeConfig, hwModule)
+      stationModuleName = config.StationType
+      stationClassName = config.StationClassName
+
+      stationModule = import_module(stationModuleName)
+      stationClass = getattr(stationModule, stationClassName)
+
+      self._station = stationClass(config.StationTypeConfig, hwModule)
 
    # ---------------------------------------------------------------------------
    def start(self):
