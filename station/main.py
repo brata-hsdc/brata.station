@@ -1,6 +1,7 @@
 from importlib import import_module
 import logging
 import logging.handlers
+from station.state import State
 from time import sleep
 # TODO Run pylint
 
@@ -33,13 +34,14 @@ class StationLoader(object):
       stationClass = getattr(stationModule, stationClassName)
 
       self._station = stationClass(config.StationTypeConfig, hwModule)
+      self._state = None
 
    # ---------------------------------------------------------------------------
    def start(self):
-
       logger.info('Starting StationLoader.')
-      self._station.start()
 
+      self.State = State.READY
+      self._station.start()
       self._connectionManager.startListening()
 
       while True:
@@ -47,11 +49,35 @@ class StationLoader(object):
 
    # ---------------------------------------------------------------------------
    def stop(self, signal):
-
       logger.info('Received signal "%s". Stopping StationLoader.', signal)
-      self._station.stop(signal)
 
+      self._station.stop(signal)
       self._connectionManager.stopListening()
+
+   # ---------------------------------------------------------------------------
+   @property
+   def State(self):
+      return self._state
+
+   @State.setter
+   def State(self, value):
+      logger.debug('State transition from %s to %s' % (self._state, value))
+      self._state = value
+
+      if value == State.READY:
+         self._station.onReady()
+      elif value == State.PROCESSING:
+         self._station.onProcessing()
+      elif value == State.FAILED:
+         self._station.onFailed()
+      elif value == State.PASSED:
+         self._station.onPassed()
+      else:
+         self._station.onUnexpectedState(value)
+
+   @State.deleter
+   def State(self):
+      del self._state
 
 
 # ------------------------------------------------------------------------------

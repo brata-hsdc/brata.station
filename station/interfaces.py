@@ -57,6 +57,31 @@ class IStation:
    def stop(self, signal):
       pass
 
+   # ---------------------------------------------------------------------------
+   @abstractmethod
+   def onReady(self):
+      pass
+
+   # ---------------------------------------------------------------------------
+   @abstractmethod
+   def onProcessing(self):
+      pass
+
+   # ---------------------------------------------------------------------------
+   @abstractmethod
+   def onFailed(self):
+      pass
+
+   # ---------------------------------------------------------------------------
+   @abstractmethod
+   def onPassed(self):
+      pass
+
+   # ---------------------------------------------------------------------------
+   @abstractmethod
+   def onUnexpectedState(self, value):
+      pass
+
 
 # ------------------------------------------------------------------------------
 class IVibrationMotor:

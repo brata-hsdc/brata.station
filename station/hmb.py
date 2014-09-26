@@ -1,7 +1,6 @@
 import logging
 import logging.handlers
 from station.interfaces import IStation
-from station.state import State
 import sys
 from threading import Thread
 import time
@@ -25,7 +24,6 @@ class Station(IStation):
       ledClass = getattr(hwModule, ledClassName)
       vibrationMotorClass = getattr(hwModule, vibrationMotorClassName)
 
-      self._state = None
       self._vibrationMotors = []
 
       for i in config.VibrationMotors:
@@ -39,61 +37,69 @@ class Station(IStation):
 
    # ---------------------------------------------------------------------------
    def start(self):
-
       logger.info('Starting HMB.')
 
-      self.State = State.READY
+      # Nothing more to do.
 
    # ---------------------------------------------------------------------------
    def stop(self, signal):
-
       logger.info('Received signal "%s". Stopping HMB.', signal)
 
       for motor in self._vibrationMotors:
          motor.stop()
 
    # ---------------------------------------------------------------------------
-   @property
-   def State(self):
-      return self._state
+   def onReady(self):
+      logger.info('HMB transitioned to Ready state.')
 
-   @State.setter
-   def State(self, value):
-      logger.debug('State transition from %s to %s' % (self._state, value))
-      self._state = value
+      for motor in self._vibrationMotors:
+         motor.stop()
 
-      if value == State.READY:
-         for motor in self._vibrationMotors:
-            motor.stop()
-         for name in self._leds.keys():
-            self._leds[name].turnOff()
-      elif value == State.PROCESSING:
-         for motor in self._vibrationMotors:
-            motor.start()
-         for name in self._leds.keys():
-            self._leds[name].turnOff()
-         self._leds['yellow'].turnOn()
-      elif value == State.FAILED:
-         for motor in self._vibrationMotors:
-            motor.stop()
-         for name in self._leds.keys():
-            self._leds[name].turnOff()
-         self._leds['red'].turnOn()
-      elif value == State.PASSED:
-         for motor in self._vibrationMotors:
-            motor.stop()
-         for name in self._leds.keys():
-            self._leds[name].turnOff()
-         self._leds['green'].turnOn()
-      else:
-         logger.critical('Unexpected state %s encountered', value)
-         for name in self._leds.keys():
-            self._leds[name].setFlashing()
+      for name in self._leds.keys():
+         self._leds[name].turnOff()
 
-   @State.deleter
-   def State(self):
-      del self._state
+   # ---------------------------------------------------------------------------
+   def onProcessing(self):
+      logger.info('HMB transitioned to Processing state.')
 
+      for motor in self._vibrationMotors:
+         motor.start()
+
+      for name in self._leds.keys():
+         self._leds[name].turnOff()
+
+      self._leds['yellow'].turnOn()
+
+   # ---------------------------------------------------------------------------
+   def onFailed(self):
+      logger.info('HMB transitioned to Failed state.')
+
+      for motor in self._vibrationMotors:
+         motor.stop()
+
+      for name in self._leds.keys():
+         self._leds[name].turnOff()
+
+      self._leds['red'].turnOn()
+
+   # ---------------------------------------------------------------------------
+   def onPassed(self):
+      logger.info('HMB transitioned to Passed state.')
+
+      for motor in self._vibrationMotors:
+         motor.stop()
+
+      for name in self._leds.keys():
+         self._leds[name].turnOff()
+
+      self._leds['green'].turnOn()
+
+   # ---------------------------------------------------------------------------
+   def onUnexpectedState(self, value):
+      logger.critical('HMB transitioned to Unexpected state %s', value)
+
+      for name in self._leds.keys():
+         self._leds[name].setFlashing()
 
 # ------------------------------------------------------------------------------
 class VibrationManager:
