@@ -10,23 +10,38 @@ class StationConfig:
       logger.debug('Constructing Station config')
 
       #---
+      # Enable one of the following for the connection. TODO Blah blah blah.
+      #---
+      #self.ConnectionModuleName = 'station.console' # TODO Unimplemented
+      self.ConnectionModuleName = 'station.connection'
+
+
+      self.ConnectionManagerClassName = 'ConnectionManager'
+      self.ConnectionManager = ConnectionManagerConfig()
+
+
+      #---
       # Enable one of the following for the hardware. The console module
       # simulates the hardware using console functions. This means the LEDs and
-      # vibration motor status will be printed to the logs.
+      # vibration motor status will be printed to the logs instead of really
+      # lighting up or vibrating.
       #---
       self.HardwareModuleName = 'station.console'
       #self.HardwareModuleName = 'station.hw'
 
-      #---
-      # Enable one of the following for the connection. TODO Blah blah blah.
-      #---
-      #self.ConnectionModuleName = 'station.console'
-      self.ConnectionModuleName = 'station.connection'
+
+      self.StationTypeConfig = StationTypeConfig()
+
+
+# ------------------------------------------------------------------------------
+class StationTypeConfig:
+
+   # ---------------------------------------------------------------------------
+   def __init__(self):
+      logger.debug('Constructing Station type config')
 
       self.LedClassName = 'Led'
       self.VibrationMotorClassName = 'VibrationMotor'
-
-      self.ConnectionManagerClassName = 'ConnectionManager'
 
       # period = 1.0 sec
       # want motor 1 to be on 1/5 of the time, off remainder
@@ -47,8 +62,6 @@ class StationConfig:
          LedConfig('yellow'),
          LedConfig('green' )
       ]
-
-      self.ConnectionManager = ConnectionManagerConfig()
 
 
 # ------------------------------------------------------------------------------

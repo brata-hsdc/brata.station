@@ -17,14 +17,13 @@ class Hmb():
 
    # ---------------------------------------------------------------------------
    def __init__(self,
-                config):
+                config,
+                hwModule):
       logger.debug('Constructing Hmb')
 
-      hwModuleName = config.HardwareModuleName
       ledClassName = config.LedClassName
       vibrationMotorClassName = config.VibrationMotorClassName
 
-      hwModule = import_module(hwModuleName)
       ledClass = getattr(hwModule, ledClassName)
       vibrationMotorClass = getattr(hwModule, vibrationMotorClassName)
 

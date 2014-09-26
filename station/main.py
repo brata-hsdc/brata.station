@@ -24,7 +24,10 @@ class StationLoader(object):
       self._connectionManager = connectionManagerClass(self,
                                                        config.ConnectionManager)
 
-      self._station = Hmb(config)
+      hwModuleName = config.HardwareModuleName
+      hwModule = import_module(hwModuleName)
+
+      self._station = Hmb(config.StationTypeConfig, hwModule)
 
    # ---------------------------------------------------------------------------
    def start(self):
