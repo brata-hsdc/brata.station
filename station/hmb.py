@@ -40,16 +40,20 @@ class Hmb():
       for i in config.Leds:
          self._leds[i.Name] = ledClass(i.Name, i)
 
-      connectionModuleName = config.ConnectionModuleName
-      connectionManagerClassName = config.ConnectionManagerClassName
+   # ---------------------------------------------------------------------------
+   def start(self):
 
-      connectionModule = import_module(connectionModuleName)
-      connectionManagerClass = getattr(connectionModule,
-                                       connectionManagerClassName)
+      logger.info('Starting Hmb.')
 
-      self._connectionManager = connectionManagerClass(self,
-                                                       config.ConnectionManager)
+      self.State = State.READY
 
+   # ---------------------------------------------------------------------------
+   def stop(self, signal):
+
+      logger.info('Received signal "%s". Stopping Hmb.', signal)
+
+      for motor in self._vibrationMotors:
+         motor.stop()
 
    # ---------------------------------------------------------------------------
    @property
@@ -92,28 +96,6 @@ class Hmb():
    @State.deleter
    def State(self):
       del self._state
-
-   # ---------------------------------------------------------------------------
-   def start(self):
-
-      logger.info('Starting Hmb.')
-
-      self.State = State.READY
-
-      self._connectionManager.startListening()
-
-      while True:
-         sleep(1)
-
-   # ---------------------------------------------------------------------------
-   def stop(self, signal):
-
-      logger.info('Received signal "%s". Stopping Hmb.', signal)
-
-      for motor in self._vibrationMotors:
-         motor.stop()
-
-      self._connectionManager.stopListening()
 
 
 # ------------------------------------------------------------------------------

@@ -1,5 +1,7 @@
+from importlib import import_module
 import logging
 import logging.handlers
+from time import sleep
 # TODO Run pylint
 from hmb import Hmb # TODO Delete
 
@@ -12,6 +14,16 @@ class StationLoader(object):
                 config):
       logger.debug('Constructing StationLoader')
 
+      connectionModuleName = config.ConnectionModuleName
+      connectionManagerClassName = config.ConnectionManagerClassName
+
+      connectionModule = import_module(connectionModuleName)
+      connectionManagerClass = getattr(connectionModule,
+                                       connectionManagerClassName)
+
+      self._connectionManager = connectionManagerClass(self,
+                                                       config.ConnectionManager)
+
       self._station = Hmb(config)
 
    # ---------------------------------------------------------------------------
@@ -20,11 +32,18 @@ class StationLoader(object):
       logger.info('Starting StationLoader.')
       self._station.start()
 
+      self._connectionManager.startListening()
+
+      while True:
+         sleep(1)
+
    # ---------------------------------------------------------------------------
    def stop(self, signal):
 
       logger.info('Received signal "%s". Stopping StationLoader.', signal)
       self._station.stop(signal)
+
+      self._connectionManager.stopListening()
 
 
 # ------------------------------------------------------------------------------
