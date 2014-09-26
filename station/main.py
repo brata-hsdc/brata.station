@@ -13,12 +13,12 @@ from time import time
 
 
 # ------------------------------------------------------------------------------
-class Station(object):
+class StationLoader(object):
 
    # ---------------------------------------------------------------------------
    def __init__(self,
                 config):
-      logger.debug('Constructing Station')
+      logger.debug('Constructing StationLoader')
 
       hwModuleName = config.HardwareModuleName
       ledClassName = config.LedClassName
@@ -96,7 +96,7 @@ class Station(object):
    # ---------------------------------------------------------------------------
    def start(self):
 
-      logger.info('Starting Station.')
+      logger.info('Starting StationLoader.')
 
       self.State = State.READY
 
@@ -108,7 +108,7 @@ class Station(object):
    # ---------------------------------------------------------------------------
    def stop(self, signal):
 
-      logger.info('Received signal "%s". Stopping Station.', signal)
+      logger.info('Received signal "%s". Stopping StationLoader.', signal)
 
       for motor in self._vibrationMotors:
          motor.stop()
