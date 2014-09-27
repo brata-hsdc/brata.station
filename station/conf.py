@@ -35,8 +35,9 @@ class StationConfig:
       # module is expected to define a class named the value of
       # StationClassName. This is the starting point for a station.
       #---
-      self.StationType = 'station.hmb'
-      #self.StationType = 'station.cpa'
+      self.StationType = 'station.types.hmb'
+      #self.StationType = 'station.types.cpa'
+      #self.StationType = 'station.types.cts'
 
 
       self.StationClassName = 'Station'
