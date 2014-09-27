@@ -6,7 +6,7 @@ import os
 import signal
 import sys
 sys.path.append(os.path.join(os.path.dirname(sys.argv[0]), os.pardir))
-from station.conf import StationConfig
+from station.conf import StationLoaderConfig
 from station.main import StationLoader
 import traceback
 #TODO Delete Disabled due to seg fault on Raspbian
@@ -38,7 +38,7 @@ def main(argv):
 
    if len(argv) == 1:
       # TODO - log
-      config = StationConfig()
+      config = StationLoaderConfig()
       app = StationLoader(config)
       app.start()
    else:
