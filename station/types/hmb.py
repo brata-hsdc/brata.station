@@ -142,10 +142,11 @@ class VibrationManager:
 
       lastNotedTime_s = 0
       isVibrating = False
+      isMotorOn = False
 
       while not self._timeToExit:
          try:
-            #TODO logger.debug('Loop begin for vibration manager %s: currently started? %s, transition to started? %s' % (self.Name, self._currentlyStarted, self._transitionToStarted))
+            #TODO Delete? logger.debug('Loop begin for vibration manager %s: currently started? %s, transition to started? %s' % (self.Name, self._currentlyStarted, self._transitionToStarted))
 
             if self._transitionToStarted:
                if self._currentlyStarted:
@@ -158,20 +159,23 @@ class VibrationManager:
                   lastNotedTime_s = time()
                   self._vibrationMotor.start()
                   isVibrating = True
+                  isMotorOn = True
 
                # started just now or still going
-               configDuration_s = self.OffDuration_s
-               motorToggle = self._vibrationMotor.stop
-
-               if isVibrating:
+               if isMotorOn:
+                  configDuration_s = self.OffDuration_s
+                  motorToggle = self._vibrationMotor.stop
+               else:
                   configDuration_s = self.OnDuration_s
                   motorToggle = self._vibrationMotor.start
 
                currentTime_s = time()
 
-               if lastNotedTime_s + configDuration_s >= currentTime_s:
+               if lastNotedTime_s + configDuration_s <= currentTime_s:
+                  logger.debug('Vibration manager %s toggling motor' % (self.Name))
                   lastNotedTime_s = time()
                   motorToggle()
+                  isMotorOn = not isMotorOn
 
             else:
                if self._currentlyStarted:
@@ -181,6 +185,7 @@ class VibrationManager:
                   lastNotedTime_s = 0
                   self._vibrationMotor.stop()
                   isVibrating = False
+                  isMotorOn = False
                else:
                   # no transition - still not started
                   pass
