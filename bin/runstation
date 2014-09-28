@@ -1,37 +1,66 @@
 #!/usr/bin/python -B
+# ------------------------------------------------------------------------------
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#  http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+# ------------------------------------------------------------------------------
+"""
+NAME
+
+   %(scriptName)s - TODO
+
+SYNOPSIS
+
+   %(scriptName)s
+
+DESCRIPTION
+
+   TODO
+
+"""
 
 import logging
 import logging.handlers
 import os
 import signal
 import sys
+import traceback
+
 sys.path.append(os.path.join(os.path.dirname(sys.argv[0]), os.pardir))
 from station.conf import StationLoaderConfig
 from station.main import StationLoader
-import traceback
 
 
 app = None
 
 
 # ------------------------------------------------------------------------------
-def usage(prog):
-
-    print "NAME"
-    print
-    print "   ", prog, " - TODO"
-    print
-    print "SYNOPSIS"
-    print
-    print "   ", prog
-    print
-    print "DESCRIPTION"
-    print
-    print "   TODO"
-    print
-
-# ------------------------------------------------------------------------------
 def main(argv):
+    """TODO strictly one-line summary
+
+    TODO Detailed multi-line description if
+    necessary.
+
+    Args:
+        arg1 (type1): TODO describe arg, valid values, etc.
+        arg2 (type2): TODO describe arg, valid values, etc.
+        arg3 (type3): TODO describe arg, valid values, etc.
+    Returns:
+        TODO describe the return type and details
+    Raises:
+        TodoError1: if TODO.
+        TodoError2: if TODO.
+
+    """
     global app
 
     if len(argv) == 1:
@@ -40,13 +69,29 @@ def main(argv):
         app = StationLoader(config)
         app.start()
     else:
-        usage(argv[0])
+        print __doc__ % {'scriptName' : sys.argv[0].split("/")[-1]}
 
     return
 
 
 # ------------------------------------------------------------------------------
 def clean_termination(signal, frame):
+    """TODO strictly one-line summary
+
+    TODO Detailed multi-line description if
+    necessary.
+
+    Args:
+        arg1 (type1): TODO describe arg, valid values, etc.
+        arg2 (type2): TODO describe arg, valid values, etc.
+        arg3 (type3): TODO describe arg, valid values, etc.
+    Returns:
+        TODO describe the return type and details
+    Raises:
+        TodoError1: if TODO.
+        TodoError2: if TODO.
+
+    """
     global app
 
     try:

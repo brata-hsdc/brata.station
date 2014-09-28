@@ -1,21 +1,59 @@
+# ------------------------------------------------------------------------------
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#  http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+# ------------------------------------------------------------------------------
+"""
+TODO module description
+"""
+
 import logging
 import logging.handlers
-from station.interfaces import IStation
 import sys
 from threading import Thread
 import time
-import traceback
 from time import sleep
 from time import time
+import traceback
+
+from station.interfaces import IStation
 
 
 # ------------------------------------------------------------------------------
 class Station(IStation):
+    """
+    TODO class comment
+    """
 
     # --------------------------------------------------------------------------
     def __init__(self,
                  config,
                  hwModule):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
         logger.debug('Constructing HMB')
 
         ledClassName = config.LedClassName
@@ -37,12 +75,44 @@ class Station(IStation):
 
     # --------------------------------------------------------------------------
     def start(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
         logger.info('Starting HMB.')
 
         # Nothing more to do.
 
     # --------------------------------------------------------------------------
     def stop(self, signal):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
         logger.info('Received signal "%s". Stopping HMB.', signal)
 
         for motor in self._vibrationMotors:
@@ -50,6 +120,22 @@ class Station(IStation):
 
     # --------------------------------------------------------------------------
     def onReady(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
         logger.info('HMB transitioned to Ready state.')
 
         for motor in self._vibrationMotors:
@@ -60,6 +146,22 @@ class Station(IStation):
 
     # --------------------------------------------------------------------------
     def onProcessing(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
         logger.info('HMB transitioned to Processing state.')
 
         for motor in self._vibrationMotors:
@@ -72,6 +174,22 @@ class Station(IStation):
 
     # --------------------------------------------------------------------------
     def onFailed(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
         logger.info('HMB transitioned to Failed state.')
 
         for motor in self._vibrationMotors:
@@ -84,6 +202,22 @@ class Station(IStation):
 
     # --------------------------------------------------------------------------
     def onPassed(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
         logger.info('HMB transitioned to Passed state.')
 
         for motor in self._vibrationMotors:
@@ -96,6 +230,22 @@ class Station(IStation):
 
     # --------------------------------------------------------------------------
     def onUnexpectedState(self, value):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
         logger.critical('HMB transitioned to Unexpected state %s', value)
 
         for name in self._leds.keys():
@@ -104,12 +254,31 @@ class Station(IStation):
 
 # ------------------------------------------------------------------------------
 class VibrationManager:
+    """
+    TODO class comment
+    """
 
     # --------------------------------------------------------------------------
     def __init__(self,
                  name,
                  config,
                  vibrationMotorClass):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
         self.Name = name
         logger.debug('Constructing vibration manager %s', self.Name)
         self._timeToExit = False
@@ -126,11 +295,43 @@ class VibrationManager:
 
     # --------------------------------------------------------------------------
     def __enter__(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
         logger.debug('Entering vibration manager %s', self.Name)
         return self
 
     # --------------------------------------------------------------------------
     def __exit__(self, type, value, traceback):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
         logger.debug('Exiting vibration manager %s', self.Name)
         stopListening(self)
         self._timeToExit = True
@@ -138,6 +339,22 @@ class VibrationManager:
 
     # --------------------------------------------------------------------------
     def run(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
         logger.info('Starting thread for vibration manager %s' % (self.Name))
 
         lastNotedTime_s = 0
@@ -203,11 +420,43 @@ class VibrationManager:
 
     # --------------------------------------------------------------------------
     def start(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
         logger.debug('Starting vibration manager %s', self.Name)
         self._transitionToStarted = True
 
     # --------------------------------------------------------------------------
     def stop(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
         logger.debug('Stopping vibration manager %s', self.Name)
         self._transitionToStarted = False
 

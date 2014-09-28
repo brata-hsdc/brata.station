@@ -1,31 +1,50 @@
-#TODO clean up imports
-from station.interfaces import IConnectionManager
-from station.state import HttpMethod
+# ------------------------------------------------------------------------------
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#  http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+# ------------------------------------------------------------------------------
+"""
+TODO module description
+"""
+
+from datetime import datetime
 import json
 import logging
 import logging.handlers
-import requests
 import sys
 from threading import Thread
 from time import sleep
 from time import time
-from datetime import datetime
+import httplib
 import traceback
+
 from flask import Flask
 from flask import request
 from flask import jsonify
-## TODO Delete
-#import pprint
-#TODO Delete from gevent import pywsgi
+import requests
 from tornado.wsgi import WSGIContainer
 from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
-import httplib
+
+from station.interfaces import IConnectionManager
+from station.state import HttpMethod
 from station.state import State
 
 
 # ------------------------------------------------------------------------------
 class ConnectionManager(IConnectionManager):
+    """
+    TODO class comment
+    """
 
     _app = Flask(__name__)
     _callback = None
@@ -35,6 +54,22 @@ class ConnectionManager(IConnectionManager):
     def __init__(self,
                  station,
                  config):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
 
         # TODO?
         """
@@ -80,6 +115,22 @@ class ConnectionManager(IConnectionManager):
     # --------------------------------------------------------------------------
     @property
     def _connected(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
         return self._connectedValue
 
     @_connected.setter
@@ -90,11 +141,43 @@ class ConnectionManager(IConnectionManager):
 
     # --------------------------------------------------------------------------
     def __enter__(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
         logger.debug('Entering connection manager')
         return self
 
     # --------------------------------------------------------------------------
     def __exit__(self, type, value, traceback):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
         logger.debug('Exiting connection manager')
         stopListening(self)
         self._timeToExit = True
@@ -102,6 +185,22 @@ class ConnectionManager(IConnectionManager):
 
     # --------------------------------------------------------------------------
     def run(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
         logger.info('Starting TODO thread for connection manager')
 
         while not self._timeToExit:
@@ -141,12 +240,44 @@ class ConnectionManager(IConnectionManager):
 
     # --------------------------------------------------------------------------
     def startListening(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
         logger.debug('Starting listening for connection manager')
         # TODO
         self._listening = True
 
     # --------------------------------------------------------------------------
     def stopListening(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
         logger.debug('Stopping listening for connection manager')
         self._listening = False
         self._connected = False
@@ -154,6 +285,22 @@ class ConnectionManager(IConnectionManager):
 
     # --------------------------------------------------------------------------
     def getTimestamp(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
         ts = time()
         st = datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
         return st
@@ -164,6 +311,22 @@ class ConnectionManager(IConnectionManager):
                     httpMethod,
                     endpointUrl,
                     args):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
         args['message_timestamp'] = self.getTimestamp()
         logger.debug('Calling service with HTTP method %s, endpoint URL %s, and args %s' % (httpMethod, endpointUrl, args))
         data = json.dumps(args)
@@ -188,6 +351,22 @@ class ConnectionManager(IConnectionManager):
     # --------------------------------------------------------------------------
     # TODO Delete @_app.route('/station/1.0.0/reset', methods=['POST'])
     def reset(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
 
         # TODO...
         if not request.json:
@@ -222,6 +401,22 @@ class ConnectionManager(IConnectionManager):
     # --------------------------------------------------------------------------
     # TODO: Delete @_app.route('/station/1.0.0/activate', methods=['POST'])
     def activate(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
 
         # TODO...
         if not request.json:
@@ -256,6 +451,22 @@ class ConnectionManager(IConnectionManager):
     # --------------------------------------------------------------------------
     # TODO: Delete @_app.route('/station/1.0.0/submit', methods=['POST'])
     def submit(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
 
         # TODO...
         if not request.json:
@@ -291,6 +502,22 @@ class ConnectionManager(IConnectionManager):
 
     # --------------------------------------------------------------------------
     def connect(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
         logger.debug('Station requesting connect with master server')
         (status, response) = self.callService(
             HttpMethod.POST, self._connectUrl,
@@ -310,6 +537,22 @@ class ConnectionManager(IConnectionManager):
 
     # --------------------------------------------------------------------------
     def disconnect(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
         logger.debug('Station requesting disconnect from master server')
         (status, response) = self.callService(
             HttpMethod.POST, self._disconnectUrl,
@@ -319,6 +562,22 @@ class ConnectionManager(IConnectionManager):
 
     # --------------------------------------------------------------------------
     def timeExpired(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
         logger.debug('Station informing master server that time for challenge has expired')
 
         self._callback.State = State.FAILED
