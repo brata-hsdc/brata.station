@@ -1,0 +1,17 @@
+#!/bin/bash
+
+DIRNAME=/usr/bin/dirname
+FIND=/usr/bin/find
+PYLINT=/usr/bin/pylint
+XARGS=/usr/bin/xargs
+
+PROGPATH="`${DIRNAME} ${0}`"
+
+startdir=${PROGPATH}/..
+${FIND} ${startdir} -type f \
+                    -name '*.py' | \
+   ${XARGS} ${PYLINT} --include-ids=yes \
+                      --reports=yes \
+                      --init-import=yes
+
+exit $?

@@ -9,8 +9,6 @@ sys.path.append(os.path.join(os.path.dirname(sys.argv[0]), os.pardir))
 from station.conf import StationLoaderConfig
 from station.main import StationLoader
 import traceback
-#TODO Delete Disabled due to seg fault on Raspbian
-#TODO Delete from gevent import monkey
 
 
 app = None
@@ -19,69 +17,69 @@ app = None
 # ------------------------------------------------------------------------------
 def usage(prog):
 
-   print "NAME"
-   print
-   print "   ", prog, " - TODO"
-   print
-   print "SYNOPSIS"
-   print
-   print "   ", prog
-   print
-   print "DESCRIPTION"
-   print
-   print "   TODO"
-   print
+    print "NAME"
+    print
+    print "   ", prog, " - TODO"
+    print
+    print "SYNOPSIS"
+    print
+    print "   ", prog
+    print
+    print "DESCRIPTION"
+    print
+    print "   TODO"
+    print
 
 # ------------------------------------------------------------------------------
 def main(argv):
-   global app
+    global app
 
-   if len(argv) == 1:
-      # TODO - log
-      config = StationLoaderConfig()
-      app = StationLoader(config)
-      app.start()
-   else:
-      usage(argv[0])
+    if len(argv) == 1:
+        # TODO - log
+        config = StationLoaderConfig()
+        app = StationLoader(config)
+        app.start()
+    else:
+        usage(argv[0])
 
-   return
+    return
 
 
 # ------------------------------------------------------------------------------
 def clean_termination(signal, frame):
-   global app
+    global app
 
-   try:
-      app.stop(signal)
-   except Exception, e:
-      logging.critical("Exception occurred while stopping: " + e.args[0])
-      sys.exit(1)
+    try:
+        app.stop(signal)
+    except Exception, e:
+        logging.critical("Exception occurred while stopping: " + e.args[0])
+        sys.exit(1)
 
-   sys.exit(0)
+    sys.exit(0)
 
 
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
 
-   logger = logging.getLogger(__name__)
-   logger.setLevel(logging.DEBUG) # TODO - delete
-   handler = logging.handlers.SysLogHandler(address = '/dev/log')
-   logger.addHandler(handler)
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG) # TODO - delete
+    handler = logging.handlers.SysLogHandler(address = '/dev/log')
+    logger.addHandler(handler)
 
-   try:
-      # register the signal handler for the signals specified in the question
-      signal.signal(signal.SIGINT,  clean_termination)
-      signal.signal(signal.SIGTERM, clean_termination)
-      signal.signal(signal.SIGABRT, clean_termination)
+    try:
+        # register the signal handler for the signals specified in the question
+        signal.signal(signal.SIGINT,  clean_termination)
+        signal.signal(signal.SIGTERM, clean_termination)
+        signal.signal(signal.SIGABRT, clean_termination)
 
-      #TODO Delete Disabled due to seg fault on Raspbian
-      #TODO Delete monkey.patch_all()
-      main(sys.argv)
-   except Exception, e:
-      exType, ex, tb = sys.exc_info()
-      logging.critical("Exception occurred of type " + exType.__name__)
-      logging.critical(str(e))
-      traceback.print_tb(tb)
-      sys.exit(1)
+        #TODO Delete Disabled due to seg fault on Raspbian
+        #TODO Delete monkey.patch_all()
+        main(sys.argv)
+    except Exception, e:
+        exType, ex, tb = sys.exc_info()
+        logging.critical("Exception occurred of type " + exType.__name__)
+        logging.critical(str(e))
+        traceback.print_tb(tb)
+        sys.exit(1)
 
 sys.exit(0)

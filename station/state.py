@@ -5,13 +5,13 @@ import logging.handlers
 # ------------------------------------------------------------------------------
 class State:
 
-   READY, PROCESSING, FAILED, PASSED = range(4)
+    READY, PROCESSING, FAILED, PASSED = range(4)
 
 
 # ------------------------------------------------------------------------------
 class HttpMethod:
 
-   GET, PUT, POST, DELETE = range(4)
+    GET, PUT, POST, DELETE = range(4)
 
 
 # ------------------------------------------------------------------------------

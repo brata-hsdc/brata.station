@@ -1,4 +1,5 @@
 #!/bin/bash
+# TODO Doc comments
 
 DIRNAME=/usr/bin/dirname
 PYTHON=/usr/bin/python
