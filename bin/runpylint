@@ -26,6 +26,12 @@ ${FIND} ${startdir} -type f \
                     -name '*.py' | \
    ${XARGS} ${PYLINT} --include-ids=yes \
                       --reports=yes \
-                      --init-import=yes
+                      --init-import=yes \
+                      --function-rgx='[a-z_][A-Za-z0-9_]{2,30}$' \
+                      --method-rgx='[a-z_][A-Za-z0-9_]{2,30}$' \
+                      --attr-rgx='[a-z_][A-Za-z0-9_]{2,30}$' \
+                      --argument-rgx='[a-z_][A-Za-z0-9_]{2,30}$' \
+                      --variable-rgx='[a-z_][A-Za-z0-9_]{2,30}$' \
+                      --inlinevar-rgx='[A-Za-z_][A-Za-z0-9_]*$'
 
 exit $?

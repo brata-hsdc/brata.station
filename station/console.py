@@ -19,8 +19,8 @@ TODO module description
 import logging
 import logging.handlers
 
-from interfaces import ILed
-from interfaces import IVibrationMotor
+from station.interfaces import ILed
+from station.interfaces import IVibrationMotor
 
 
 # ------------------------------------------------------------------------------

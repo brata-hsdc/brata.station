@@ -58,8 +58,8 @@ class StationLoader(object):
         connectionManagerClass = getattr(connectionModule,
                                          connectionManagerClassName)
 
-        self._connectionManager = connectionManagerClass(self,
-                                                         config.ConnectionManager)
+        self._connectionManager =
+            connectionManagerClass(self, config.ConnectionManager)
 
         hwModuleName = config.HardwareModuleName
         hwModule = import_module(hwModuleName)
