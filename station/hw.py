@@ -18,6 +18,7 @@ TODO module description
 
 import logging
 import logging.handlers
+import pibrella, signal
 
 from interfaces import ILed
 from interfaces import IVibrationMotor
@@ -146,6 +147,10 @@ class VibrationMotor(IVibrationMotor):
 
         """
         self.Name = name
+        #TODO - Need to get these from config file [SS]
+        #self.OnDuration_s = 0.5
+        #self.OffDuration_s = 0.5
+        self.outputPin = pibrella.ouput.e
 
     # --------------------------------------------------------------------------
     def __enter__(self):
@@ -208,7 +213,8 @@ class VibrationMotor(IVibrationMotor):
 
         """
         logger.debug('Started vibration motor \"%s\".', self.Name)
-        # TODO
+        # TODO       
+        self.outputPin.On()
 
     # --------------------------------------------------------------------------
     def stop(self):
@@ -230,6 +236,7 @@ class VibrationMotor(IVibrationMotor):
         """
         logger.debug('Stopped vibration motor \"%s\".', self.Name)
         # TODO
+        self.outputPin.Off()
 
 
 # ------------------------------------------------------------------------------
