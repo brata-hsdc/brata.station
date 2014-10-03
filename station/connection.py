@@ -95,15 +95,16 @@ class ConnectionManager(IConnectionManager):
         self._callback = station
         #TODO? self._handler = todoHandler
 
-        self._app.add_url_rule('/station/1.0.0/reset',
+        # TODO Make URLs configurable
+        self._app.add_url_rule('/station_reset-v1',
                              'reset',
                              self.reset,
                              methods=['POST'])
-        self._app.add_url_rule('/station/1.0.0/activate',
+        self._app.add_url_rule('/station_activate-v1',
                              'activate',
                              self.activate,
                              methods=['POST'])
-        self._app.add_url_rule('/station/1.0.0/submit',
+        self._app.add_url_rule('/station_submit-v1',
                              'submit',
                              self.submit,
                              methods=['POST'])
