@@ -224,6 +224,12 @@ class ConnectionManagerConfig:
         self.DisconnectUrl = 'http://localhost:8080/ms/1.0.0/disconnect';
         self.TimeExpiredUrl = 'http://localhost:8080/ms/1.0.0/time_expired';
 
+# TODO MS information
+# //http://dc2014.hostreo.com/m/mgmt_main/login
+# http://dc2014.comli.com/m/mgmt_main/login
+# admin password is on the login page
+# DeviceTesting/Test Contact
+
 
 # ------------------------------------------------------------------------------
 # Module Initialization

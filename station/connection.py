@@ -350,7 +350,7 @@ class ConnectionManager(IConnectionManager):
 
 
     # --------------------------------------------------------------------------
-    # TODO Delete @_app.route('/station/1.0.0/reset', methods=['POST'])
+    # TODO Delete @_app.route('/station_reset-v1', methods=['POST'])
     def reset(self):
         """TODO strictly one-line summary
 
@@ -376,7 +376,7 @@ class ConnectionManager(IConnectionManager):
             logger.debug('return 400?')
 
         # TODO - To test:
-        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "PIN": "13579"}' 'http://localhost:5000/station/1.0.0/reset'
+        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "PIN": "13579"}' 'http://localhost:5000/station_reset-v1'
 
         message_version = request.json['message_version']
         message_timestamp = request.json['message_timestamp']
@@ -400,7 +400,7 @@ class ConnectionManager(IConnectionManager):
 
 
     # --------------------------------------------------------------------------
-    # TODO: Delete @_app.route('/station/1.0.0/activate', methods=['POST'])
+    # TODO: Delete @_app.route('/station_activate-v1', methods=['POST'])
     def activate(self):
         """TODO strictly one-line summary
 
@@ -426,7 +426,7 @@ class ConnectionManager(IConnectionManager):
             logger.debug('return 400?')
 
         # TODO - To test:
-        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59"}' 'http://localhost:5000/station/1.0.0/activate'
+        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59"}' 'http://localhost:5000/station_activate-v1'
 
         message_version = request.json['message_version']
         message_timestamp = request.json['message_timestamp']
@@ -450,7 +450,7 @@ class ConnectionManager(IConnectionManager):
 
 
     # --------------------------------------------------------------------------
-    # TODO: Delete @_app.route('/station/1.0.0/submit', methods=['POST'])
+    # TODO: Delete @_app.route('/station_submit-v1', methods=['POST'])
     def submit(self):
         """TODO strictly one-line summary
 
@@ -476,7 +476,7 @@ class ConnectionManager(IConnectionManager):
             logger.debug('return 400?')
 
         # TODO - To test:
-        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "submitted_answer": "42", "is_correct": "True"}' 'http://localhost:5000/station/1.0.0/submit'
+        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "submitted_answer": "42", "is_correct": "True"}' 'http://localhost:5000/station_submit-v1'
 
         message_version = request.json['message_version']
         message_timestamp = request.json['message_timestamp']
