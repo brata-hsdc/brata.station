@@ -36,7 +36,6 @@ import sys
 import traceback
 
 sys.path.append(os.path.join(os.path.dirname(sys.argv[0]), os.pardir))
-from station.conf import StationLoaderConfig
 from station.main import StationLoader
 
 
@@ -63,13 +62,22 @@ def main(argv):
     """
     global app
 
+    scriptName = sys.argv[0].split("/")[-1]
+    configFile = os.path.join(os.path.dirname(sys.argv[0]),
+                              scriptName + ".conf")
+
     if len(argv) == 1:
-        # TODO - log
-        config = StationLoaderConfig()
-        app = StationLoader(config)
+        # TODO - log debug parsing successfully
+
+        config = {}
+        discard = {}
+        execfile(configFile, discard, config) 
+        # TODO - log info config file parsed successfully
+
+        app = StationLoader(config['s'])
         app.start()
     else:
-        print __doc__ % {'scriptName' : sys.argv[0].split("/")[-1]}
+        print __doc__ % {'scriptName' : scriptName}
 
     return
 
