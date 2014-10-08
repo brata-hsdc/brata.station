@@ -380,10 +380,10 @@ class VibrationManager:
 
                     # started just now or still going
                     if isMotorOn:
-                        configDuration_s = self.OffDuration_s
+                        configDuration_s = self.OnDuration_s
                         motorToggle = self._vibrationMotor.stop
                     else:
-                        configDuration_s = self.OnDuration_s
+                        configDuration_s = self.OffDuration_s
                         motorToggle = self._vibrationMotor.start
 
                     currentTime_s = time()
