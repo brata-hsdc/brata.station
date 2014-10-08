@@ -105,7 +105,7 @@ def clean_termination(signal, frame):
     try:
         app.stop(signal)
     except Exception, e:
-        logging.critical("Exception occurred while stopping: " + e.args[0])
+        logger.critical("Exception occurred while stopping: " + e.args[0])
         sys.exit(1)
 
     sys.exit(0)
@@ -130,8 +130,8 @@ if __name__ == "__main__":
         main(sys.argv)
     except Exception, e:
         exType, ex, tb = sys.exc_info()
-        logging.critical("Exception occurred of type " + exType.__name__)
-        logging.critical(str(e))
+        logger.critical("Exception occurred of type " + exType.__name__)
+        logger.critical(str(e))
         traceback.print_tb(tb)
         sys.exit(1)
 
