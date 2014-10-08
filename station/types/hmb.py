@@ -284,8 +284,8 @@ class VibrationManager:
         self._timeToExit = False
         self.OnDuration_s = config.OnDuration_s
         self.OffDuration_s = config.OffDuration_s
-        self._vibrationMotor = vibrationMotorClass(self.Name)
-
+        self._vibrationMotor = vibrationMotorClass(self.Name, config.OutputPin)
+        
         self._currentlyStarted = False
         self._transitionToStarted = False
 

@@ -36,7 +36,8 @@ class Led(ILed):
 
     # --------------------------------------------------------------------------
     def __init__(self,
-                 name):
+                 name, 
+                 config):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -77,7 +78,7 @@ class Led(ILed):
         """
         logger.debug('Set LED steady ON \"%s\".', self.Name)
         # TODO, Replace
-        pibrella.output.f.pulse(0, 0, self.FlashingOnDuration_s, self.FlashingOffDuration_s)
+        # pibrella.output.f.pulse(0, 0, self.FlashingOnDuration_s, self.FlashingOffDuration_s)
     # --------------------------------------------------------------------------
     def turnOff(self):
         """TODO strictly one-line summary
@@ -280,7 +281,8 @@ class VibrationMotor(IVibrationMotor):
 
     # --------------------------------------------------------------------------
     def __init__(self,
-                 name):
+                 name,
+                 outputPin):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -301,7 +303,8 @@ class VibrationMotor(IVibrationMotor):
         #TODO - Need to get these from config file [SS]
         #self.OnDuration_s = 0.5
         #self.OffDuration_s = 0.5
-        self.outputPin = pibrella.ouput.e
+        #self.outputPin = pibrella.output.e
+        self.outputPin = getattr(pibrella.output, outputPin)
 
     # --------------------------------------------------------------------------
     def __enter__(self):
@@ -365,7 +368,7 @@ class VibrationMotor(IVibrationMotor):
         """
         logger.debug('Started vibration motor \"%s\".', self.Name)
         # TODO       
-        self.outputPin.On()
+        self.outputPin.on()
 
     # --------------------------------------------------------------------------
     def stop(self):
@@ -387,7 +390,7 @@ class VibrationMotor(IVibrationMotor):
         """
         logger.debug('Stopped vibration motor \"%s\".', self.Name)
         # TODO
-        self.outputPin.Off()
+        self.outputPin.off()
 
 
 # ------------------------------------------------------------------------------

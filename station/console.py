@@ -318,7 +318,8 @@ class VibrationMotor(IVibrationMotor):
 
     # --------------------------------------------------------------------------
     def __init__(self,
-                 name):
+                 name,
+                 outputPin):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -335,7 +336,7 @@ class VibrationMotor(IVibrationMotor):
             TodoError2: if TODO.
 
         """
-        self.Name = name
+        self.Name = name + " (" + outputPin +")"
 
     # --------------------------------------------------------------------------
     def __enter__(self):
