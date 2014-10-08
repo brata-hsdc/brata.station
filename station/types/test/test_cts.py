@@ -18,7 +18,7 @@ TODO module description
 
 import unittest
 
-from station.main import StationLoader
+from station.types.cts import Station
 
 # ------------------------------------------------------------------------------
 class StationTestCase(unittest.TestCase):
@@ -46,7 +46,7 @@ class StationTestCase(unittest.TestCase):
         """
 
         #TODO
-        #self.config = StationConfig()
+
 
     # --------------------------------------------------------------------------
     def test_init(self):
@@ -68,10 +68,11 @@ class StationTestCase(unittest.TestCase):
         """
 
         #TODO
-        #target = Station(self.config)
+        #self.assertEqual(name, target.Name)
+
 
     # --------------------------------------------------------------------------
-    def test_start(self):
+    def test_onReady(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -89,12 +90,15 @@ class StationTestCase(unittest.TestCase):
 
         """
 
-        #TODO
-        #target = Station(self.config)
-        #target.start()
+        # TODO
+        #output = pibrella.output.e
+        #self.assertEqual(0, output.read())
+        #self.Target.turnOn()
+        #self.assertEqual(1, output.read())
+
 
     # --------------------------------------------------------------------------
-    def test_stop(self):
+    def test_onProcessing(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -112,12 +116,15 @@ class StationTestCase(unittest.TestCase):
 
         """
 
-        #TODO
-        #target = Station(self.config)
-        #target.start()
+        # TODO
+        #output = pibrella.output.f
+        #self.assertEqual(0, output.read())
+        #self.Target.turnOff()
+        #self.assertEqual(1, output.read())
+
 
     # --------------------------------------------------------------------------
-    def test_State(self):
+    def test_onFailed(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -135,9 +142,55 @@ class StationTestCase(unittest.TestCase):
 
         """
 
-        #TODO
-        #target = Station(self.config)
-        #target.start()
+        # TODO
+        #self.Target.setFlashing()
+        # TODO
+
+    # --------------------------------------------------------------------------
+    def test_onPassed(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        # TODO
+        #self.Target.setFlashing()
+        # TODO
+
+    # --------------------------------------------------------------------------
+    def test_onUnexpectedState(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        # TODO
+        #self.Target.setFlashing()
+        # TODO
 
 
 # ------------------------------------------------------------------------------

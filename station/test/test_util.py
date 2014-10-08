@@ -18,10 +18,10 @@ TODO module description
 
 import unittest
 
-from station.main import StationLoader
+from station.util import NonBlockingConsole
 
 # ------------------------------------------------------------------------------
-class StationTestCase(unittest.TestCase):
+class NonBlockingConsoleTestCase(unittest.TestCase):
     """
     TODO class comment
     """
@@ -46,10 +46,11 @@ class StationTestCase(unittest.TestCase):
         """
 
         #TODO
-        #self.config = StationConfig()
+        #self.Target = Led('three')
+
 
     # --------------------------------------------------------------------------
-    def test_init(self):
+    def test_enter(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -68,10 +69,13 @@ class StationTestCase(unittest.TestCase):
         """
 
         #TODO
-        #target = Station(self.config)
+        #name = 'four'
+        #target = Led(name)
+        #self.assertEqual(name, target.Name)
+
 
     # --------------------------------------------------------------------------
-    def test_start(self):
+    def test_exit(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -89,12 +93,15 @@ class StationTestCase(unittest.TestCase):
 
         """
 
-        #TODO
-        #target = Station(self.config)
-        #target.start()
+        # TODO
+        #output = pibrella.output.e
+        #self.assertEqual(0, output.read())
+        #self.Target.turnOn()
+        #self.assertEqual(1, output.read())
+
 
     # --------------------------------------------------------------------------
-    def test_stop(self):
+    def test_get_data(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -112,32 +119,11 @@ class StationTestCase(unittest.TestCase):
 
         """
 
-        #TODO
-        #target = Station(self.config)
-        #target.start()
-
-    # --------------------------------------------------------------------------
-    def test_State(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
-        """
-
-        #TODO
-        #target = Station(self.config)
-        #target.start()
+        # TODO
+        #output = pibrella.output.f
+        #self.assertEqual(0, output.read())
+        #self.Target.turnOff()
+        #self.assertEqual(1, output.read())
 
 
 # ------------------------------------------------------------------------------

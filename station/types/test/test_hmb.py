@@ -16,17 +16,12 @@
 TODO module description
 """
 
-from mock import Mock
-import sys
 import unittest
 
-sys.modules['pibrella'] = Mock()
-from station.hw import Led
-from station.hw import PushButton
-from station.hw import VibrationMotor
+from station.types.hmb import Station
 
 # ------------------------------------------------------------------------------
-class LedTestCase(unittest.TestCase):
+class StationTestCase(unittest.TestCase):
     """
     TODO class comment
     """
@@ -50,7 +45,7 @@ class LedTestCase(unittest.TestCase):
 
         """
 
-        self.Target = Led('three')
+        #TODO
 
 
     # --------------------------------------------------------------------------
@@ -72,13 +67,12 @@ class LedTestCase(unittest.TestCase):
 
         """
 
-        name = 'four'
-        target = Led(name)
-        self.assertEqual(name, target.Name)
+        #TODO
+        #self.assertEqual(name, target.Name)
 
 
     # --------------------------------------------------------------------------
-    def test_turnOn(self):
+    def test_onReady(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -99,12 +93,12 @@ class LedTestCase(unittest.TestCase):
         # TODO
         #output = pibrella.output.e
         #self.assertEqual(0, output.read())
-        self.Target.turnOn()
+        #self.Target.turnOn()
         #self.assertEqual(1, output.read())
 
 
     # --------------------------------------------------------------------------
-    def test_turnOff(self):
+    def test_onProcessing(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -125,12 +119,12 @@ class LedTestCase(unittest.TestCase):
         # TODO
         #output = pibrella.output.f
         #self.assertEqual(0, output.read())
-        self.Target.turnOff()
+        #self.Target.turnOff()
         #self.assertEqual(1, output.read())
 
 
     # --------------------------------------------------------------------------
-    def test_setFlashing(self):
+    def test_onFailed(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -149,12 +143,58 @@ class LedTestCase(unittest.TestCase):
         """
 
         # TODO
-        self.Target.setFlashing()
+        #self.Target.setFlashing()
+        # TODO
+
+    # --------------------------------------------------------------------------
+    def test_onPassed(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        # TODO
+        #self.Target.setFlashing()
+        # TODO
+
+    # --------------------------------------------------------------------------
+    def test_onUnexpectedState(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        # TODO
+        #self.Target.setFlashing()
         # TODO
 
 
 # ------------------------------------------------------------------------------
-class PushButtonTestCase(unittest.TestCase):
+class VibrationManagerTestCase(unittest.TestCase):
     """
     TODO class comment
     """
@@ -178,7 +218,7 @@ class PushButtonTestCase(unittest.TestCase):
 
         """
 
-        self.Target = VibrationMotor('two')
+        #TODO
 
 
     # --------------------------------------------------------------------------
@@ -200,9 +240,8 @@ class PushButtonTestCase(unittest.TestCase):
 
         """
 
-        name = 'one'
-        target = VibrationMotor(name)
-        self.assertEqual(name, target.Name)
+        #TODO
+        #self.assertEqual(name, target.Name)
 
     # --------------------------------------------------------------------------
     def test_enter(self):
@@ -223,9 +262,8 @@ class PushButtonTestCase(unittest.TestCase):
 
         """
 
-        # TODO
-        #self.Target.start()
-        # TODO
+        #TODO
+        #self.assertEqual(name, target.Name)
 
     # --------------------------------------------------------------------------
     def test_exit(self):
@@ -246,9 +284,8 @@ class PushButtonTestCase(unittest.TestCase):
 
         """
 
-        # TODO
-        #self.Target.start()
-        # TODO
+        #TODO
+        #self.assertEqual(name, target.Name)
 
     # --------------------------------------------------------------------------
     def test_run(self):
@@ -269,152 +306,8 @@ class PushButtonTestCase(unittest.TestCase):
 
         """
 
-        # TODO
-        #self.Target.start()
-        # TODO
-
-    # --------------------------------------------------------------------------
-    def test_startListening(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
-        """
-
-        # TODO
-        self.Target.start()
-        # TODO
-
-    # --------------------------------------------------------------------------
-    def test_stopListening(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
-        """
-
-        # TODO
-        self.Target.stop()
-        # TODO
-
-# ------------------------------------------------------------------------------
-class VibrationMotorTestCase(unittest.TestCase):
-    """
-    TODO class comment
-    """
-
-    # --------------------------------------------------------------------------
-    def setUp(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
-        """
-
-        self.Target = VibrationMotor('two')
-
-
-    # --------------------------------------------------------------------------
-    def test_init(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
-        """
-
-        name = 'one'
-        target = VibrationMotor(name)
-        self.assertEqual(name, target.Name)
-
-    # --------------------------------------------------------------------------
-    def test_enter(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
-        """
-
-        # TODO
-        #self.Target.start()
-        # TODO
-
-    # --------------------------------------------------------------------------
-    def test_exit(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
-        """
-
-        # TODO
-        #self.Target.start()
-        # TODO
+        #TODO
+        #self.assertEqual(name, target.Name)
 
     # --------------------------------------------------------------------------
     def test_start(self):
@@ -435,9 +328,8 @@ class VibrationMotorTestCase(unittest.TestCase):
 
         """
 
-        # TODO
-        self.Target.start()
-        # TODO
+        #TODO
+        #self.assertEqual(name, target.Name)
 
     # --------------------------------------------------------------------------
     def test_stop(self):
@@ -458,9 +350,9 @@ class VibrationMotorTestCase(unittest.TestCase):
 
         """
 
-        # TODO
-        self.Target.stop()
-        # TODO
+        #TODO
+        #self.assertEqual(name, target.Name)
+
 
 # ------------------------------------------------------------------------------
 if __name__ == '__main__':
