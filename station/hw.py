@@ -77,7 +77,7 @@ class Led(ILed):
         """
         logger.debug('Set LED steady ON \"%s\".', self.Name)
         # TODO, Replace
-         pibrella.output.f.pulse(0, 0, self.FlashingOnDuration_s, self.FlashingOffDuration_s)
+        pibrella.output.f.pulse(0, 0, self.FlashingOnDuration_s, self.FlashingOffDuration_s)
     # --------------------------------------------------------------------------
     def turnOff(self):
         """TODO strictly one-line summary
