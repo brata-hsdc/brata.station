@@ -75,6 +75,8 @@ class LedTestCase(unittest.TestCase):
         name = 'four'
         target = Led(name)
         self.assertEqual(name, target.Name)
+        self.assertEqual(0.5, target.FlashingOnDuration_s)
+        self.assertEqual(0.5, target.FlashingOffDuration_s)
 
 
     # --------------------------------------------------------------------------
