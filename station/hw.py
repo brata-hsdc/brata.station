@@ -38,25 +38,24 @@ class Led(ILed):
     def __init__(self,
                  name, 
                  config):
-        """TODO strictly one-line summary
+        """Initializes the LED class
 
         TODO Detailed multi-line description if
         necessary.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            name (string): Name of this instance of the LED class. Example "Bob"
+            config (Config): Configuration object for the LED class
         Returns:
-            TODO describe the return type and details
+            N/A
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            N/A
 
         """
         self.Name = name
         self.FlashingOnDuration_s = 0.5
         self.FlashingOffDuration_s = 0.5
+        self.outputPin = getattr(pibrella.light, config.OutputPin)
 
     # --------------------------------------------------------------------------
     def turnOn(self):
@@ -77,8 +76,7 @@ class Led(ILed):
 
         """
         logger.debug('Set LED steady ON \"%s\".', self.Name)
-        # TODO, Replace
-        # pibrella.output.f.pulse(0, 0, self.FlashingOnDuration_s, self.FlashingOffDuration_s)
+        self.outputPin.on()
     # --------------------------------------------------------------------------
     def turnOff(self):
         """TODO strictly one-line summary
@@ -98,8 +96,7 @@ class Led(ILed):
 
         """
         logger.debug('Set LED steady OFF \"%s\".', self.Name)
-        # TODO, Replace
-        pibrella.output.f.off()
+        self.outputPin.off()
         
 
     # --------------------------------------------------------------------------
@@ -124,7 +121,10 @@ class Led(ILed):
                      self.Name,
                      self.FlashingOnDuration_s,
                      self.FlashingOffDuration_s)
-        # TODO
+        
+        # Pulse function, FadeInTime_s, FadeOutTime_s, OnTime_s, OffTime_s
+        self.outputPin.pulse(0, 0, self.FlashingOnDuration_s, self.FlashingOffDuration_s);
+        
         pass
 
 
@@ -290,8 +290,8 @@ class VibrationMotor(IVibrationMotor):
 
         Args:
             arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            name (string): Name of this motor, example "Huey"
+            outputPin (string): Letter Designation of Pin , "E", "F", "G", or"H"
         Returns:
             TODO describe the return type and details
         Raises:

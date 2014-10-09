@@ -35,7 +35,7 @@ class Led(ILed):
     # --------------------------------------------------------------------------
     def __init__(self,
                  name,
-                 config):
+                 outputPin):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -52,7 +52,7 @@ class Led(ILed):
             TodoError2: if TODO.
 
         """
-        self.Name = name
+        self.Name = name + " (" + outputPin +")"
         logger.debug('Constructing LED %s', self.Name)
 
     # --------------------------------------------------------------------------
