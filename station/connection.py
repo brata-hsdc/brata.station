@@ -86,6 +86,7 @@ class ConnectionManager(IConnectionManager):
         self._connectUrl = config.ConnectUrl
         self._disconnectUrl = config.DisconnectUrl
         self._timeExpiredUrl = config.TimeExpiredUrl
+        self._submitUrl = config.SubmitUrl
         self._stationType = config.StationType
         self._stationInstanceId = config.StationInstanceId
         self._connected = False
@@ -96,17 +97,30 @@ class ConnectionManager(IConnectionManager):
         #TODO? self._handler = todoHandler
 
         # TODO Make URLs configurable
-        self._app.add_url_rule('/station_reset-v1',
+        self._app.add_url_rule('/rpi/reset',
                              'reset',
                              self.reset,
                              methods=['POST'])
-        self._app.add_url_rule('/station_activate-v1',
+        # TODO - To test:
+        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "PIN": "13579"}' 'http://localhost:5000/rpi/reset'
+
+        self._app.add_url_rule('/rpi/start_challenge',
                              'activate',
                              self.activate,
                              methods=['POST'])
-        self._app.add_url_rule('/station_submit-v1',
+        # TODO - To test:
+        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59"}' 'http://localhost:5000/rpi/start_challenge'
+
+        self._app.add_url_rule('/rpi/submit',
                              'submit',
                              self.submit,
+                             methods=['POST'])
+        # TODO - To test:
+        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "submitted_answer": "42", "is_correct": "True"}' 'http://localhost:5000/rpi/submit'
+
+        self._app.add_url_rule('/rpi/shutdown',
+                             'shutdown',
+                             self.shutdown,
                              methods=['POST'])
 
         self._thread = Thread(target = self.run)
@@ -350,7 +364,6 @@ class ConnectionManager(IConnectionManager):
 
 
     # --------------------------------------------------------------------------
-    # TODO Delete @_app.route('/station_reset-v1', methods=['POST'])
     def reset(self):
         """TODO strictly one-line summary
 
@@ -375,9 +388,6 @@ class ConnectionManager(IConnectionManager):
             #TODO abort(400)
             logger.debug('return 400?')
 
-        # TODO - To test:
-        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "PIN": "13579"}' 'http://localhost:5000/station_reset-v1'
-
         message_version = request.json['message_version']
         message_timestamp = request.json['message_timestamp']
         pin = request.json['PIN']
@@ -400,7 +410,6 @@ class ConnectionManager(IConnectionManager):
 
 
     # --------------------------------------------------------------------------
-    # TODO: Delete @_app.route('/station_activate-v1', methods=['POST'])
     def activate(self):
         """TODO strictly one-line summary
 
@@ -425,9 +434,6 @@ class ConnectionManager(IConnectionManager):
             #TODO abort(400)
             logger.debug('return 400?')
 
-        # TODO - To test:
-        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59"}' 'http://localhost:5000/station_activate-v1'
-
         message_version = request.json['message_version']
         message_timestamp = request.json['message_timestamp']
 
@@ -450,7 +456,6 @@ class ConnectionManager(IConnectionManager):
 
 
     # --------------------------------------------------------------------------
-    # TODO: Delete @_app.route('/station_submit-v1', methods=['POST'])
     def submit(self):
         """TODO strictly one-line summary
 
@@ -475,9 +480,6 @@ class ConnectionManager(IConnectionManager):
             #TODO abort(400)
             logger.debug('return 400?')
 
-        # TODO - To test:
-        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "submitted_answer": "42", "is_correct": "True"}' 'http://localhost:5000/station_submit-v1'
-
         message_version = request.json['message_version']
         message_timestamp = request.json['message_timestamp']
         submitted_answer = request.json['submitted_answer']
@@ -488,6 +490,52 @@ class ConnectionManager(IConnectionManager):
         #'description': request.json.get('description', ""),
 
         logger.debug('Master server submitting (ver %s) user answer to station at %s. Answer "%s" is correct? %s' % (message_version, message_timestamp, submitted_answer, is_correct))
+
+        # TODO implement method body
+        if True: # TODO
+            self._callback.State = State.PASSED
+
+        # TODO can't pass-in self - how to get handle to self? is it needed?
+
+        # TODO
+        resp = jsonify({'foo': 'bar'})
+        resp.status_code = 200
+        return resp
+
+
+    # --------------------------------------------------------------------------
+    def shutdown(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        # TODO...
+        if not request.json:
+        #if not request.json or not 'title' in request.json:
+            #TODO abort(400)
+            logger.debug('return 400?')
+
+        message_version = request.json['message_version']
+        message_timestamp = request.json['message_timestamp']
+
+        # TODO Delete
+        #'title': request.json['title'],
+        #'description': request.json.get('description', ""),
+
+        logger.debug('Master server requesting station shutdown (ver %s) at %s' % (message_version, message_timestamp))
 
         # TODO implement method body
         if True: # TODO
@@ -587,6 +635,39 @@ class ConnectionManager(IConnectionManager):
             HttpMethod.POST, self._timeExpiredUrl,
             {'message_version':     0,
              'station_instance_id': self._stationInstanceId})
+
+
+    # --------------------------------------------------------------------------
+    def submitToMS(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Station submitting answer to master server')
+        (status, response) = self.callService(
+            HttpMethod.POST, self._connectUrl,
+            {'message_version':     0,
+             'station_instance_id': self._stationInstanceId,
+             'submitted_answer':    (31, 41, 59)}) # TODO
+
+        if status == httplib.OK:
+            logger.debug('Service %s returned OK' % (self._connectUrl))
+        elif status == httplib.NOT_FOUND:
+            logger.debug('Service %s returned NOT_FOUND' % (self._connectUrl))
+        else:
+            logger.critical('Unexpected HTTP response %s received from service %s' % (status, self._connectUrl))
 
 
 # ------------------------------------------------------------------------------
