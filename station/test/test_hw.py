@@ -346,7 +346,7 @@ class VibrationMotorTestCase(unittest.TestCase):
 
         """
 
-        self.Target = VibrationMotor('two')
+        self.Target = VibrationMotor('two', 'e')
 
 
     # --------------------------------------------------------------------------
@@ -369,8 +369,13 @@ class VibrationMotorTestCase(unittest.TestCase):
         """
 
         name = 'one'
-        target = VibrationMotor(name)
+        pin = 'z'
+        target = VibrationMotor(name, pin)
+        #TODO target.outputPin.z = MagicMock()
+        target.outputPin.z.__name__ = pin
+
         self.assertEqual(name, target.Name)
+        #TODO self.assertEqual(pin, target.outputPin.__name__)
 
     # --------------------------------------------------------------------------
     def test_enter(self):

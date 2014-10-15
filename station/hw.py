@@ -303,7 +303,6 @@ class VibrationMotor(IVibrationMotor):
         #TODO - Need to get these from config file [SS]
         #self.OnDuration_s = 0.5
         #self.OffDuration_s = 0.5
-        #self.outputPin = pibrella.output.e
         self.outputPin = getattr(pibrella.output, outputPin)
 
     # --------------------------------------------------------------------------
@@ -367,7 +366,6 @@ class VibrationMotor(IVibrationMotor):
 
         """
         logger.debug('Started vibration motor \"%s\".', self.Name)
-        # TODO       
         self.outputPin.on()
 
     # --------------------------------------------------------------------------
@@ -389,7 +387,6 @@ class VibrationMotor(IVibrationMotor):
 
         """
         logger.debug('Stopped vibration motor \"%s\".', self.Name)
-        # TODO
         self.outputPin.off()
 
 
