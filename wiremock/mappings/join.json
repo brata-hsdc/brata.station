@@ -1,7 +1,7 @@
 {
    "request": {
       "method": "POST",
-      "url": "/ms/1.0.0/connect"
+      "url": "/m/join"
    },
    "response": {
       "status": 200,
