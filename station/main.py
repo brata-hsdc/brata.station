@@ -72,6 +72,7 @@ class StationLoader(object):
 
         self._station = stationClass(config.StationTypeConfig, hwModule)
         self._state = None
+        self.args = None
 
     # --------------------------------------------------------------------------
     def start(self):
@@ -146,13 +147,13 @@ class StationLoader(object):
 
     @State.setter
     def State(self, value):
-        logger.debug('State transition from %s to %s' % (self._state, value))
+        logger.debug('State transition from %s to %s with args [%s]' % (self._state, value, self.args))
         self._state = value
 
         if value == State.READY:
             self._station.onReady()
         elif value == State.PROCESSING:
-            self._station.onProcessing()
+            self._station.onProcessing(self.args)
         elif value == State.FAILED:
             self._station.onFailed()
         elif value == State.PASSED:

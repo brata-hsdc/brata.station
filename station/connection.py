@@ -105,11 +105,11 @@ class ConnectionManager(IConnectionManager):
         # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "PIN": "13579"}' 'http://localhost:5000/rpi/reset'
 
         self._app.add_url_rule('/rpi/start_challenge',
-                             'activate',
-                             self.activate,
+                             'start_challenge',
+                             self.start_challenge,
                              methods=['POST'])
         # TODO - To test:
-        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59"}' 'http://localhost:5000/rpi/start_challenge'
+        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "hmb_vibration_pattern_ms": [1000, 3000, 1000, 5000, 1000, 11000]}' 'http://localhost:5000/rpi/start_challenge'
 
         self._app.add_url_rule('/rpi/submit',
                              'submit',
@@ -410,7 +410,7 @@ class ConnectionManager(IConnectionManager):
 
 
     # --------------------------------------------------------------------------
-    def activate(self):
+    def start_challenge(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -436,14 +436,16 @@ class ConnectionManager(IConnectionManager):
 
         message_version = request.json['message_version']
         message_timestamp = request.json['message_timestamp']
+        hmb_vibration_pattern_ms = request.json['hmb_vibration_pattern_ms']
 
         # TODO Delete
         #'title': request.json['title'],
         #'description': request.json.get('description', ""),
 
-        logger.debug('Master server requesting station activate (ver %s) at %s' % (message_version, message_timestamp))
+        logger.debug('Master server requesting station start_challenge (ver %s) at %s with vibration pattern %s' % (message_version, message_timestamp, hmb_vibration_pattern_ms))
 
         # TODO implement method body
+        self._callback.args = hmb_vibration_pattern_ms
         self._callback.State = State.PROCESSING
 
         # TODO can't pass-in self - how to get handle to self? is it needed?

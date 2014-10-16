@@ -145,7 +145,8 @@ class Station(IStation):
             self._leds[name].turnOff()
 
     # --------------------------------------------------------------------------
-    def onProcessing(self):
+    def onProcessing(self,
+                     args):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -162,15 +163,23 @@ class Station(IStation):
             TodoError2: if TODO.
 
         """
-        logger.info('HMB transitioned to Processing state.')
+        logger.info('HMB transitioned to Processing state with args [%s].' % (args))
 
-        for motor in self._vibrationMotors:
-            motor.start()
+        if 2 * len(self._vibrationMotors) == len(args):
+            for i, motor in enumerate(self._vibrationMotors):
+                onDuration_ms  = args[2*i + 0]
+                offDuration_ms = args[2*i + 1]
+                onDuration_s   = onDuration_ms  / 1000.0
+                offDuration_s  = offDuration_ms / 1000.0
+                motor.start(onDuration_s, offDuration_s)
 
-        for name in self._leds.keys():
-            self._leds[name].turnOff()
+            for name in self._leds.keys():
+                self._leds[name].turnOff()
 
-        self._leds['yellow'].turnOn()
+            self._leds['yellow'].turnOn()
+        else:
+            logger.critical("Mismatched argument length. Cannot start. (num motors = %s, expected num args = %s, actual num args = %s)" % (len(self._vibrationMotors), 2 * len(self._vibrationMotors), len(args)))
+
 
     # --------------------------------------------------------------------------
     def onFailed(self):
@@ -282,8 +291,6 @@ class VibrationManager:
         self.Name = name
         logger.debug('Constructing vibration manager %s', self.Name)
         self._timeToExit = False
-        self.OnDuration_s = config.OnDuration_s
-        self.OffDuration_s = config.OffDuration_s
         self._vibrationMotor = vibrationMotorClass(self.Name, config.OutputPin)
         
         self._currentlyStarted = False
@@ -419,7 +426,9 @@ class VibrationManager:
 
 
     # --------------------------------------------------------------------------
-    def start(self):
+    def start(self,
+              onDuration_s,
+              offDuration_s):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -437,6 +446,8 @@ class VibrationManager:
 
         """
         logger.debug('Starting vibration manager %s', self.Name)
+        self.OnDuration_s = onDuration_s
+        self.OffDuration_s = offDuration_s
         self._transitionToStarted = True
 
     # --------------------------------------------------------------------------
