@@ -71,7 +71,7 @@ class Station(IStation):
         self._leds = {}
 
         for i in config.Leds:
-            self._leds[i.Name] = ledClass(i.Name, i)
+            self._leds[i.Name] = ledClass(i.Name, i) # TODO: SS - Should I be placing the color from the config file here?
 
     # --------------------------------------------------------------------------
     def start(self):

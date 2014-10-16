@@ -52,7 +52,7 @@ class Led(ILed):
             TodoError2: if TODO.
 
         """
-        self.Name = name
+        self.Name = name + " (" + config.OutputPin +")"
         logger.debug('Constructing LED %s', self.Name)
 
     # --------------------------------------------------------------------------
