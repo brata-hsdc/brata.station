@@ -76,7 +76,7 @@ class Station(IStation):
         for i in config.Leds:
             self._leds[i.Name] = ledClass(i.Name, i) # TODO: SS - Should I be placing the color from the config file here?
 
-        self.expirationTime_ms = 0
+        self.expiredTimer = None
 
     # --------------------------------------------------------------------------
     def start(self):
@@ -149,10 +149,9 @@ class Station(IStation):
         for name in self._leds.keys():
             self._leds[name].turnOff()
 
-    # --------------------------------------------------------------------------
-    def calculateLcm(values):
-        result = 0
-        return result
+        if not self.expiredTimer == None:
+            self.expiredTimer.cancel()
+            self.expiredTimer = None
 
     # --------------------------------------------------------------------------
     def getCurrentTime_ms(self):
@@ -205,11 +204,33 @@ class Station(IStation):
             expirationTime_ms = now_ms + delta_ms
             logger.info("Challenge started at time=%s seconds and will complete %s seconds later at time=%s seconds" % ((now_ms / 1000.0), delta_s, (expirationTime_ms / 1000.0)))
 
-            delta_s = 10.0 # TODO Delete
-            self.expiredTimer = Timer(delta_s, self.onFailed)
+            self.expiredTimer = Timer(delta_s, self.onTimeExpired)
             self.expiredTimer.start()
         else:
             logger.critical("Mismatched argument length. Cannot start. (num motors = %s, expected num args = %s, actual num args = %s)" % (len(self._vibrationMotors), 2 * len(self._vibrationMotors), len(args)))
+
+
+    # --------------------------------------------------------------------------
+    def onTimeExpired(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.info('HMB time expired.')
+        # TODO Send time_expired message to MS
+        self.onFailed()
 
 
     # --------------------------------------------------------------------------
@@ -231,6 +252,10 @@ class Station(IStation):
 
         """
         logger.info('HMB transitioned to Failed state.')
+
+        if not self.expiredTimer == None:
+            self.expiredTimer.cancel()
+            self.expiredTimer = None
 
         for motor in self._vibrationMotors:
             motor.stop()
@@ -260,6 +285,10 @@ class Station(IStation):
         """
         logger.info('HMB transitioned to Passed state.')
 
+        if not self.expiredTimer == None:
+            self.expiredTimer.cancel()
+            self.expiredTimer = None
+
         for motor in self._vibrationMotors:
             motor.stop()
 
@@ -287,6 +316,10 @@ class Station(IStation):
 
         """
         logger.critical('HMB transitioned to Unexpected state %s', value)
+
+        if not self.expiredTimer == None:
+            self.expiredTimer.cancel()
+            self.expiredTimer = None
 
         for name in self._leds.keys():
             self._leds[name].setFlashing()
