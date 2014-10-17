@@ -21,6 +21,7 @@ import logging
 import logging.handlers
 import sys
 from threading import Thread
+from threading import Timer
 import time
 from time import sleep
 from time import time
@@ -200,8 +201,13 @@ class Station(IStation):
             self._leds['yellow'].turnOn()
 
             delta_ms = lcmm(*periods_ms)
-            self.expirationTime_ms = now_ms + delta_ms
-            logger.info("Challenge started at time=%s seconds and will complete %s seconds later at time=%s seconds" % ((now_ms / 1000.0), (delta_ms / 1000.0), (self.expirationTime_ms / 1000.0)))
+            delta_s = delta_ms / 1000.0
+            expirationTime_ms = now_ms + delta_ms
+            logger.info("Challenge started at time=%s seconds and will complete %s seconds later at time=%s seconds" % ((now_ms / 1000.0), delta_s, (expirationTime_ms / 1000.0)))
+
+            delta_s = 10.0 # TODO Delete
+            self.expiredTimer = Timer(delta_s, self.onFailed)
+            self.expiredTimer.start()
         else:
             logger.critical("Mismatched argument length. Cannot start. (num motors = %s, expected num args = %s, actual num args = %s)" % (len(self._vibrationMotors), 2 * len(self._vibrationMotors), len(args)))
 
