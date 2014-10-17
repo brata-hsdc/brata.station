@@ -383,8 +383,8 @@ class ConnectionManager(IConnectionManager):
         """
 
         # TODO...
-        if not request.json:
         #if not request.json or not 'title' in request.json:
+        if not request.json:
             #TODO abort(400)
             logger.debug('return 400?')
 
@@ -429,8 +429,8 @@ class ConnectionManager(IConnectionManager):
         """
 
         # TODO...
-        if not request.json:
         #if not request.json or not 'title' in request.json:
+        if not request.json:
             #TODO abort(400)
             logger.debug('return 400?')
 
@@ -477,8 +477,8 @@ class ConnectionManager(IConnectionManager):
         """
 
         # TODO...
-        if not request.json:
         #if not request.json or not 'title' in request.json:
+        if not request.json:
             #TODO abort(400)
             logger.debug('return 400?')
 
@@ -525,8 +525,8 @@ class ConnectionManager(IConnectionManager):
         """
 
         # TODO...
-        if not request.json:
         #if not request.json or not 'title' in request.json:
+        if not request.json:
             #TODO abort(400)
             logger.debug('return 400?')
 
