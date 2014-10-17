@@ -16,6 +16,7 @@
 TODO module description
 """
 
+from datetime import datetime
 import logging
 import logging.handlers
 import sys
@@ -26,6 +27,7 @@ from time import time
 import traceback
 
 from station.interfaces import IStation
+from station.util import lcmm
 
 
 # ------------------------------------------------------------------------------
@@ -72,6 +74,8 @@ class Station(IStation):
 
         for i in config.Leds:
             self._leds[i.Name] = ledClass(i.Name, i) # TODO: SS - Should I be placing the color from the config file here?
+
+        self.expirationTime_ms = 0
 
     # --------------------------------------------------------------------------
     def start(self):
@@ -145,6 +149,19 @@ class Station(IStation):
             self._leds[name].turnOff()
 
     # --------------------------------------------------------------------------
+    def calculateLcm(values):
+        result = 0
+        return result
+
+    # --------------------------------------------------------------------------
+    def getCurrentTime_ms(self):
+        now = datetime.now()
+        now_ms = (now.day * 24 * 3600 + now.second) * 1000 \
+               + now.microsecond / 1000.0
+
+        return now_ms
+
+    # --------------------------------------------------------------------------
     def onProcessing(self,
                      args):
         """TODO strictly one-line summary
@@ -166,17 +183,25 @@ class Station(IStation):
         logger.info('HMB transitioned to Processing state with args [%s].' % (args))
 
         if 2 * len(self._vibrationMotors) == len(args):
+            periods_ms = []
+            now_ms = self.getCurrentTime_ms()
+
             for i, motor in enumerate(self._vibrationMotors):
                 onDuration_ms  = args[2*i + 0]
                 offDuration_ms = args[2*i + 1]
                 onDuration_s   = onDuration_ms  / 1000.0
                 offDuration_s  = offDuration_ms / 1000.0
+                periods_ms.append(onDuration_ms + offDuration_ms)
                 motor.start(onDuration_s, offDuration_s)
 
             for name in self._leds.keys():
                 self._leds[name].turnOff()
 
             self._leds['yellow'].turnOn()
+
+            delta_ms = lcmm(*periods_ms)
+            self.expirationTime_ms = now_ms + delta_ms
+            logger.info("Challenge started at time=%s seconds and will complete %s seconds later at time=%s seconds" % ((now_ms / 1000.0), (delta_ms / 1000.0), (self.expirationTime_ms / 1000.0)))
         else:
             logger.critical("Mismatched argument length. Cannot start. (num motors = %s, expected num args = %s, actual num args = %s)" % (len(self._vibrationMotors), 2 * len(self._vibrationMotors), len(args)))
 

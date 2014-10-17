@@ -109,7 +109,7 @@ class ConnectionManager(IConnectionManager):
                              self.start_challenge,
                              methods=['POST'])
         # TODO - To test:
-        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "hmb_vibration_pattern_ms": [1000, 3000, 1000, 5000, 1000, 11000]}' 'http://localhost:5000/rpi/start_challenge'
+        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "hmb_vibration_pattern_ms": [1000, 2000, 1000, 4000, 1000, 10000]}' 'http://localhost:5000/rpi/start_challenge'
 
         self._app.add_url_rule('/rpi/submit',
                              'submit',
