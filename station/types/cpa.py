@@ -51,6 +51,7 @@ class Station(IStation):
         logger.debug('Constructing CPA')
 
         # TODO - Jaron add code here
+        self.ConnectionManager = None
 
     # --------------------------------------------------------------------------
     def start(self):

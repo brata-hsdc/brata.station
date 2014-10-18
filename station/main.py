@@ -71,6 +71,7 @@ class StationLoader(object):
         stationClass = getattr(stationModule, stationClassName)
 
         self._station = stationClass(config.StationTypeConfig, hwModule)
+        self._station.ConnectionManager = self._connectionManager
         self._state = None
         self.args = None
 

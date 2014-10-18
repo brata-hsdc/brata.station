@@ -77,6 +77,7 @@ class Station(IStation):
             self._leds[i.Name] = ledClass(i.Name, i) # TODO: SS - Should I be placing the color from the config file here?
 
         self.expiredTimer = None
+        self.ConnectionManager = None
 
     # --------------------------------------------------------------------------
     def start(self):
@@ -149,7 +150,7 @@ class Station(IStation):
         for name in self._leds.keys():
             self._leds[name].turnOff()
 
-        if not self.expiredTimer == None:
+        if self.expiredTimer != None:
             self.expiredTimer.cancel()
             self.expiredTimer = None
 
@@ -229,8 +230,9 @@ class Station(IStation):
 
         """
         logger.info('HMB time expired.')
-        # TODO Send time_expired message to MS
-        self.onFailed()
+
+        if self.ConnectionManager != None:
+            self.ConnectionManager.timeExpired()
 
 
     # --------------------------------------------------------------------------
@@ -253,7 +255,7 @@ class Station(IStation):
         """
         logger.info('HMB transitioned to Failed state.')
 
-        if not self.expiredTimer == None:
+        if self.expiredTimer != None:
             self.expiredTimer.cancel()
             self.expiredTimer = None
 
@@ -285,7 +287,7 @@ class Station(IStation):
         """
         logger.info('HMB transitioned to Passed state.')
 
-        if not self.expiredTimer == None:
+        if self.expiredTimer != None:
             self.expiredTimer.cancel()
             self.expiredTimer = None
 
@@ -317,7 +319,7 @@ class Station(IStation):
         """
         logger.critical('HMB transitioned to Unexpected state %s', value)
 
-        if not self.expiredTimer == None:
+        if self.expiredTimer != None:
             self.expiredTimer.cancel()
             self.expiredTimer = None
 
