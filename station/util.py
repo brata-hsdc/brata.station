@@ -13,7 +13,7 @@
 #  limitations under the License.
 # ------------------------------------------------------------------------------
 """
-TODO module description
+Provides general utilities.
 """
 
 import logging
@@ -44,7 +44,22 @@ def lcmm(*args):
 # ------------------------------------------------------------------------------
 class NonBlockingConsole(object):
     """
-    TODO class comment
+    Provides support for capturing keyboard input without blocking the console.
+    This means the get_data method will not block while waiting for input, so
+    the surrounding application can still continue if no key press is detected.
+
+    Example usage:
+
+        with NonBlockingConsole() as nbc:
+            while True:
+                keypress = nbc.get_data()
+
+                if keypress == ' ':
+                    processSpace()
+
+                # ignore all other key presses
+                else:
+                    pass
     """
 
     # --------------------------------------------------------------------------
@@ -91,20 +106,18 @@ class NonBlockingConsole(object):
 
     # --------------------------------------------------------------------------
     def get_data(self):
-        """TODO strictly one-line summary
+        """Returns a key press if one was detected
 
-        TODO Detailed multi-line description if
-        necessary.
+        If a key press was detected, then the key is returned; otherwise, the
+        method returns with another indicator. This method does not block on
+        input.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            N/A
         Returns:
-            TODO describe the return type and details
+            the key press character
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            N/A
 
         """
         if select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], []):

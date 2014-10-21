@@ -13,7 +13,8 @@
 #  limitations under the License.
 # ------------------------------------------------------------------------------
 """
-TODO module documentation
+The interfaces used by the various station types as well as the hardware
+abstractions.
 """
 
 from abc import ABCMeta
@@ -96,27 +97,20 @@ class IConnectionManager:
 # ------------------------------------------------------------------------------
 class ILed:
     """
-    TODO class comment
+    Represents a single light emitting diode.
     """
     __metaclass__ = ABCMeta
 
     # --------------------------------------------------------------------------
     @abstractmethod
     def turnOff(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
+        """Ceases any illumination of the LED.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
         Returns:
-            TODO describe the return type and details
+            N/A.
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            N/A.
 
         """
         pass
@@ -124,20 +118,14 @@ class ILed:
     # --------------------------------------------------------------------------
     @abstractmethod
     def turnOn(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
+        """Steadily illuminates the LED.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            N/A.
         Returns:
-            TODO describe the return type and details
+            N/A.
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            N/A.
 
         """
         pass
@@ -145,20 +133,18 @@ class ILed:
     # --------------------------------------------------------------------------
     @abstractmethod
     def setFlashing(self):
-        """TODO strictly one-line summary
+        """Flashes the LED at a pre-defined period.
 
-        TODO Detailed multi-line description if
-        necessary.
+
+        Indefinitely flashes the LED on and off. Configuration of the on/off
+        is left up to the implementation.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            N/A.
         Returns:
-            TODO describe the return type and details
+            N/A.
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            N/A.
 
         """
         pass
@@ -238,27 +224,21 @@ class IPushButton:
 # ------------------------------------------------------------------------------
 class IStation:
     """
-    TODO class comment
+    Represents a specific Raspberry Pi challenge station type.
     """
     __metaclass__ = ABCMeta
 
     # --------------------------------------------------------------------------
     @abstractmethod
     def start(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
+        """Performs any processing necessary when the application starts.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            N/A.
         Returns:
-            TODO describe the return type and details
+            N/A.
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            N/A.
 
         """
         pass
@@ -266,20 +246,14 @@ class IStation:
     # --------------------------------------------------------------------------
     @abstractmethod
     def stop(self, signal):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
+        """Performs any clean-up necessary as the application terminates.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            signal (int): The number of the signal being handled.
         Returns:
-            TODO describe the return type and details
+            N/A.
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            N/A.
 
         """
         pass
@@ -287,20 +261,18 @@ class IStation:
     # --------------------------------------------------------------------------
     @abstractmethod
     def onReady(self):
-        """TODO strictly one-line summary
+        """Prepares the station for the next challenge.
 
-        TODO Detailed multi-line description if
-        necessary.
+        This is called on station start-up as well as after the previous run
+        completes. It should set the station to visually indicate that a user
+        may approach and begin the challenge.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            N/A.
         Returns:
-            TODO describe the return type and details
+            N/A.
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            N/A.
 
         """
         pass
@@ -308,20 +280,18 @@ class IStation:
     # --------------------------------------------------------------------------
     @abstractmethod
     def onProcessing(self):
-        """TODO strictly one-line summary
+        """Begins running the challenge.
 
-        TODO Detailed multi-line description if
-        necessary.
+        This is called when the MS informs the station that it is time to begin
+        the challenge. It follows the user scanning the QR code next to the
+        station.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            N/A.
         Returns:
-            TODO describe the return type and details
+            N/A.
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            N/A.
 
         """
         pass
@@ -329,20 +299,18 @@ class IStation:
     # --------------------------------------------------------------------------
     @abstractmethod
     def onFailed(self):
-        """TODO strictly one-line summary
+        """Completes the challenge with a failed indication.
 
-        TODO Detailed multi-line description if
-        necessary.
+        This is called when the MS informs the station that the user has failed
+        completing the challenge. It should set the station to visually and
+        perhaps aurally indicate that the challenge was unsuccessful.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            N/A.
         Returns:
-            TODO describe the return type and details
+            N/A.
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            N/A.
 
         """
         pass
@@ -350,20 +318,18 @@ class IStation:
     # --------------------------------------------------------------------------
     @abstractmethod
     def onPassed(self):
-        """TODO strictly one-line summary
+        """Completes the challenge with a success indication.
 
-        TODO Detailed multi-line description if
-        necessary.
+        This is called when the MS informs the station that the user has passed
+        completing the challenge. It should set the station to visually and
+        perhaps aurally indicate that the challenge was successful.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            N/A.
         Returns:
-            TODO describe the return type and details
+            N/A.
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            N/A.
 
         """
         pass
@@ -371,20 +337,19 @@ class IStation:
     # --------------------------------------------------------------------------
     @abstractmethod
     def onUnexpectedState(self, value):
-        """TODO strictly one-line summary
+        """Indicates a logic error in the application.
 
-        TODO Detailed multi-line description if
-        necessary.
+        This indicates a transition to an unrecognized or unexpected state. This
+        must be logged and should set the station to visually and perhaps
+        aurally indicate the condition in order to help troubleshoot during
+        testing.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            value (State): The attempted state transition value.
         Returns:
-            TODO describe the return type and details
+            N/A.
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            N/A.
 
         """
         pass
@@ -393,27 +358,21 @@ class IStation:
 # ------------------------------------------------------------------------------
 class IVibrationMotor:
     """
-    TODO class comment
+    Represents a single vibration motor.
     """
     __metaclass__ = ABCMeta
 
     # --------------------------------------------------------------------------
     @abstractmethod
     def start(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
+        """Steadily vibrates the motor.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            N/A.
         Returns:
-            TODO describe the return type and details
+            N/A.
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            N/A.
 
         """
         pass
@@ -421,20 +380,14 @@ class IVibrationMotor:
     # --------------------------------------------------------------------------
     @abstractmethod
     def stop(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
+        """Ceases vibrating the motor.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            N/A.
         Returns:
-            TODO describe the return type and details
+            N/A.
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            N/A.
 
         """
         pass

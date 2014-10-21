@@ -124,6 +124,7 @@ class StationLoader(object):
 
         self._station.stop(signal)
         self._connectionManager.stopListening()
+        # TODO maybe stop connection manager before stopping station?
 
     # --------------------------------------------------------------------------
     @property

@@ -84,20 +84,18 @@ def main(argv):
 
 # ------------------------------------------------------------------------------
 def clean_termination(signal, frame):
-    """TODO strictly one-line summary
+    """Exits the application after cleaning up.
 
-    TODO Detailed multi-line description if
-    necessary.
+    A zero exit code is passed back to the calling environment if no problems
+    occurred during termination; otherwise, a nonzero exit code is passed back.
 
     Args:
-        arg1 (type1): TODO describe arg, valid values, etc.
-        arg2 (type2): TODO describe arg, valid values, etc.
-        arg3 (type3): TODO describe arg, valid values, etc.
+        signal (int): The number of the signal being handled.
+        frame (frame): The current stack frame. (Not used.)
     Returns:
-        TODO describe the return type and details
+        No return.
     Raises:
-        TodoError1: if TODO.
-        TodoError2: if TODO.
+        N/A.
 
     """
     global app

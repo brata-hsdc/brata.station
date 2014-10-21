@@ -13,7 +13,7 @@
 #  limitations under the License.
 # ------------------------------------------------------------------------------
 """
-TODO module description
+Provides enumerated types to represent state values.
 """
 
 import logging
@@ -23,7 +23,9 @@ import logging.handlers
 # ------------------------------------------------------------------------------
 class State:
     """
-    TODO class comment
+    The states of the station representing whether the station is ready to
+    accept a challenge, processing a challenge, or has completed a challenge
+    with a failed or passed indicator.
     """
 
     READY, PROCESSING, FAILED, PASSED = range(4)
@@ -32,7 +34,7 @@ class State:
 # ------------------------------------------------------------------------------
 class HttpMethod:
     """
-    TODO class comment
+    HTTP verbs used for REST calls.
     """
 
     GET, PUT, POST, DELETE = range(4)
