@@ -13,7 +13,7 @@
 #  limitations under the License.
 # ------------------------------------------------------------------------------
 """
-TODO module description
+The main entry point for the station application.
 """
 
 from importlib import import_module
@@ -27,7 +27,7 @@ from station.state import State
 # ------------------------------------------------------------------------------
 class StationLoader(object):
     """
-    TODO class comment
+    Manages a specific station type based on the application configuration.
     """
 
     # --------------------------------------------------------------------------
@@ -77,20 +77,17 @@ class StationLoader(object):
 
     # --------------------------------------------------------------------------
     def start(self):
-        """TODO strictly one-line summary
+        """Starts the station instance.
 
-        TODO Detailed multi-line description if
-        necessary.
+        Starts the station instance in the Ready state, initiates a connection
+        with the MS, and begins listening for messages from the MS.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            N/A.
         Returns:
-            TODO describe the return type and details
+            N/A.
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            N/A.
 
         """
         logger.info('Starting StationLoader.')
@@ -104,20 +101,17 @@ class StationLoader(object):
 
     # --------------------------------------------------------------------------
     def stop(self, signal):
-        """TODO strictly one-line summary
+        """Stops the station instance.
 
-        TODO Detailed multi-line description if
-        necessary.
+        Stops the station instance and stops listening to messages from the MS.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            signal (int): The number of the signal being handled.
+            N/A.
         Returns:
-            TODO describe the return type and details
+            N/A.
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            N/A.
 
         """
         logger.info('Received signal "%s". Stopping StationLoader.', signal)
@@ -129,20 +123,17 @@ class StationLoader(object):
     # --------------------------------------------------------------------------
     @property
     def State(self):
-        """TODO strictly one-line summary
+        """The current station state.
 
-        TODO Detailed multi-line description if
-        necessary.
+        Indicates whether the station is ready to run a challenge, running a
+        challenge, or completed a challenge with a passed or failed result.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            N/A.
         Returns:
-            TODO describe the return type and details
+            The current station state.
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            N/A.
 
         """
         return self._state
