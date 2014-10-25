@@ -23,9 +23,159 @@ import signal
 import sys
 import traceback
 
+from interfaces import IDisplay
 from interfaces import ILed
 from interfaces import IPushButton
 from interfaces import IVibrationMotor
+
+
+# ------------------------------------------------------------------------------
+class Display(IDisplay):
+    """
+    TODO class comment
+    """
+    # TODO Reference the bottom of this for the code needed for the LCD display:
+    # https://github.com/adafruit/Adafruit-Raspberry-Pi-Python-Code/blob/master/Adafruit_CharLCDPlate/Adafruit_CharLCDPlate.py
+    # TODO for text > 16 chars - might need to consider scrolling to display all the text
+
+    # --------------------------------------------------------------------------
+    def __init__(self,
+                 config):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Constructing display')
+
+        self._line1Text = ''
+        self._line2Text = ''
+
+    # --------------------------------------------------------------------------
+    def __enter__(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Entering display')
+        return self
+
+    # --------------------------------------------------------------------------
+    def __exit__(self, type, value, traceback):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Exiting display')
+        self.setText('')
+
+    # --------------------------------------------------------------------------
+    def setLine1Text(self,
+                     text):
+        """Sets the text for line 1 of the display.
+
+        Sets the text for line 1 of the display. If the text is too long to fit
+        on the display, then the text scrolls over time.
+
+        Args:
+            text (string): The text to display.
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        self._line1Text = text
+        # TODO
+        logger.debug('Setting Line 1 text. Display now reads "%s"[br]"%s"' %
+                     (self._line1Text, self._line2Text))
+
+
+    # --------------------------------------------------------------------------
+    def setLine2Text(self,
+                     text):
+        """Sets the text for line 2 of the display.
+
+        Sets the text for line 2 of the display. If the text is too long to fit
+        on the display, then the text scrolls over time.
+
+        Args:
+            text (string): The text to display.
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        self._line2Text = text
+        # TODO
+        logger.debug('Setting Line 2 text. Display now reads "%s"[br]"%s"' %
+                     (self._line1Text, self._line2Text))
+
+
+    # --------------------------------------------------------------------------
+    def setText(self,
+                text):
+        """Sets the text for the entire display.
+
+        Directly sets the text for the display. Multiple lines can be provided
+        at once by separating with a '\n' character.
+
+        Args:
+            text (string): The text to display.
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        idx = text.find('\n')
+
+        if idx != -1:
+            self._line1Text = text[:idx]
+            self._line2Text = text[idx+1:]
+        else:
+            self._line1Text = text
+            self._line2Text = ''
+
+        # TODO
+        logger.debug('Setting Line 2 text. Display now reads "%s"[br]"%s"' %
+                     (self._line1Text, self._line2Text))
 
 
 # ------------------------------------------------------------------------------
@@ -77,6 +227,7 @@ class Led(ILed):
         """
         logger.debug('Set LED steady ON \"%s\".', self.Name)
         self.outputPin.on()
+
     # --------------------------------------------------------------------------
     def turnOff(self):
         """TODO strictly one-line summary
@@ -97,7 +248,6 @@ class Led(ILed):
         """
         logger.debug('Set LED steady OFF \"%s\".', self.Name)
         self.outputPin.off()
-        
 
     # --------------------------------------------------------------------------
     def setFlashing(self):
@@ -124,8 +274,6 @@ class Led(ILed):
         
         # Pulse function, FadeInTime_s, FadeOutTime_s, OnTime_s, OffTime_s
         self.outputPin.pulse(0, 0, self.FlashingOnDuration_s, self.FlashingOffDuration_s);
-        
-        pass
 
 
 # ------------------------------------------------------------------------------
@@ -133,6 +281,8 @@ class PushButton(IPushButton):
     """
     TODO class comment
     """
+    # TODO Reference the bottom of this for the code needed for push buttons:
+    # https://github.com/adafruit/Adafruit-Raspberry-Pi-Python-Code/blob/master/Adafruit_CharLCDPlate/Adafruit_CharLCDPlate.py
 
     # --------------------------------------------------------------------------
     def __init__(self,
@@ -186,7 +336,7 @@ class PushButton(IPushButton):
 
         """
         logger.debug('Exiting push button')
-        stopListening(self)
+        self.stopListening()
         self._timeToExit = True
         self._thread.join()
 
@@ -345,7 +495,7 @@ class VibrationMotor(IVibrationMotor):
 
         """
         logger.debug('Exiting vibration motor %s', self.Name)
-        stop(self)
+        self.stop()
 
     # --------------------------------------------------------------------------
     def start(self):

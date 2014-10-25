@@ -95,6 +95,73 @@ class IConnectionManager:
 
 
 # ------------------------------------------------------------------------------
+class IDisplay:
+    """
+    Represents an LCD display.
+    """
+    __metaclass__ = ABCMeta
+
+    # --------------------------------------------------------------------------
+    @abstractmethod
+    def setLine1Text(self,
+                     text):
+        """Sets the text for line 1 of the display.
+
+        Sets the text for line 1 of the display. If the text is too long to fit
+        on the display, then the text scrolls over time.
+
+        Args:
+            text (string): The text to display.
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        pass
+
+
+    # --------------------------------------------------------------------------
+    @abstractmethod
+    def setLine2Text(self,
+                     text):
+        """Sets the text for line 2 of the display.
+
+        Sets the text for line 2 of the display. If the text is too long to fit
+        on the display, then the text scrolls over time.
+
+        Args:
+            text (string): The text to display.
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        pass
+
+
+    # --------------------------------------------------------------------------
+    @abstractmethod
+    def setText(self,
+                text):
+        """Sets the text for the entire display.
+
+        Directly sets the text for the display. Multiple lines can be provided
+        at once by separating with a '\n' character.
+
+        Args:
+            text (string): The text to display.
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        pass
+
+
+# ------------------------------------------------------------------------------
 class ILed:
     """
     Represents a single light emitting diode.

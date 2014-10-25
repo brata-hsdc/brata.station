@@ -13,7 +13,7 @@
 #  limitations under the License.
 # ------------------------------------------------------------------------------
 """
-TODO module description
+Provides the definitions needed for the HMB station type.
 """
 
 from datetime import datetime
@@ -34,7 +34,8 @@ from station.util import lcmm
 # ------------------------------------------------------------------------------
 class Station(IStation):
     """
-    TODO class comment
+    Provides the implementation for a HMB station to support motors that drive
+    vibrating platforms.
     """
 
     # --------------------------------------------------------------------------
@@ -76,6 +77,7 @@ class Station(IStation):
         for i in config.Leds:
             self._leds[i.Name] = ledClass(i.Name, i) # TODO: SS - Should I be placing the color from the config file here?
 
+         # TODO is the expired timer common to all stations? Should both of these be moved up?
         self.expiredTimer = None
         self.ConnectionManager = None
 
@@ -330,7 +332,7 @@ class Station(IStation):
 # ------------------------------------------------------------------------------
 class VibrationManager:
     """
-    TODO class comment
+    Manages the start/stop interval of a single vibration motor.
     """
 
     # --------------------------------------------------------------------------

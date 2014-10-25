@@ -13,7 +13,7 @@
 #  limitations under the License.
 # ------------------------------------------------------------------------------
 """
-TODO module description
+Provides the definitions needed for the CTS station type.
 """
 
 import logging
@@ -25,7 +25,8 @@ from station.interfaces import IStation
 # ------------------------------------------------------------------------------
 class Station(IStation):
     """
-    TODO class comment
+    Provides the implementation for a CTS station to support displaying and
+    obtaining a combination value from the user to supply to the MS.
     """
 
     # --------------------------------------------------------------------------
@@ -50,7 +51,23 @@ class Station(IStation):
         """
         logger.debug('Constructing CTS')
 
-        # TODO - add code here
+        displayClassName = config.DisplayClassName
+        pushButtonClassName = config.PushButtonClassName
+
+        displayClass = getattr(hwModule, displayClassName)
+        pushButtonClass = getattr(hwModule, pushButtonClassName)
+
+        self._display = displayClass(config.Display)
+        self._display.setText("Initializing...")
+
+        self._pushButtons = {}
+
+        for i in config.PushButtons:
+            self._pushButtons[i.Name] = pushButtonClass(i.Name,
+                                                        self.buttonPressed,
+                                                        i)
+
+        self._submitting = False
         self.ConnectionManager = None
 
     # --------------------------------------------------------------------------
@@ -73,7 +90,7 @@ class Station(IStation):
         """
         logger.info('Starting CTS.')
 
-        # TODO - add code here
+        # Nothing more to do.
 
     # --------------------------------------------------------------------------
     def stop(self, signal):
@@ -94,8 +111,10 @@ class Station(IStation):
 
         """
         logger.info('Received signal "%s". Stopping CTS.', signal)
+        self._display.setText("Shutting down...")
 
-        # TODO - add code here
+        for name in self._pushButtons.keys():
+            self._pushButtons[name].stopListening()
 
     # --------------------------------------------------------------------------
     def onReady(self):
@@ -116,11 +135,14 @@ class Station(IStation):
 
         """
         logger.info('CTS transitioned to Ready state.')
+        self._display.setText("Ready.")
 
-        # TODO - add code here
+        for name in self._pushButtons.keys():
+            self._pushButtons[name].stopListening()
 
     # --------------------------------------------------------------------------
-    def onProcessing(self):
+    def onProcessing(self,
+                     args):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -139,7 +161,81 @@ class Station(IStation):
         """
         logger.info('CTS transitioned to Processing state.')
 
-        # TODO - add code here
+        self._combo = Combo(0, 0, 0)
+
+        self._display.setLine1Text("TODO: [Specify starting message here.]")
+        self.refreshDisplayedCombo()
+
+        for name in self._pushButtons.keys():
+            self._pushButtons[name].startListening()
+
+    # --------------------------------------------------------------------------
+    def refreshDisplayedCombo(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        s = self._combo.toString()
+        logger.debug('Setting display Line 2 to: %s.' % (s))
+        self._display.setLine2Text(s)
+
+    # --------------------------------------------------------------------------
+    def buttonPressed(self,
+                      pushButtonName):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.info('Push button %s pressed.' % (pushButtonName))
+
+        if pushButton.Name == 'Up':
+            self._combo.incCurrentDigit(1)
+            self.refreshDisplayedCombo()
+            self._submitting = False
+        elif pushButton.Name == 'Down':
+            self._combo.decCurrentDigit(1)
+            self.refreshDisplayedCombo()
+            self._submitting = False
+        elif pushButton.Name == 'Left':
+            self._combo.moveLeft(1)
+            self.refreshDisplayedCombo()
+            self._submitting = False
+        elif pushButton.Name == 'Right':
+            self._combo.moveRight(1)
+            self.refreshDisplayedCombo()
+            self._submitting = False
+        elif pushButton.Name == 'Enter':
+            if self._submitting:
+                # TODO submit combo to MS
+                self._submitting = False
+            else:
+                self._submitting = True
+        else:
+            pass #TODO log unexpected button press received
 
     # --------------------------------------------------------------------------
     def onFailed(self):
@@ -160,8 +256,10 @@ class Station(IStation):
 
         """
         logger.info('CTS transitioned to Failed state.')
+        self._display.setText("Failed.")
 
-        # TODO - add code here
+        for name in self._pushButtons.keys():
+            self._pushButtons[name].stopListening()
 
     # --------------------------------------------------------------------------
     def onPassed(self):
@@ -182,8 +280,10 @@ class Station(IStation):
 
         """
         logger.info('CTS transitioned to Passed state.')
+        self._display.setText("Success!")
 
-        # TODO - add code here
+        for name in self._pushButtons.keys():
+            self._pushButtons[name].stopListening()
 
     # --------------------------------------------------------------------------
     def onUnexpectedState(self, value):
@@ -204,9 +304,233 @@ class Station(IStation):
 
         """
         logger.critical('CTS transitioned to Unexpected state %s', value)
+        self._display.setText("Malfunction!")
 
-        # TODO - add code here
+        for name in self._pushButtons.keys():
+            self._pushButtons[name].stopListening()
 
+
+# ------------------------------------------------------------------------------
+class Combo:
+    """
+    Manages the state of the combination being entered.
+    """
+
+    # --------------------------------------------------------------------------
+    def __init__(self,
+                 value1,
+                 value2,
+                 value3):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Constructing combo')
+
+        # TODO
+        self._position = 0
+        self._digits = [0, 0, 0, 0, 0, 0]
+
+        self._digits[0] = value1 / 10 % 10
+        self._digits[1] = value1 /  1 % 10
+        self._digits[2] = value2 / 10 % 10
+        self._digits[3] = value2 /  1 % 10
+        self._digits[4] = value3 / 10 % 10
+        self._digits[5] = value3 /  1 % 10
+
+    # --------------------------------------------------------------------------
+    def __enter__(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Entering combo %s', self.Name)
+        # TODO
+        return self
+
+    # --------------------------------------------------------------------------
+    def __exit__(self, type, value, traceback):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Exiting combo')
+        # TODO
+
+    # --------------------------------------------------------------------------
+    def moveLeft(self,
+                 numPlaces):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        self._position -= 1
+        if self._position < 0:
+            self._position = len(self._digits) - 1
+        logger.debug('moved current combo pos to %s' % (self._position))
+
+    # --------------------------------------------------------------------------
+    def moveRight(self,
+                  numPlaces):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        self._position += 1
+        if self._position >= len(self._digits):
+            self._position = 0
+        logger.debug('moved current combo pos to %s' % (self._position))
+
+    # --------------------------------------------------------------------------
+    def incCurrentDigit(self,
+                        incrementValue):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        value = self._digits[self._position]
+        value += 1
+
+        if value > 9:
+            value = 0
+
+        self._digits[self._position] = value
+
+    # --------------------------------------------------------------------------
+    def decCurrentDigit(self,
+                        decrementValue):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        value = self._digits[self._position]
+        value -= 1
+
+        if value < 0:
+            value = 9
+
+        self._digits[self._position] = value
+
+    # --------------------------------------------------------------------------
+    def toString(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        s = ''.join(str(x) for x in self._digits)
+        s = s[0:1] + ' ' + s[2:3] + ' ' + s[4:5]
+
+        idx = self._position
+        if idx > 3:
+            idx += 2
+        elif idx > 1:
+            idx += 1
+
+        s = s[:idx] + '[' + s[idx] + ']' + s[idx+1:]
+
+        logger.debug('combo value for (%s, %s, %s) as string: "%s"' %
+                     (''.join(str(x) for x in self._digits[0:1]),
+                      ''.join(str(x) for x in self._digits[2:3]),
+                      ''.join(str(x) for x in self._digits[4:5]),
+                      s))
+
+        return s
 
 # ------------------------------------------------------------------------------
 # Module Initialization

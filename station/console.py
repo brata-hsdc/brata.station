@@ -19,11 +19,158 @@ TODO module description
 import logging
 import logging.handlers
 import sys
+from threading import Thread
+from time import sleep
 import traceback
 
+from station.interfaces import IDisplay
 from station.interfaces import ILed
 from station.interfaces import IPushButton
 from station.interfaces import IVibrationMotor
+from station.util import NonBlockingConsole
+
+
+# ------------------------------------------------------------------------------
+class Display(IDisplay):
+    """
+    TODO class comment
+    """
+
+    # --------------------------------------------------------------------------
+    def __init__(self,
+                 config):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Constructing display')
+
+        self._line1Text = ''
+        self._line2Text = ''
+
+    # --------------------------------------------------------------------------
+    def __enter__(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Entering display')
+        return self
+
+    # --------------------------------------------------------------------------
+    def __exit__(self, type, value, traceback):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Exiting display')
+        self.setText('')
+
+    # --------------------------------------------------------------------------
+    def setLine1Text(self,
+                     text):
+        """Sets the text for line 1 of the display.
+
+        Sets the text for line 1 of the display. If the text is too long to fit
+        on the display, then the text scrolls over time.
+
+        Args:
+            text (string): The text to display.
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        self._line1Text = text
+        logger.debug('Setting Line 1 text. Display now reads "%s"[br]"%s"' %
+                     (self._line1Text, self._line2Text))
+
+
+    # --------------------------------------------------------------------------
+    def setLine2Text(self,
+                     text):
+        """Sets the text for line 2 of the display.
+
+        Sets the text for line 2 of the display. If the text is too long to fit
+        on the display, then the text scrolls over time.
+
+        Args:
+            text (string): The text to display.
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        self._line2Text = text
+        logger.debug('Setting Line 2 text. Display now reads "%s"[br]"%s"' %
+                     (self._line1Text, self._line2Text))
+
+
+    # --------------------------------------------------------------------------
+    def setText(self,
+                text):
+        """Sets the text for the entire display.
+
+        Directly sets the text for the display. Multiple lines can be provided
+        at once by separating with a '\n' character.
+
+        Args:
+            text (string): The text to display.
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        idx = text.find('\n')
+
+        if idx != -1:
+            self._line1Text = text[:idx]
+            self._line2Text = text[idx+1:]
+        else:
+            self._line1Text = text
+            self._line2Text = ''
+
+        logger.debug('Setting Line 2 text. Display now reads "%s"[br]"%s"' %
+                     (self._line1Text, self._line2Text))
 
 
 # ------------------------------------------------------------------------------
@@ -95,7 +242,7 @@ class Led(ILed):
 
         """
         logger.debug('Exiting LED %s', self.Name)
-        turnOff(self)
+        self.turnOff()
 
     # --------------------------------------------------------------------------
     def turnOff(self):
@@ -165,7 +312,9 @@ class PushButton(IPushButton):
     """
 
     # --------------------------------------------------------------------------
+    # TODO Add name to __init__ in hw.py
     def __init__(self,
+                 name,
                  buttonPressHandler,
                  config):
         """TODO strictly one-line summary
@@ -184,7 +333,8 @@ class PushButton(IPushButton):
             TodoError2: if TODO.
 
         """
-        logger.debug('Constructing push button')
+        logger.debug('Constructing push button %s' % (name))
+        self.Name = name
         self._listening = False
         self._timeToExit = False
         self._handler = buttonPressHandler
@@ -194,7 +344,7 @@ class PushButton(IPushButton):
 
     # --------------------------------------------------------------------------
     def __enter__(self):
-        logger.debug('Entering push button')
+        logger.debug('Entering push button %s' % (self.Name))
         return self
 
     # --------------------------------------------------------------------------
@@ -215,8 +365,8 @@ class PushButton(IPushButton):
             TodoError2: if TODO.
 
         """
-        logger.debug('Exiting push button')
-        stopListening(self)
+        logger.debug('Exiting push button %s' % (self.Name))
+        self.stopListening()
         self._timeToExit = True
         self._thread.join()
 
@@ -239,7 +389,7 @@ class PushButton(IPushButton):
 
         """
         with NonBlockingConsole() as nbc:
-            logger.debug('Starting key press thread for push button')
+            logger.debug('Starting key press thread for push button %s' % (self.Name))
 
             while not self._timeToExit:
                 try:
@@ -248,8 +398,9 @@ class PushButton(IPushButton):
                         keypress = nbc.get_data()
 
                         if keypress == ' ':
-                            logger.debug('Received key press event for <SPACE>')
-                            self._handler()
+                            logger.debug('Received key press event for <SPACE> from push button %s' % (self.Name))
+                            # TODO add self.Name to _handler in hw.py?
+                            self._handler(self.Name)
 
                         # ignore all other key presses
                         else:
@@ -261,7 +412,7 @@ class PushButton(IPushButton):
                     #logger.critical("Exception occurred: " + e.args[0])
                     # JIA TODO UPDATE change
                     exType, ex, tb = sys.exc_info()
-                    logger.critical("Exception occurred of type " + exType.__name_)
+                    logger.critical("Exception occurred of type %s in push button %s" % (exType.__name__, self.Name))
                     logger.critical(str(e))
                     traceback.print_tb(tb)
                     # JIA TODO END change
@@ -284,7 +435,7 @@ class PushButton(IPushButton):
             TodoError2: if TODO.
 
         """
-        logger.debug('Starting listening for push button')
+        logger.debug('Starting listening for push button %s' % (self.Name))
         # TODO
         self._listening = True
 
@@ -306,7 +457,7 @@ class PushButton(IPushButton):
             TodoError2: if TODO.
 
         """
-        logger.debug('Stopping listening for push button')
+        logger.debug('Stopping listening for push button %s' % (self.Name))
         self._listening = False
 
 
@@ -378,7 +529,7 @@ class VibrationMotor(IVibrationMotor):
 
         """
         logger.debug('Exiting vibration motor %s', self.Name)
-        stop(self)
+        self.stop()
 
     # --------------------------------------------------------------------------
     def start(self):

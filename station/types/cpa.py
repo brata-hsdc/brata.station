@@ -13,7 +13,7 @@
 #  limitations under the License.
 # ------------------------------------------------------------------------------
 """
-TODO module description
+Provides the definitions needed for the CPA station type.
 """
 
 import logging
@@ -25,7 +25,7 @@ from station.interfaces import IStation
 # ------------------------------------------------------------------------------
 class Station(IStation):
     """
-    TODO class comment
+    Provides the implementation for a CPA station to support TODO.
     """
 
     # --------------------------------------------------------------------------
@@ -120,7 +120,8 @@ class Station(IStation):
         # TODO - Jaron add code here
 
     # --------------------------------------------------------------------------
-    def onProcessing(self):
+    def onProcessing(self,
+                     args):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
