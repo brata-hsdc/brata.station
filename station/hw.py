@@ -23,6 +23,7 @@ import signal
 import sys
 import traceback
 
+from Adafruit_CharLCDPlate import Adafruit_CharLCDPlate
 from interfaces import IDisplay
 from interfaces import ILed
 from interfaces import IPushButtonMonitor
@@ -34,9 +35,6 @@ class Display(IDisplay):
     """
     TODO class comment
     """
-    # TODO Reference the bottom of this for the code needed for the LCD display:
-    # https://github.com/adafruit/Adafruit-Raspberry-Pi-Python-Code/blob/master/Adafruit_CharLCDPlate/Adafruit_CharLCDPlate.py
-    # TODO for text > 16 chars - might need to consider scrolling to display all the text
 
     # --------------------------------------------------------------------------
     def __init__(self,
@@ -61,6 +59,7 @@ class Display(IDisplay):
 
         self._line1Text = ''
         self._line2Text = ''
+        self._lcd = Adafruit_CharLCDPlate()
 
     # --------------------------------------------------------------------------
     def __enter__(self):
@@ -81,6 +80,9 @@ class Display(IDisplay):
 
         """
         logger.debug('Entering display')
+        self._lcd.begin(16, 2)
+        self._lcd.clear()
+        self._lcd.noCursor()
         return self
 
     # --------------------------------------------------------------------------
@@ -103,6 +105,7 @@ class Display(IDisplay):
         """
         logger.debug('Exiting display')
         self.setText('')
+        self._lcd.stop()
 
     # --------------------------------------------------------------------------
     def setLine1Text(self,
@@ -121,7 +124,7 @@ class Display(IDisplay):
 
         """
         self._line1Text = text
-        # TODO
+        self._refreshDisplay()
         logger.debug('Setting Line 1 text. Display now reads "%s"[br]"%s"' %
                      (self._line1Text, self._line2Text))
 
@@ -143,7 +146,7 @@ class Display(IDisplay):
 
         """
         self._line2Text = text
-        # TODO
+        self._refreshDisplay()
         logger.debug('Setting Line 2 text. Display now reads "%s"[br]"%s"' %
                      (self._line1Text, self._line2Text))
 
@@ -173,9 +176,26 @@ class Display(IDisplay):
             self._line1Text = text
             self._line2Text = ''
 
-        # TODO
+        self._refreshDisplay()
         logger.debug('Setting Line 2 text. Display now reads "%s"[br]"%s"' %
                      (self._line1Text, self._line2Text))
+
+    # --------------------------------------------------------------------------
+    def _refreshDisplay(self):
+        """TODO single-line comment
+
+        TODO multi-line
+        comment
+
+        Args:
+            N/A.
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        self.setText(self._line1Text + '\n' + self._line2Text)
 
 
 # ------------------------------------------------------------------------------
@@ -281,8 +301,6 @@ class PushButtonMonitor(IPushButtonMonitor):
     """
     TODO class comment
     """
-    # TODO Reference the bottom of this for the code needed for push buttons:
-    # https://github.com/adafruit/Adafruit-Raspberry-Pi-Python-Code/blob/master/Adafruit_CharLCDPlate/Adafruit_CharLCDPlate.py
 
     # --------------------------------------------------------------------------
     def __init__(self):
@@ -402,8 +420,8 @@ class PushButtonMonitor(IPushButtonMonitor):
             TodoError2: if TODO.
 
         """
-        # TODO
-        keypress = config.ConsoleKeyPress
+        # TODO[BEGIN]
+        keypress = config.HwKeyPress
 
         if keypress in self._pushButtons:
             logger.warning('Console key [%s] already registered to push button %s; redefining to register to push button %s' %
@@ -413,6 +431,7 @@ class PushButtonMonitor(IPushButtonMonitor):
 
         logger.debug('Registered push button %s for key press [%s]' %
                      (name, keypress))
+        # TODO[END]
 
     # --------------------------------------------------------------------------
     def run(self):
