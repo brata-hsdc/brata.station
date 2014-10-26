@@ -218,32 +218,11 @@ class ILed:
 
 
 # ------------------------------------------------------------------------------
-class IPushButton:
+class IPushButtonMonitor:
     """
     TODO class comment
     """
     __metaclass__ = ABCMeta
-
-    # --------------------------------------------------------------------------
-    @abstractmethod
-    def run(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
-        """
-        pass
 
     # --------------------------------------------------------------------------
     @abstractmethod
@@ -269,6 +248,30 @@ class IPushButton:
     # --------------------------------------------------------------------------
     @abstractmethod
     def stopListening(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        pass
+
+    # --------------------------------------------------------------------------
+    @abstractmethod
+    def registerPushButton(self,
+                           name,
+                           buttonPressHandler,
+                           config):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if

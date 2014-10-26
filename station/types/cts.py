@@ -52,20 +52,20 @@ class Station(IStation):
         logger.debug('Constructing CTS')
 
         displayClassName = config.DisplayClassName
-        pushButtonClassName = config.PushButtonClassName
+        pushButtonMonitorClassName = config.PushButtonMonitorClassName
 
         displayClass = getattr(hwModule, displayClassName)
-        pushButtonClass = getattr(hwModule, pushButtonClassName)
+        pushButtonMonitorClass = getattr(hwModule, pushButtonMonitorClassName)
 
         self._display = displayClass(config.Display)
         self._display.setText("Initializing...")
 
-        self._pushButtons = {}
+        self._pushButtonMonitor = pushButtonMonitorClass()
 
         for i in config.PushButtons:
-            self._pushButtons[i.Name] = pushButtonClass(i.Name,
-                                                        self.buttonPressed,
-                                                        i)
+            self._pushButtonMonitor.registerPushButton(i.Name,
+                                                       self.buttonPressed,
+                                                       i)
 
         self._submitting = False
         self.ConnectionManager = None
@@ -113,8 +113,7 @@ class Station(IStation):
         logger.info('Received signal "%s". Stopping CTS.', signal)
         self._display.setText("Shutting down...")
 
-        for name in self._pushButtons.keys():
-            self._pushButtons[name].stopListening()
+        self._pushButtonMonitor.stopListening()
 
     # --------------------------------------------------------------------------
     def onReady(self):
@@ -137,8 +136,7 @@ class Station(IStation):
         logger.info('CTS transitioned to Ready state.')
         self._display.setText("Ready.")
 
-        for name in self._pushButtons.keys():
-            self._pushButtons[name].stopListening()
+        self._pushButtonMonitor.stopListening()
 
     # --------------------------------------------------------------------------
     def onProcessing(self,
@@ -166,8 +164,7 @@ class Station(IStation):
         self._display.setLine1Text("TODO: [Specify starting message here.]")
         self.refreshDisplayedCombo()
 
-        for name in self._pushButtons.keys():
-            self._pushButtons[name].startListening()
+        self._pushButtonMonitor.startListening()
 
     # --------------------------------------------------------------------------
     def refreshDisplayedCombo(self):
@@ -230,9 +227,12 @@ class Station(IStation):
             self._submitting = False
         elif pushButtonName == 'Enter':
             if self._submitting:
+                logger.info('2nd enter key press received. Submitting combo: %s' %
+                            (self._combo.toList()))
                 # TODO submit combo to MS
                 self._submitting = False
             else:
+                logger.info('1st enter key press received. Waiting for 2nd.')
                 self._submitting = True
         else:
             pass #TODO log unexpected button press received
@@ -258,8 +258,7 @@ class Station(IStation):
         logger.info('CTS transitioned to Failed state.')
         self._display.setText("Failed.")
 
-        for name in self._pushButtons.keys():
-            self._pushButtons[name].stopListening()
+        self._pushButtonMonitor.stopListening()
 
     # --------------------------------------------------------------------------
     def onPassed(self):
@@ -282,8 +281,7 @@ class Station(IStation):
         logger.info('CTS transitioned to Passed state.')
         self._display.setText("Success!")
 
-        for name in self._pushButtons.keys():
-            self._pushButtons[name].stopListening()
+        self._pushButtonMonitor.stopListening()
 
     # --------------------------------------------------------------------------
     def onUnexpectedState(self, value):
@@ -306,8 +304,7 @@ class Station(IStation):
         logger.critical('CTS transitioned to Unexpected state %s', value)
         self._display.setText("Malfunction!")
 
-        for name in self._pushButtons.keys():
-            self._pushButtons[name].stopListening()
+        self._pushButtonMonitor.stopListening()
 
 
 # ------------------------------------------------------------------------------
@@ -496,6 +493,29 @@ class Combo:
         self._digits[self._position] = value
 
     # --------------------------------------------------------------------------
+    def toList(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        result = [self._digits[0] * 10 + self._digits[1],
+                  self._digits[2] * 10 + self._digits[3],
+                  self._digits[4] * 10 + self._digits[5]]
+        return result
+
+    # --------------------------------------------------------------------------
     def toString(self):
         """TODO strictly one-line summary
 
@@ -529,9 +549,9 @@ class Combo:
         logger.debug('s = "%s"' % (s))
 
         logger.debug('combo value for (%s, %s, %s) as string: "%s"' %
-                     (''.join(str(x) for x in self._digits[0:1]),
-                      ''.join(str(x) for x in self._digits[2:3]),
-                      ''.join(str(x) for x in self._digits[4:5]),
+                     (''.join(str(x) for x in self._digits[0:2]),
+                      ''.join(str(x) for x in self._digits[2:4]),
+                      ''.join(str(x) for x in self._digits[4:6]),
                       s))
 
         return s

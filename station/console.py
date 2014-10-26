@@ -16,6 +16,7 @@
 TODO module description
 """
 
+from collections import namedtuple
 import logging
 import logging.handlers
 import sys
@@ -25,7 +26,7 @@ import traceback
 
 from station.interfaces import IDisplay
 from station.interfaces import ILed
-from station.interfaces import IPushButton
+from station.interfaces import IPushButtonMonitor
 from station.interfaces import IVibrationMotor
 from station.util import NonBlockingConsole
 
@@ -306,17 +307,17 @@ class Led(ILed):
 
 
 # ------------------------------------------------------------------------------
-class PushButton(IPushButton):
+PushButton = namedtuple('PushButton', 'Name Handler')
+
+
+# ------------------------------------------------------------------------------
+class PushButtonMonitor(IPushButtonMonitor):
     """
     TODO class comment
     """
 
     # --------------------------------------------------------------------------
-    # TODO Add name to __init__ in hw.py
-    def __init__(self,
-                 name,
-                 buttonPressHandler,
-                 config):
+    def __init__(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -333,19 +334,17 @@ class PushButton(IPushButton):
             TodoError2: if TODO.
 
         """
-        logger.debug('Constructing push button %s' % (name))
-        self.Name = name
-        self._keypress = config.ConsoleKeyPress
+        logger.debug('Constructing push button monitor')
+        self._pushButtons = {}
         self._listening = False
         self._timeToExit = False
-        self._handler = buttonPressHandler
         self._thread = Thread(target = self.run)
         self._thread.daemon = True
         self._thread.start()
 
     # --------------------------------------------------------------------------
     def __enter__(self):
-        logger.debug('Entering push button %s' % (self.Name))
+        logger.debug('Entering push button monitor')
         return self
 
     # --------------------------------------------------------------------------
@@ -366,61 +365,10 @@ class PushButton(IPushButton):
             TodoError2: if TODO.
 
         """
-        logger.debug('Exiting push button %s' % (self.Name))
+        logger.debug('Exiting push button monitor')
         self.stopListening()
         self._timeToExit = True
         self._thread.join()
-
-    # --------------------------------------------------------------------------
-    def run(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
-        """
-        with NonBlockingConsole() as nbc:
-            logger.debug('Starting key press thread for push button %s' % (self.Name))
-
-            while not self._timeToExit:
-                try:
-                    if self._listening:
-
-                        logger.debug('Push button %s getting data' % (self.Name))
-                        keypress = nbc.get_data()
-
-                        if keypress == self._keypress:
-                            logger.debug('Received key press event from push button %s' % (self.Name))
-                            # TODO add self.Name to _handler in hw.py?
-                            self._handler(self.Name)
-
-                        elif keypress != False:
-                            logger.warning('Received unexpected key press event for <%s> from push button %s' % (keypress, self.Name))
-
-                        # ignore all other key presses
-                        else:
-                            pass
-
-                    sleep(1)
-                except Exception, e:
-                    # JIA TODO BEGIN change
-                    #logger.critical("Exception occurred: " + e.args[0])
-                    # JIA TODO UPDATE change
-                    exType, ex, tb = sys.exc_info()
-                    logger.critical("Exception occurred of type %s in push button %s" % (exType.__name__, self.Name))
-                    logger.critical(str(e))
-                    traceback.print_tb(tb)
-                    # JIA TODO END change
 
     # --------------------------------------------------------------------------
     def startListening(self):
@@ -440,7 +388,7 @@ class PushButton(IPushButton):
             TodoError2: if TODO.
 
         """
-        logger.debug('Starting listening for push button %s' % (self.Name))
+        logger.debug('Starting listening for push button monitor')
         # TODO
         self._listening = True
 
@@ -462,8 +410,86 @@ class PushButton(IPushButton):
             TodoError2: if TODO.
 
         """
-        logger.debug('Stopping listening for push button %s' % (self.Name))
+        logger.debug('Stopping listening for push button monitor')
         self._listening = False
+
+    # --------------------------------------------------------------------------
+    def registerPushButton(self,
+                           name,
+                           buttonPressHandler,
+                           config):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        keypress = config.ConsoleKeyPress
+
+        if keypress in self._pushButtons:
+            logger.warning('Console key [%s] already registered to push button %s; redefining to register to push button %s' %
+                           (keypress, self._pushButtons[keypress].Name, name))
+
+        self._pushButtons[keypress] = PushButton(name, buttonPressHandler)
+
+        logger.debug('Registered push button %s for key press [%s]' %
+                     (name, keypress))
+
+    # --------------------------------------------------------------------------
+    def run(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        with NonBlockingConsole() as nbc:
+            logger.debug('Starting key press thread for push button monitor')
+
+            while not self._timeToExit:
+                try:
+                    if self._listening:
+                        keypress = nbc.get_data()
+
+                        if keypress in self._pushButtons:
+                            pb = self._pushButtons[keypress]
+
+                            logger.debug('Received key press event [%s] from push button monitor for push button %s' % (keypress, pb.Name))
+                            pb.Handler(pb.Name)
+
+                        elif keypress != False:
+                            logger.warning('Received unexpected key press event for <%s> from push button monitor' % (keypress))
+
+                        # ignore all other key presses
+                        else:
+                            pass
+
+                    sleep(0.1)
+                except Exception, e:
+                    exType, ex, tb = sys.exc_info()
+                    logger.critical("Exception occurred of type %s in push button monitor" % (exType.__name__))
+                    logger.critical(str(e))
+                    traceback.print_tb(tb)
 
 
 # ------------------------------------------------------------------------------
