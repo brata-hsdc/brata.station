@@ -335,6 +335,7 @@ class PushButton(IPushButton):
         """
         logger.debug('Constructing push button %s' % (name))
         self.Name = name
+        self._keypress = config.ConsoleKeyPress
         self._listening = False
         self._timeToExit = False
         self._handler = buttonPressHandler
@@ -395,12 +396,16 @@ class PushButton(IPushButton):
                 try:
                     if self._listening:
 
+                        logger.debug('Push button %s getting data' % (self.Name))
                         keypress = nbc.get_data()
 
-                        if keypress == ' ':
-                            logger.debug('Received key press event for <SPACE> from push button %s' % (self.Name))
+                        if keypress == self._keypress:
+                            logger.debug('Received key press event from push button %s' % (self.Name))
                             # TODO add self.Name to _handler in hw.py?
                             self._handler(self.Name)
+
+                        elif keypress != False:
+                            logger.warning('Received unexpected key press event for <%s> from push button %s' % (keypress, self.Name))
 
                         # ignore all other key presses
                         else:

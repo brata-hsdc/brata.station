@@ -212,23 +212,23 @@ class Station(IStation):
         """
         logger.info('Push button %s pressed.' % (pushButtonName))
 
-        if pushButton.Name == 'Up':
+        if pushButtonName == 'Up':
             self._combo.incCurrentDigit(1)
             self.refreshDisplayedCombo()
             self._submitting = False
-        elif pushButton.Name == 'Down':
+        elif pushButtonName == 'Down':
             self._combo.decCurrentDigit(1)
             self.refreshDisplayedCombo()
             self._submitting = False
-        elif pushButton.Name == 'Left':
+        elif pushButtonName == 'Left':
             self._combo.moveLeft(1)
             self.refreshDisplayedCombo()
             self._submitting = False
-        elif pushButton.Name == 'Right':
+        elif pushButtonName == 'Right':
             self._combo.moveRight(1)
             self.refreshDisplayedCombo()
             self._submitting = False
-        elif pushButton.Name == 'Enter':
+        elif pushButtonName == 'Enter':
             if self._submitting:
                 # TODO submit combo to MS
                 self._submitting = False
@@ -514,7 +514,8 @@ class Combo:
 
         """
         s = ''.join(str(x) for x in self._digits)
-        s = s[0:1] + ' ' + s[2:3] + ' ' + s[4:5]
+        s = s[0:2] + ' ' + s[2:4] + ' ' + s[4:6]
+        logger.debug('s = "%s"' % (s))
 
         idx = self._position
         if idx > 3:
@@ -522,7 +523,10 @@ class Combo:
         elif idx > 1:
             idx += 1
 
+        logger.debug('idx = %s"' % (idx))
+
         s = s[:idx] + '[' + s[idx] + ']' + s[idx+1:]
+        logger.debug('s = "%s"' % (s))
 
         logger.debug('combo value for (%s, %s, %s) as string: "%s"' %
                      (''.join(str(x) for x in self._digits[0:1]),
