@@ -13,8 +13,12 @@
 #         https://github.com/adafruit/Adafruit-Raspberry-Pi-Python-Code
 #------------------------------------------------------------------------------
 
+import os
+import sys
 import time
-import Adafruit_CharLCD as LCD
+
+sys.path.append(os.path.join(os.path.dirname(sys.argv[0]), os.pardir))
+from station.Adafruit_CharLCDPlate import Adafruit_CharLCDPlate
 
 
 #--------------------------------------------------------
@@ -36,7 +40,7 @@ class LcdRgbDisplay(object):
     OUTPUT     = (0, 0, 0, PRESSED, 0, 0, RELEASED, 0)
     NUM_STATES = len(NEXT_STATE)
     NUM_BUTTONS = 5
-    BUTTONS = (LCD.SELECT, LCD.RIGHT, LCD.DOWN, LCD.UP, LCD.LEFT)
+    BUTTONS = (Adafruit_CharLCDPlate.SELECT, Adafruit_CharLCDPlate.RIGHT, Adafruit_CharLCDPlate.DOWN, Adafruit_CharLCDPlate.UP, Adafruit_CharLCDPlate.LEFT)
     BUTTON_NAMES = ("SELECT", "RIGHT", "DOWN", "UP", "LEFT")
     DEBOUNCE_INTERVAL = 0.05 # sec.  (= sampling rate of 20 Hz)
     
@@ -51,11 +55,11 @@ class LcdRgbDisplay(object):
               }
     
     def __init__(self):
-        self._lcd = LCD.Adafruit_CharLCDPlate()  # initialize the hardware
+        self._lcd = Adafruit_CharLCDPlate()  # initialize the hardware
         self._donePolling = False # for breaking out of polling loop
     
-        self._lcd.set_left_to_right()
-        self._lcd.autoscroll(False)
+        self._lcd.leftToRight()
+        self._lcd.noAutoscroll()
         
     def clear(self):
         self._lcd.clear()
@@ -64,7 +68,7 @@ class LcdRgbDisplay(object):
         ''' Set the display background color to [rgb].  The color component
             values are in the range 0.0 .. 1.0.
         '''
-        self._lcd.set_color(*self.COLORS[color])
+        self._lcd.backlight(*self.COLORS[color])
     
     def setText(self, text):
         ''' Display text.  \n will jump to the next line of the display.
@@ -124,12 +128,12 @@ class LcdRgbDisplay(object):
             Hold down SELECT and RIGHT buttons to return from polling.
         '''
         print "Pressed:", [self.BUTTON_NAMES[i] for i in buttons]
-        if self.isPressed(LCD.SELECT) and self.isPressed(LCD.RIGHT):
+        if self.isPressed(Adafruit_CharLCDPlate.SELECT) and self.isPressed(Adafruit_CharLCDPlate.RIGHT):
             self.quitPolling()
 
     def deliverButtonReleaseEvents(self, buttons):
         ''' Sample button release event hook.
-        '''
+        '''	
         print "Released:", [self.BUTTON_NAMES[i] for i in buttons]
     
     def quitPolling(self):
