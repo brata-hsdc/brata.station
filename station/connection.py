@@ -88,7 +88,7 @@ class ConnectionManager(IConnectionManager):
         self._timeExpiredUrl = config.TimeExpiredUrl
         self._submitUrl = config.SubmitUrl
         self._stationType = config.StationType
-        self._stationInstanceId = config.StationInstanceId
+        self._stationKey = config.StationInstanceId
         self._connected = False
         self._listening = False
         self._timeToExit = False
@@ -97,19 +97,21 @@ class ConnectionManager(IConnectionManager):
         #TODO? self._handler = todoHandler
 
         # TODO Make URLs configurable
-        self._app.add_url_rule('/rpi/reset',
+        self._app.add_url_rule('/rpi/reset/<int:pin>',
                              'reset',
                              self.reset,
                              methods=['POST'])
         # TODO - To test:
-        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "PIN": "13579"}' 'http://localhost:5000/rpi/reset'
+        # $ curl -X POST 'http://localhost:5000/rpi/reset/31415'
 
-        self._app.add_url_rule('/rpi/start_challenge',
+        self._app.add_url_rule('/rpi/start_challenge/<string:teamId>',
                              'start_challenge',
                              self.start_challenge,
                              methods=['POST'])
         # TODO - To test:
-        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "hmb_vibration_pattern_ms": [1000, 2000, 1000, 4000, 1000, 10000]}' 'http://localhost:5000/rpi/start_challenge'
+        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "theatric_delay_ms": "2000", "hmb_vibration_pattern_ms": [1000, 2000, 1000, 4000, 1000, 10000]}' 'http://localhost:5000/rpi/start_challenge/13579'
+        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "theatric_delay_ms": "2000", "cpa_velocity": "246", "cpa_velocity_tolerance_ms": "1000", "cpa_window_time_ms": "4000", "cpa_window_time_tolerance_ms": "5000", "cpa_pulse_width_ms": "4500", "cpa_pulse_width_tolerance_ms": "3500"}' 'http://localhost:5000/rpi/start_challenge/13579'
+        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "theatric_delay_ms": "2000", "cts_combo": [97, 42, 6]}' 'http://localhost:5000/rpi/start_challenge/13579'
 
         self._app.add_url_rule('/rpi/submit',
                              'submit',
@@ -364,53 +366,38 @@ class ConnectionManager(IConnectionManager):
 
 
     # --------------------------------------------------------------------------
-    def reset(self):
-        """TODO strictly one-line summary
+    def reset(self,
+              pin):
+        """Transitions the station to the Ready state.
 
-        TODO Detailed multi-line description if
-        necessary.
+        Transiitions the station to the Ready state if the correct PIN is
+        provided; otherwise, the reset request is ignored.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            pin (int): This must be 31415 in order to reset the station.
         Returns:
-            TODO describe the return type and details
+            Empty JSON response with 200 status code on success.
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            N/A.
 
         """
 
-        # TODO...
-        #if not request.json or not 'title' in request.json:
-        if not request.json:
-            #TODO abort(400)
-            logger.debug('return 400?')
+        resp = jsonify()
 
-        message_version = request.json['message_version']
-        message_timestamp = request.json['message_timestamp']
-        pin = request.json['PIN']
+        if pin == 31415:
+            logger.debug('Master server successfully requesting station reset with pin "%s"' % (pin))
+            self._callback.State = State.READY
+            resp.status_code = 200
+        else:
+            logger.debug('Master server requesting station reset with invalid pin "%s"' % (pin))
+            resp.status_code = 400
 
-        # TODO Delete
-        #'title': request.json['title'],
-        #'description': request.json.get('description', ""),
-
-        logger.debug('Master server requesting station reset (ver %s) at %s with pin "%s"' % (message_version, message_timestamp, pin))
-
-        # TODO implement method body
-        self._callback.State = State.READY
-
-        # TODO can't pass-in self - how to get handle to self? is it needed?
-
-        # TODO
-        resp = jsonify({'foo': 'bar'})
-        resp.status_code = 200
         return resp
 
 
     # --------------------------------------------------------------------------
-    def start_challenge(self):
+    def start_challenge(self,
+                        teamId):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -436,16 +423,34 @@ class ConnectionManager(IConnectionManager):
 
         message_version = request.json['message_version']
         message_timestamp = request.json['message_timestamp']
-        hmb_vibration_pattern_ms = request.json['hmb_vibration_pattern_ms']
+        theatric_delay_ms = request.json['theatric_delay_ms']
 
-        # TODO Delete
-        #'title': request.json['title'],
-        #'description': request.json.get('description', ""),
+        if 'hmb_vibration_pattern_ms' in request.json:
+            logger.debug('Received a start_challenge request for HMB station')
+            hmb_vibration_pattern_ms = request.json['hmb_vibration_pattern_ms']
+            self._callback.args = hmb_vibration_pattern_ms
+            logger.debug('Master server requesting station start_challenge (ver %s) for team ID %s at %s with theatric delay of %s ms, HMB vibration pattern %s' % (message_version, teamId, message_timestamp, theatric_delay_ms, hmb_vibration_pattern_ms))
+        elif 'cpa_velocity' in request.json:
+            logger.debug('Received a start_challenge request for CPA station')
+            cpa_velocity = request.json['cpa_velocity']
+            cpa_velocity_tolerance_ms = request.json['cpa_velocity_tolerance_ms']
+            cpa_window_time_ms = request.json['cpa_window_time_ms']
+            cpa_window_time_tolerance_ms = request.json['cpa_window_time_tolerance_ms']
+            cpa_pulse_width_ms = request.json['cpa_pulse_width_ms']
+            cpa_pulse_width_tolerance_ms = request.json['cpa_pulse_width_tolerance_ms']
+            self._callback.args = [cpa_velocity, cpa_velocity_tolerance_ms, cpa_window_time_ms, cpa_window_time_tolerance_ms, cpa_pulse_width_ms, cpa_pulse_width_tolerance_ms]
+            logger.debug('Master server requesting station start_challenge (ver %s) for team ID %s at %s with theatric delay of %s ms, CPA velocity %s with tolerance %s, window time %s ms with tolerance %s ms, and pulse width %s ms with tolerance %s ms' % (message_version, teamId, message_timestamp, theatric_delay_ms, cpa_velocity, cpa_velocity_tolerance_ms, cpa_window_time_ms, cpa_window_time_tolerance_ms, cpa_pulse_width_ms, cpa_pulse_width_tolerance_ms))
+        elif 'cts_combo' in request.json:
+            logger.debug('Received a start_challenge request for CTS station')
+            cts_combo = request.json['cts_combo']
+            self._callback.args = cts_combo
+            logger.debug('Master server requesting station start_challenge (ver %s) for team ID %s at %s with theatric delay of %s ms, CTS combo %s' % (message_version, teamId, message_timestamp, theatric_delay_ms, cts_combo))
+        else:
+            logger.critical('Received a start_challenge request for unrecognized station')
 
-        logger.debug('Master server requesting station start_challenge (ver %s) at %s with vibration pattern %s' % (message_version, message_timestamp, hmb_vibration_pattern_ms))
+        # TODO...
 
         # TODO implement method body
-        self._callback.args = hmb_vibration_pattern_ms
         self._callback.State = State.PROCESSING
 
         # TODO can't pass-in self - how to get handle to self? is it needed?
@@ -572,11 +577,11 @@ class ConnectionManager(IConnectionManager):
         logger.debug('Station requesting connect with master server')
         (status, response) = self.callService(
             HttpMethod.POST, self._connectUrl,
-            {'message_version':     0,
-             'station_instance_id': self._stationInstanceId,
-             'station_type':        self._stationType,
-             'station_host':        'todo_localhost',
-             'station_port':        'todo_5000'})
+            {'message_version': 0,
+             'station_key':     self._stationKey,
+             'station_type':    self._stationType,
+             'station_host':    'todo_localhost',
+             'station_port':    'todo_5000'})
 
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (self._connectUrl))
@@ -607,8 +612,8 @@ class ConnectionManager(IConnectionManager):
         logger.debug('Station requesting disconnect from master server')
         (status, response) = self.callService(
             HttpMethod.POST, self._disconnectUrl,
-            {'message_version':     0,
-             'station_instance_id': self._stationInstanceId})
+            {'message_version': 0,
+             'station_key':     self._stationKey})
 
 
     # --------------------------------------------------------------------------
@@ -635,8 +640,8 @@ class ConnectionManager(IConnectionManager):
 
         (status, response) = self.callService(
             HttpMethod.POST, self._timeExpiredUrl,
-            {'message_version':     0,
-             'station_instance_id': self._stationInstanceId})
+            {'message_version': 0,
+             'station_key':     self._stationKey})
 
 
     # --------------------------------------------------------------------------
@@ -660,9 +665,9 @@ class ConnectionManager(IConnectionManager):
         logger.debug('Station submitting answer to master server')
         (status, response) = self.callService(
             HttpMethod.POST, self._connectUrl,
-            {'message_version':     0,
-             'station_instance_id': self._stationInstanceId,
-             'submitted_answer':    (31, 41, 59)}) # TODO
+            {'message_version':  0,
+             'station_key':      self._stationKey,
+             'submitted_answer': (31, 41, 59)}) # TODO
 
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (self._connectUrl))
