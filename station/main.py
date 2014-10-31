@@ -52,25 +52,26 @@ class StationLoader(object):
         logger.debug('Constructing StationLoader')
 
         connectionModuleName = config.ConnectionModuleName
-        connectionManagerClassName = config.ConnectionManagerClassName
-
-        connectionModule = import_module(connectionModuleName)
-        connectionManagerClass = getattr(connectionModule,
-                                         connectionManagerClassName)
-
-        self._connectionManager = connectionManagerClass(
-                                     self, config.ConnectionManager)
-
         hwModuleName = config.HardwareModuleName
-        hwModule = import_module(hwModuleName)
-
+        connectionManagerClassName = config.ConnectionManagerClassName
         stationModuleName = config.StationType
         stationClassName = config.StationClassName
 
+        connectionModule = import_module(connectionModuleName)
+        hwModule = import_module(hwModuleName)
         stationModule = import_module(stationModuleName)
+
+        connectionManagerClass = getattr(connectionModule,
+                                         connectionManagerClassName)
         stationClass = getattr(stationModule, stationClassName)
 
         self._station = stationClass(config.StationTypeConfig, hwModule)
+        logger.debug('Constructed station of type %s' % (self._station.stationTypeId))
+        self._connectionManager = connectionManagerClass(
+                                     self,
+                                     self._station.stationTypeId,
+                                     config.ConnectionManager)
+
         self._station.ConnectionManager = self._connectionManager
         self._state = None
         self.args = None

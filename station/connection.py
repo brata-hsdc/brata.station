@@ -53,6 +53,7 @@ class ConnectionManager(IConnectionManager):
     # --------------------------------------------------------------------------
     def __init__(self,
                  station,
+                 stationTypeId,
                  config):
         """TODO strictly one-line summary
 
@@ -78,7 +79,7 @@ class ConnectionManager(IConnectionManager):
                  config):
         """
 
-        logger.debug('Constructing connection manager')
+        logger.debug('Constructing connection manager for station type ID %s.' % (stationTypeId))
         logger.debug('Flask debugging? %s' % (self._app.config['DEBUG']))
         logger.debug('Flask testing? %s' % (self._app.config['TESTING']))
         logger.debug('Flask logger? %s' % (self._app.config['LOGGER_NAME']))
@@ -87,7 +88,7 @@ class ConnectionManager(IConnectionManager):
         self._disconnectUrl = config.DisconnectUrl
         self._timeExpiredUrl = config.TimeExpiredUrl
         self._submitUrl = config.SubmitUrl
-        self._stationType = config.StationType
+        self._stationType = stationTypeId
         self._stationKey = config.StationInstanceId
         self._connected = False
         self._listening = False

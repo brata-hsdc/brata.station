@@ -71,6 +71,21 @@ class Station(IStation):
         self.ConnectionManager = None
 
     # --------------------------------------------------------------------------
+    @property
+    def stationTypeId(self):
+        """Identifies this station's type as CTS.
+
+        Args:
+            N/A.
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        return "CTS"
+
+    # --------------------------------------------------------------------------
     def start(self):
         """TODO strictly one-line summary
 

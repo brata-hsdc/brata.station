@@ -54,6 +54,21 @@ class Station(IStation):
         self.ConnectionManager = None
 
     # --------------------------------------------------------------------------
+    @property
+    def stationTypeId(self):
+        """Identifies this station's type as CPA.
+
+        Args:
+            N/A.
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        return "CPA"
+
+    # --------------------------------------------------------------------------
     def start(self):
         """TODO strictly one-line summary
 

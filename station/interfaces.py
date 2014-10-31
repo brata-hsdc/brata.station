@@ -19,6 +19,7 @@ abstractions.
 
 from abc import ABCMeta
 from abc import abstractmethod
+from abc import abstractproperty
 import logging
 import logging.handlers
 
@@ -297,6 +298,23 @@ class IStation:
     Represents a specific Raspberry Pi challenge station type.
     """
     __metaclass__ = ABCMeta
+
+    # --------------------------------------------------------------------------
+    @abstractproperty
+    def stationTypeId(self):
+        """The station type identifier passed to the MS.
+
+        The station type identifier that is provided to the MS upon join.
+
+        Args:
+            N/A.
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        pass
 
     # --------------------------------------------------------------------------
     @abstractmethod
