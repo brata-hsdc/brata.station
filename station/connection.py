@@ -497,10 +497,6 @@ class ConnectionManager(IConnectionManager):
         is_correct = request.json['is_correct']
         challenge_incomplete = request.json['challenge_incomplete']
 
-        # TODO Delete
-        #'title': request.json['title'],
-        #'description': request.json.get('description', ""),
-
         logger.debug('Master server submitting (ver %s) user answer to station ID %s for team ID %s at %s. Answer "%s" with theatric delay %s ms is correct? %s. Challenge incomplete? %s' % (message_version, stationId, teamId, message_timestamp, submitted_answer, theatric_delay_ms, is_correct, challenge_incomplete))
 
         self._callback.args = [theatric_delay_ms, submitted_answer]
@@ -512,8 +508,6 @@ class ConnectionManager(IConnectionManager):
         else:
             pass # TODO
             #TODO self._callback.State = neither State.PASSED nor State.FAILED
-
-        # TODO can't pass-in self - how to get handle to self? is it needed?
 
         # TODO
         resp = jsonify({'foo': 'bar'})
