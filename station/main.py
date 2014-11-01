@@ -149,9 +149,9 @@ class StationLoader(object):
         elif value == State.PROCESSING:
             self._station.onProcessing(self.args)
         elif value == State.FAILED:
-            self._station.onFailed()
+            self._station.onFailed(self.args)
         elif value == State.PASSED:
-            self._station.onPassed()
+            self._station.onPassed(self.args)
         else:
             self._station.onUnexpectedState(value)
 

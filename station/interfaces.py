@@ -367,7 +367,8 @@ class IStation:
 
     # --------------------------------------------------------------------------
     @abstractmethod
-    def onProcessing(self):
+    def onProcessing(self,
+                     args):
         """Begins running the challenge.
 
         This is called when the MS informs the station that it is time to begin
@@ -375,7 +376,7 @@ class IStation:
         station.
 
         Args:
-            N/A.
+            arg1 (type1): TODO describe arg, valid values, etc.
         Returns:
             N/A.
         Raises:
@@ -386,7 +387,8 @@ class IStation:
 
     # --------------------------------------------------------------------------
     @abstractmethod
-    def onFailed(self):
+    def onFailed(self,
+                 args):
         """Completes the challenge with a failed indication.
 
         This is called when the MS informs the station that the user has failed
@@ -394,7 +396,7 @@ class IStation:
         perhaps aurally indicate that the challenge was unsuccessful.
 
         Args:
-            N/A.
+            arg1 (type1): TODO describe arg, valid values, etc.
         Returns:
             N/A.
         Raises:
@@ -405,7 +407,8 @@ class IStation:
 
     # --------------------------------------------------------------------------
     @abstractmethod
-    def onPassed(self):
+    def onPassed(self,
+                 args):
         """Completes the challenge with a success indication.
 
         This is called when the MS informs the station that the user has passed
@@ -413,7 +416,7 @@ class IStation:
         perhaps aurally indicate that the challenge was successful.
 
         Args:
-            N/A.
+            arg1 (type1): TODO describe arg, valid values, etc.
         Returns:
             N/A.
         Raises:

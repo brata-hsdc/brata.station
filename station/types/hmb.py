@@ -253,7 +253,8 @@ class Station(IStation):
 
 
     # --------------------------------------------------------------------------
-    def onFailed(self):
+    def onFailed(self,
+                 args):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -270,7 +271,7 @@ class Station(IStation):
             TodoError2: if TODO.
 
         """
-        logger.info('HMB transitioned to Failed state.')
+        logger.info('HMB transitioned to Failed state with args [%s].' % (args))
 
         if self.expiredTimer != None:
             self.expiredTimer.cancel()
@@ -285,7 +286,8 @@ class Station(IStation):
         self._leds['red'].turnOn()
 
     # --------------------------------------------------------------------------
-    def onPassed(self):
+    def onPassed(self,
+                 args):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -302,7 +304,7 @@ class Station(IStation):
             TodoError2: if TODO.
 
         """
-        logger.info('HMB transitioned to Passed state.')
+        logger.info('HMB transitioned to Passed state with args [%s].' % (args))
 
         if self.expiredTimer != None:
             self.expiredTimer.cancel()

@@ -114,12 +114,12 @@ class ConnectionManager(IConnectionManager):
         # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "theatric_delay_ms": "2000", "cpa_velocity": "246", "cpa_velocity_tolerance_ms": "1000", "cpa_window_time_ms": "4000", "cpa_window_time_tolerance_ms": "5000", "cpa_pulse_width_ms": "4500", "cpa_pulse_width_tolerance_ms": "3500"}' 'http://localhost:5000/rpi/start_challenge/13579'
         # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "theatric_delay_ms": "2000", "cts_combo": [97, 42, 6]}' 'http://localhost:5000/rpi/start_challenge/13579'
 
-        self._app.add_url_rule('/rpi/submit',
+        self._app.add_url_rule('/rpi/submit/<string:stationId>/<string:teamId>',
                              'submit',
                              self.submit,
                              methods=['POST'])
         # TODO - To test:
-        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "submitted_answer": "42", "is_correct": "True"}' 'http://localhost:5000/rpi/submit'
+        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "theatric_delay_ms": 3000, "submitted_answer": "42", "is_correct": "True", "challenge_incomplete": "True"}' 'http://localhost:5000/rpi/submit/2468/13579'
 
         self._app.add_url_rule('/rpi/shutdown',
                              'shutdown',
@@ -464,7 +464,9 @@ class ConnectionManager(IConnectionManager):
 
 
     # --------------------------------------------------------------------------
-    def submit(self):
+    def submit(self,
+               stationId,
+               teamId):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -490,18 +492,26 @@ class ConnectionManager(IConnectionManager):
 
         message_version = request.json['message_version']
         message_timestamp = request.json['message_timestamp']
+        theatric_delay_ms = request.json['theatric_delay_ms']
         submitted_answer = request.json['submitted_answer']
         is_correct = request.json['is_correct']
+        challenge_incomplete = request.json['challenge_incomplete']
 
         # TODO Delete
         #'title': request.json['title'],
         #'description': request.json.get('description', ""),
 
-        logger.debug('Master server submitting (ver %s) user answer to station at %s. Answer "%s" is correct? %s' % (message_version, message_timestamp, submitted_answer, is_correct))
+        logger.debug('Master server submitting (ver %s) user answer to station ID %s for team ID %s at %s. Answer "%s" with theatric delay %s ms is correct? %s. Challenge incomplete? %s' % (message_version, stationId, teamId, message_timestamp, submitted_answer, theatric_delay_ms, is_correct, challenge_incomplete))
 
-        # TODO implement method body
-        if True: # TODO
+        self._callback.args = [theatric_delay_ms, submitted_answer]
+
+        if is_correct:
             self._callback.State = State.PASSED
+        elif challenge_incomplete:
+            self._callback.State = State.FAILED
+        else:
+            pass # TODO
+            #TODO self._callback.State = neither State.PASSED nor State.FAILED
 
         # TODO can't pass-in self - how to get handle to self? is it needed?
 
@@ -637,6 +647,10 @@ class ConnectionManager(IConnectionManager):
         """
         logger.debug('Station informing master server that time for challenge has expired')
 
+        theatric_delay_ms = 0
+        submitted_answer = 0
+
+        self._callback.args = [theatric_delay_ms, submitted_answer]
         self._callback.State = State.FAILED
 
         (status, response) = self.callService(

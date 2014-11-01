@@ -172,7 +172,7 @@ class Station(IStation):
             TodoError2: if TODO.
 
         """
-        logger.info('CTS transitioned to Processing state.')
+        logger.info('CTS transitioned to Processing state with args [%s].' % (args))
 
         self._combo = Combo(0, 0, 0)
 
@@ -253,7 +253,8 @@ class Station(IStation):
             pass #TODO log unexpected button press received
 
     # --------------------------------------------------------------------------
-    def onFailed(self):
+    def onFailed(self,
+                 args):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -270,13 +271,14 @@ class Station(IStation):
             TodoError2: if TODO.
 
         """
-        logger.info('CTS transitioned to Failed state.')
+        logger.info('CTS transitioned to Failed state with args [%s].' % (args))
         self._display.setText("Failed.")
 
         self._pushButtonMonitor.stopListening()
 
     # --------------------------------------------------------------------------
-    def onPassed(self):
+    def onPassed(self,
+                 args):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -293,7 +295,7 @@ class Station(IStation):
             TodoError2: if TODO.
 
         """
-        logger.info('CTS transitioned to Passed state.')
+        logger.info('CTS transitioned to Passed state with args [%s].' % (args))
         self._display.setText("Success!")
 
         self._pushButtonMonitor.stopListening()
