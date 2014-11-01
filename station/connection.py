@@ -121,10 +121,12 @@ class ConnectionManager(IConnectionManager):
         # TODO - To test:
         # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "theatric_delay_ms": 3000, "submitted_answer": "42", "is_correct": "True", "challenge_incomplete": "True"}' 'http://localhost:5000/rpi/submit/2468/13579'
 
-        self._app.add_url_rule('/rpi/shutdown',
+        self._app.add_url_rule('/rpi/shutdown/<int:pin>',
                              'shutdown',
                              self.shutdown,
                              methods=['POST'])
+        # TODO - To test:
+        # $ curl -X POST 'http://localhost:5000/rpi/shutdown/31415'
 
         self._thread = Thread(target = self.run)
         self._thread.daemon = True
@@ -385,6 +387,7 @@ class ConnectionManager(IConnectionManager):
 
         resp = jsonify()
 
+        # TODO make pin configurable and update doc comment
         if pin == 31415:
             logger.debug('Master server successfully requesting station reset with pin "%s"' % (pin))
             self._callback.State = State.READY
@@ -516,48 +519,42 @@ class ConnectionManager(IConnectionManager):
 
 
     # --------------------------------------------------------------------------
-    def shutdown(self):
-        """TODO strictly one-line summary
+    def shutdown(self,
+              pin):
+        """Prepares the station to power off.
 
-        TODO Detailed multi-line description if
-        necessary.
+        Sends the shutdown command to the station so it can clean up in
+        preparation for power to be removed if the correct PIN is provided;
+        otherwise, the reset request is ignored.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            pin (int): This must be 31415 in order to reset the station.
         Returns:
-            TODO describe the return type and details
+            Empty JSON response with 200 status code on success.
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            N/A.
 
         """
+        resp = jsonify()
 
-        # TODO...
-        #if not request.json or not 'title' in request.json:
-        if not request.json:
-            #TODO abort(400)
-            logger.debug('return 400?')
+        # TODO make pin configurable and update doc comment
+        if pin == 31415:
+            logger.debug('Master server successfully requesting station shutdown with pin "%s"' % (pin))
+            #TODO Look at http://stackoverflow.com/questions/23013274/shutting-down-computer-linux-using-python
+            # import dbus
+            # sys_bus = dbus.SystemBus()
+            # ck_srv = sys_bus.get_object('org.freedesktop.ConsoleKit',
+            #                             '/org/freedesktop/ConsoleKit/Manager')
+            # ck_iface = dbus.Interface(ck_srv,
+            #                           'org.freedesktop.ConsoleKit.Manager')
+            # stop_method = ck_iface.get_dbus_method("Stop")
+            # stop_method()
 
-        message_version = request.json['message_version']
-        message_timestamp = request.json['message_timestamp']
+            resp.status_code = 200
+        else:
+            logger.debug('Master server requesting station shutdown with invalid pin "%s"' % (pin))
+            resp.status_code = 400
 
-        # TODO Delete
-        #'title': request.json['title'],
-        #'description': request.json.get('description', ""),
-
-        logger.debug('Master server requesting station shutdown (ver %s) at %s' % (message_version, message_timestamp))
-
-        # TODO implement method body
-        if True: # TODO
-            self._callback.State = State.PASSED
-
-        # TODO can't pass-in self - how to get handle to self? is it needed?
-
-        # TODO
-        resp = jsonify({'foo': 'bar'})
-        resp.status_code = 200
         return resp
 
 
