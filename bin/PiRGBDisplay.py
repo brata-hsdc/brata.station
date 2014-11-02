@@ -1,4 +1,4 @@
-#!/usr/bin/python -B
+#!python
 #
 #   File: PiRGBDisplay.py
 # Author: Ellery Chan
@@ -14,6 +14,7 @@
 #------------------------------------------------------------------------------
 
 import time
+import operator
 import Adafruit_CharLCD as LCD
 
 
@@ -69,8 +70,16 @@ class LcdRgbDisplay(object):
     def setText(self, text):
         ''' Display text.  \n will jump to the next line of the display.
         '''
+        self.setCursor(0, 0)
         self._lcd.message(text)
     
+    def setCursor(self, row, col):
+        self._lcd.set_cursor(col, row)
+    
+    def showCursor(self, show=True):
+        self._lcd.blink(show)
+        self._lcd.show_cursor(show)
+        
     def isPressed(self, button):
         return self._lcd.is_pressed(button)
     
@@ -137,16 +146,91 @@ class LcdRgbDisplay(object):
         '''
         self._donePolling = True
 
+class Safe(object):
+    def __init__(self):
+        self._msg = ""
+        self._cursorpos = 0
+        self._combination = [0,0, 0,0, 0,0]
+        self._target = [0,0, 0,0, 0,0]
+        self._display = LcdRgbDisplay()
+        self._display.deliverButtonPressEvents = self.onPress
+        self._display.deliverButtonReleaseEvents = self.onRelease
+        self.setCursor(self._cursorpos)
+        self._display.showCursor()
+    
+    @property
+    def msg(self):  return self._msg
+    @msg.setter
+    def msg(self, value):  self._msg = value
+    
+    @property
+    def target(self):  return self._target
+    @target.setter
+    def target(self, value):  self._target = value
+    
+    def __getitem__(self, n):  return self._combination[n]
+    def __setitem__(self, n, value):  self._combination[n] = value
+    
+    def numDigits(self):  return len(self._combination)
+    
+    def onPress(self, buttons):
+        if LCD.LEFT in buttons:
+            self._cursorpos -= 1
+        if LCD.RIGHT in buttons:
+            self._cursorpos += 1
+        self._cursorpos = max(min(self._cursorpos, self.numDigits()-1), 0)  # clamp
+        
+        if LCD.UP in buttons:
+            self[self._cursorpos] += 1
+        if LCD.DOWN in buttons:
+            self[self._cursorpos] -= 1
+        self[self._cursorpos] %= 10 # clamp to single digit
+        
+        if LCD.SELECT in buttons:
+            self.msg = "****  Done  ****"
+            self._display.showCursor(False)
+            self._display.quitPolling()
+        
+        self.check()
+        self.display()
+        
+    def onRelease(self, buttons):
+        pass
+    
+    def check(self):
+        ''' Check the combination.  If it is correct, set the bg color to
+            green, else set it to red.
+        '''
+        if reduce(operator.and_, map(operator.eq, self._combination, self._target)):
+            self._display.setBgColor("GREEN")
+        else:
+            self._display.setBgColor("RED")
+            
+    def setCursor(self, digit):
+        self._display.setCursor(1, (4,5, 7,8, 10,11)[digit])
+    
+    def display(self):
+        self._display.setText("{}\n    {}{}:{}{}:{}{}".format(self.msg, *self._combination))
+        self.setCursor(self._cursorpos)
+    
+    def run(self):
+        self.display()
+        self._display.pollButtons()
+        
 #------------------------------------------------------------------------------
 if __name__ == '__main__':
-    lcd = LcdRgbDisplay()
+#     lcd = LcdRgbDisplay()
+# 
+#     lcd.setBgColor("GREEN")
+#     lcd.setText("** Pi Display **\n    12:34:56")
+#     lcd.pollButtons() # hold SELECT and RIGHT to quit
 
-    lcd._lcd.clear()
-    lcd._lcd.message("Hello")
-    time.sleep(2)
-    lcd._lcd.set_backlight(1.0)
-    time.sleep(3)
-    #lcd._lcd.set_color(1.0, 0.0, 0.0)
-    #lcd.setBgColor("GREEN")
-    #lcd.setText("** Pi Display **\n    12:34:56")
-    #lcd.pollButtons() # hold SELECT and RIGHT to quit
+    # Enter a safe combination using the cursor keys:
+    # SELECT quits the app
+    # If the combination entered matches the target, the background is green.
+    # If the combination is wrong, the background is red.
+    # TODO:  Make the red background flash
+    safe = Safe()
+    safe.msg = ">> Enter Code <<"
+    safe.target = [1,1, 0,0, 9,9]
+    safe.run()
