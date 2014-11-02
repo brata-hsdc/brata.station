@@ -1,4 +1,4 @@
-#!python
+#!/usr/bin/python -B
 #
 #   File: PiRGBDisplay.py
 # Author: Ellery Chan
