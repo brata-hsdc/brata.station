@@ -17,6 +17,7 @@ TODO module description
 """
 
 from datetime import datetime
+import dbus
 import json
 import logging
 import logging.handlers
@@ -540,15 +541,13 @@ class ConnectionManager(IConnectionManager):
         # TODO make pin configurable and update doc comment
         if pin == 31415:
             logger.debug('Master server successfully requesting station shutdown with pin "%s"' % (pin))
-            #TODO Look at http://stackoverflow.com/questions/23013274/shutting-down-computer-linux-using-python
-            # import dbus
-            # sys_bus = dbus.SystemBus()
-            # ck_srv = sys_bus.get_object('org.freedesktop.ConsoleKit',
-            #                             '/org/freedesktop/ConsoleKit/Manager')
-            # ck_iface = dbus.Interface(ck_srv,
-            #                           'org.freedesktop.ConsoleKit.Manager')
-            # stop_method = ck_iface.get_dbus_method("Stop")
-            # stop_method()
+            sys_bus = dbus.SystemBus()
+            ck_srv = sys_bus.get_object('org.freedesktop.ConsoleKit',
+                                        '/org/freedesktop/ConsoleKit/Manager')
+            ck_iface = dbus.Interface(ck_srv,
+                                      'org.freedesktop.ConsoleKit.Manager')
+            stop_method = ck_iface.get_dbus_method("Stop")
+            stop_method()
 
             resp.status_code = 200
         else:
