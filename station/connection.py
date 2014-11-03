@@ -91,6 +91,9 @@ class ConnectionManager(IConnectionManager):
         self._submitUrl = config.SubmitUrl
         self._stationType = stationTypeId
         self._stationKey = config.StationInstanceId
+        self._resetPin = config.ResetPIN
+        self._shutdownPin = config.ShutdownPIN
+        self._reallyShutdown = config.ReallyShutdown
         self._connected = False
         self._listening = False
         self._timeToExit = False
@@ -388,8 +391,7 @@ class ConnectionManager(IConnectionManager):
 
         resp = jsonify()
 
-        # TODO make pin configurable and update doc comment
-        if pin == 31415:
+        if pin == self._resetPin:
             logger.debug('Master server successfully requesting station reset with pin "%s"' % (pin))
             self._callback.State = State.READY
             resp.status_code = 200
@@ -538,8 +540,7 @@ class ConnectionManager(IConnectionManager):
         """
         resp = jsonify()
 
-        # TODO make pin configurable and update doc comment
-        if pin == 31415:
+        if pin == self._shutdownPin:
             logger.debug('Master server successfully requesting station shutdown with pin "%s"' % (pin))
             sys_bus = dbus.SystemBus()
             ck_srv = sys_bus.get_object('org.freedesktop.ConsoleKit',
@@ -547,7 +548,12 @@ class ConnectionManager(IConnectionManager):
             ck_iface = dbus.Interface(ck_srv,
                                       'org.freedesktop.ConsoleKit.Manager')
             stop_method = ck_iface.get_dbus_method("Stop")
-            stop_method()
+
+            if self._reallyShutdown:
+                logger.info('Shutting down based on MS request')
+                stop_method()
+            else:
+                logger.info('Shutdown successfully requested by MS but station not configured to really shutdown')
 
             resp.status_code = 200
         else:
