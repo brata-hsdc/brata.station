@@ -90,7 +90,10 @@ class ConnectionManager(IConnectionManager):
         self._timeExpiredUrl = config.TimeExpiredUrl
         self._submitUrl = config.SubmitUrl
         self._stationType = stationTypeId
-        self._stationKey = config.StationInstanceId
+        self._stationId = config.StationId
+        self._resetPin = config.ResetPIN
+        self._shutdownPin = config.ShutdownPIN
+        self._reallyShutdown = config.ReallyShutdown
         self._connected = False
         self._listening = False
         self._timeToExit = False
@@ -98,36 +101,25 @@ class ConnectionManager(IConnectionManager):
         self._callback = station
         #TODO? self._handler = todoHandler
 
-        # TODO Make URLs configurable
-        self._app.add_url_rule('/rpi/reset/<int:pin>',
-                             'reset',
-                             self.reset,
-                             methods=['POST'])
-        # TODO - To test:
-        # $ curl -X POST 'http://localhost:5000/rpi/reset/31415'
+        self._app.add_url_rule(config.ResetUrlRule,
+                               'reset',
+                               self.reset,
+                               methods=['POST'])
 
-        self._app.add_url_rule('/rpi/start_challenge/<string:teamId>',
-                             'start_challenge',
-                             self.start_challenge,
-                             methods=['POST'])
-        # TODO - To test:
-        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "theatric_delay_ms": "2000", "hmb_vibration_pattern_ms": [1000, 2000, 1000, 4000, 1000, 10000]}' 'http://localhost:5000/rpi/start_challenge/13579'
-        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "theatric_delay_ms": "2000", "cpa_velocity": "246", "cpa_velocity_tolerance_ms": "1000", "cpa_window_time_ms": "4000", "cpa_window_time_tolerance_ms": "5000", "cpa_pulse_width_ms": "4500", "cpa_pulse_width_tolerance_ms": "3500"}' 'http://localhost:5000/rpi/start_challenge/13579'
-        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "theatric_delay_ms": "2000", "cts_combo": [97, 42, 6]}' 'http://localhost:5000/rpi/start_challenge/13579'
+        self._app.add_url_rule(config.StartChallengeUrlRule,
+                               'start_challenge',
+                               self.start_challenge,
+                               methods=['POST'])
 
-        self._app.add_url_rule('/rpi/submit/<string:stationId>/<string:teamId>',
-                             'submit',
-                             self.submit,
-                             methods=['POST'])
-        # TODO - To test:
-        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "theatric_delay_ms": 3000, "submitted_answer": "42", "is_correct": "True", "challenge_incomplete": "True"}' 'http://localhost:5000/rpi/submit/2468/13579'
+        self._app.add_url_rule(config.SubmitUrlRule,
+                               'submit',
+                               self.submit,
+                               methods=['POST'])
 
-        self._app.add_url_rule('/rpi/shutdown/<int:pin>',
+        self._app.add_url_rule(config.ShutdownUrlRule,
                              'shutdown',
                              self.shutdown,
                              methods=['POST'])
-        # TODO - To test:
-        # $ curl -X POST 'http://localhost:5000/rpi/shutdown/31415'
 
         self._thread = Thread(target = self.run)
         self._thread.daemon = True
@@ -235,9 +227,6 @@ class ConnectionManager(IConnectionManager):
 
                         # TODO named constant
                         port = 5000
-                        # TODO Delete Disabled due to monkey seg fault on Raspbian
-                        #TODO Delete server = pywsgi.WSGIServer(('', port), self._app)
-                        #TODO Delete server.serve_forever()
                         server = HTTPServer(WSGIContainer(self._app))
                         server.listen(port)
                         IOLoop.instance().start()
@@ -305,7 +294,7 @@ class ConnectionManager(IConnectionManager):
 
 
     # --------------------------------------------------------------------------
-    def getTimestamp(self):
+    def timestamp(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -348,7 +337,8 @@ class ConnectionManager(IConnectionManager):
             TodoError2: if TODO.
 
         """
-        args['message_timestamp'] = self.getTimestamp()
+        # TODO check if args present - might be null/empty
+        args['message_timestamp'] = self.timestamp()
         logger.debug('Calling service with HTTP method %s, endpoint URL %s, and args %s' % (httpMethod, endpointUrl, args))
         data = json.dumps(args)
         response = requests.post(endpointUrl, data)
@@ -388,8 +378,7 @@ class ConnectionManager(IConnectionManager):
 
         resp = jsonify()
 
-        # TODO make pin configurable and update doc comment
-        if pin == 31415:
+        if pin == self._resetPin:
             logger.debug('Master server successfully requesting station reset with pin "%s"' % (pin))
             self._callback.State = State.READY
             resp.status_code = 200
@@ -538,8 +527,7 @@ class ConnectionManager(IConnectionManager):
         """
         resp = jsonify()
 
-        # TODO make pin configurable and update doc comment
-        if pin == 31415:
+        if pin == self._shutdownPin:
             logger.debug('Master server successfully requesting station shutdown with pin "%s"' % (pin))
             sys_bus = dbus.SystemBus()
             ck_srv = sys_bus.get_object('org.freedesktop.ConsoleKit',
@@ -547,7 +535,12 @@ class ConnectionManager(IConnectionManager):
             ck_iface = dbus.Interface(ck_srv,
                                       'org.freedesktop.ConsoleKit.Manager')
             stop_method = ck_iface.get_dbus_method("Stop")
-            stop_method()
+
+            if self._reallyShutdown:
+                logger.info('Shutting down based on MS request')
+                stop_method()
+            else:
+                logger.info('Shutdown successfully requested by MS but station not configured to really shutdown')
 
             resp.status_code = 200
         else:
@@ -578,11 +571,13 @@ class ConnectionManager(IConnectionManager):
         logger.debug('Station requesting connect with master server')
         (status, response) = self.callService(
             HttpMethod.POST, self._connectUrl,
-            {'message_version': 0,
-             'station_key':     self._stationKey,
-             'station_type':    self._stationType,
-             'station_host':    'todo_localhost',
-             'station_port':    'todo_5000'})
+            {
+                'message_version'  : 0,
+                'message_timestamp': self.timestamp(),
+                'station_type'     : self._stationType,
+                'station_url'      : 'http://todo:5000/rpi/blah/blah/blah',
+                'station_id'       : self._stationId
+            })
 
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (self._connectUrl))
@@ -613,8 +608,10 @@ class ConnectionManager(IConnectionManager):
         logger.debug('Station requesting disconnect from master server')
         (status, response) = self.callService(
             HttpMethod.POST, self._disconnectUrl,
-            {'message_version': 0,
-             'station_key':     self._stationKey})
+            {
+                'message_version': 0,
+                'station_id'    : self._stationId
+            })
 
 
     # --------------------------------------------------------------------------
@@ -645,8 +642,10 @@ class ConnectionManager(IConnectionManager):
 
         (status, response) = self.callService(
             HttpMethod.POST, self._timeExpiredUrl,
-            {'message_version': 0,
-             'station_key':     self._stationKey})
+            {
+                'message_version': 0,
+                'station_id'    : self._stationId
+            })
 
 
     # --------------------------------------------------------------------------
@@ -671,7 +670,7 @@ class ConnectionManager(IConnectionManager):
         (status, response) = self.callService(
             HttpMethod.POST, self._connectUrl,
             {'message_version':  0,
-             'station_key':      self._stationKey,
+             'station_id':      self._stationId,
              'submitted_answer': (31, 41, 59)}) # TODO
 
         if status == httplib.OK:

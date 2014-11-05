@@ -1,7 +1,7 @@
 {
    "request": {
       "method": "POST",
-      "url": "/m/join"
+      "url": "/m/rpi/join"
    },
    "response": {
       "status": 200,
