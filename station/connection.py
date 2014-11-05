@@ -101,36 +101,25 @@ class ConnectionManager(IConnectionManager):
         self._callback = station
         #TODO? self._handler = todoHandler
 
-        # TODO Make URLs configurable
-        self._app.add_url_rule('/rpi/reset/<int:pin>',
-                             'reset',
-                             self.reset,
-                             methods=['POST'])
-        # TODO - To test:
-        # $ curl -X POST 'http://localhost:5000/rpi/reset/31415'
+        self._app.add_url_rule(config.ResetUrlRule,
+                               'reset',
+                               self.reset,
+                               methods=['POST'])
 
-        self._app.add_url_rule('/rpi/start_challenge/<string:teamId>',
-                             'start_challenge',
-                             self.start_challenge,
-                             methods=['POST'])
-        # TODO - To test:
-        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "theatric_delay_ms": "2000", "hmb_vibration_pattern_ms": [1000, 2000, 1000, 4000, 1000, 10000]}' 'http://localhost:5000/rpi/start_challenge/13579'
-        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "theatric_delay_ms": "2000", "cpa_velocity": "246", "cpa_velocity_tolerance_ms": "1000", "cpa_window_time_ms": "4000", "cpa_window_time_tolerance_ms": "5000", "cpa_pulse_width_ms": "4500", "cpa_pulse_width_tolerance_ms": "3500"}' 'http://localhost:5000/rpi/start_challenge/13579'
-        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "theatric_delay_ms": "2000", "cts_combo": [97, 42, 6]}' 'http://localhost:5000/rpi/start_challenge/13579'
+        self._app.add_url_rule(config.StartChallengeUrlRule,
+                               'start_challenge',
+                               self.start_challenge,
+                               methods=['POST'])
 
-        self._app.add_url_rule('/rpi/submit/<string:stationId>/<string:teamId>',
-                             'submit',
-                             self.submit,
-                             methods=['POST'])
-        # TODO - To test:
-        # $ curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "theatric_delay_ms": 3000, "submitted_answer": "42", "is_correct": "True", "challenge_incomplete": "True"}' 'http://localhost:5000/rpi/submit/2468/13579'
+        self._app.add_url_rule(config.SubmitUrlRule,
+                               'submit',
+                               self.submit,
+                               methods=['POST'])
 
-        self._app.add_url_rule('/rpi/shutdown/<int:pin>',
+        self._app.add_url_rule(config.ShutdownUrlRule,
                              'shutdown',
                              self.shutdown,
                              methods=['POST'])
-        # TODO - To test:
-        # $ curl -X POST 'http://localhost:5000/rpi/shutdown/31415'
 
         self._thread = Thread(target = self.run)
         self._thread.daemon = True
@@ -373,6 +362,28 @@ class ConnectionManager(IConnectionManager):
 
 
     # --------------------------------------------------------------------------
+    def timestamp(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        # TODO
+        return "2014-09-15 14:08:59"
+
+    # --------------------------------------------------------------------------
     def reset(self,
               pin):
         """Transitions the station to the Ready state.
@@ -584,11 +595,14 @@ class ConnectionManager(IConnectionManager):
         logger.debug('Station requesting connect with master server')
         (status, response) = self.callService(
             HttpMethod.POST, self._connectUrl,
-            {'message_version': 0,
-             'station_key':     self._stationKey,
-             'station_type':    self._stationType,
-             'station_host':    'todo_localhost',
-             'station_port':    'todo_5000'})
+            {
+                'message_version'  : 0,
+                'message_timestamp': self.timestamp(),
+                'station_key'      : self._stationKey,
+                'station_type'     : self._stationType,
+                'station_url'      : 'http://todo:5000/rpi/blah/blah/blah',
+                'station_id'       : 'todo'
+            })
 
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (self._connectUrl))
