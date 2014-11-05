@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# TODO: Delete this file.
 
 # Python library for Adafruit RGB-backlit LCD plate for Raspberry Pi.
 # Written by Adafruit Industries.  MIT license.

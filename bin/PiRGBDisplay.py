@@ -229,8 +229,25 @@ if __name__ == '__main__':
     # SELECT quits the app
     # If the combination entered matches the target, the background is green.
     # If the combination is wrong, the background is red.
-    # TODO:  Make the red background flash
+
     safe = Safe()
+
+    # TODO:  Make the red background flash
+    #while True:
+    #   safe._display.setBgColor("RED")
+    #   time.sleep(0.5)
+    #   safe._display.setBgColor("BLACK")
+    #   time.sleep(0.5)
+
+    # Cycling through colors
+    #while True:
+    #   for i in xrange(0, 8):
+    #       r = (i & 0b100) >> 2
+    #       g = (i & 0b010) >> 1
+    #       b = (i & 0b001) >> 0
+    #       safe._display._lcd.set_color(r, g, b) # TODO Bad practice to access private member
+    #       time.sleep(1)
+
     safe.msg = ">> Enter Code <<"
     safe.target = [1,1, 0,0, 9,9]
     safe.run()
