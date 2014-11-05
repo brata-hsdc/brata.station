@@ -90,7 +90,7 @@ class ConnectionManager(IConnectionManager):
         self._timeExpiredUrl = config.TimeExpiredUrl
         self._submitUrl = config.SubmitUrl
         self._stationType = stationTypeId
-        self._stationKey = config.StationInstanceId
+        self._stationId = config.StationId
         self._resetPin = config.ResetPIN
         self._shutdownPin = config.ShutdownPIN
         self._reallyShutdown = config.ReallyShutdown
@@ -227,9 +227,6 @@ class ConnectionManager(IConnectionManager):
 
                         # TODO named constant
                         port = 5000
-                        # TODO Delete Disabled due to monkey seg fault on Raspbian
-                        #TODO Delete server = pywsgi.WSGIServer(('', port), self._app)
-                        #TODO Delete server.serve_forever()
                         server = HTTPServer(WSGIContainer(self._app))
                         server.listen(port)
                         IOLoop.instance().start()
@@ -297,7 +294,7 @@ class ConnectionManager(IConnectionManager):
 
 
     # --------------------------------------------------------------------------
-    def getTimestamp(self):
+    def timestamp(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -340,7 +337,8 @@ class ConnectionManager(IConnectionManager):
             TodoError2: if TODO.
 
         """
-        args['message_timestamp'] = self.getTimestamp()
+        # TODO check if args present - might be null/empty
+        args['message_timestamp'] = self.timestamp()
         logger.debug('Calling service with HTTP method %s, endpoint URL %s, and args %s' % (httpMethod, endpointUrl, args))
         data = json.dumps(args)
         response = requests.post(endpointUrl, data)
@@ -360,28 +358,6 @@ class ConnectionManager(IConnectionManager):
         logger.debug('Service returned %s for HTTP method %s, endpoint URL %s, and args %s' % (response.status_code, httpMethod, endpointUrl, args))
         return (response.status_code, response.json)
 
-
-    # --------------------------------------------------------------------------
-    def timestamp(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
-        """
-
-        # TODO
-        return "2014-09-15 14:08:59"
 
     # --------------------------------------------------------------------------
     def reset(self,
@@ -598,10 +574,9 @@ class ConnectionManager(IConnectionManager):
             {
                 'message_version'  : 0,
                 'message_timestamp': self.timestamp(),
-                'station_key'      : self._stationKey,
                 'station_type'     : self._stationType,
                 'station_url'      : 'http://todo:5000/rpi/blah/blah/blah',
-                'station_id'       : 'todo'
+                'station_id'       : self._stationId
             })
 
         if status == httplib.OK:
@@ -633,8 +608,10 @@ class ConnectionManager(IConnectionManager):
         logger.debug('Station requesting disconnect from master server')
         (status, response) = self.callService(
             HttpMethod.POST, self._disconnectUrl,
-            {'message_version': 0,
-             'station_key':     self._stationKey})
+            {
+                'message_version': 0,
+                'station_id'    : self._stationId
+            })
 
 
     # --------------------------------------------------------------------------
@@ -665,8 +642,10 @@ class ConnectionManager(IConnectionManager):
 
         (status, response) = self.callService(
             HttpMethod.POST, self._timeExpiredUrl,
-            {'message_version': 0,
-             'station_key':     self._stationKey})
+            {
+                'message_version': 0,
+                'station_id'    : self._stationId
+            })
 
 
     # --------------------------------------------------------------------------
@@ -691,7 +670,7 @@ class ConnectionManager(IConnectionManager):
         (status, response) = self.callService(
             HttpMethod.POST, self._connectUrl,
             {'message_version':  0,
-             'station_key':      self._stationKey,
+             'station_id':      self._stationId,
              'submitted_answer': (31, 41, 59)}) # TODO
 
         if status == httplib.OK:
