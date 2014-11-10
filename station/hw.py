@@ -18,16 +18,21 @@ TODO module description
 
 import logging
 import logging.handlers
-import pibrella
+import pibrella  # @UnresolvedImport when not on R-Pi
 import signal
 import sys
 import traceback
+from threading import Thread
+from time import sleep
+import operator
 
-from Adafruit_CharLCDPlate import Adafruit_CharLCDPlate
+import Adafruit_CharLCD as LCD    # @UnresolvedImport when not on R-Pi
 from interfaces import IDisplay
 from interfaces import ILed
 from interfaces import IPushButtonMonitor
 from interfaces import IVibrationMotor
+from station.util import NonBlockingConsole
+from station.console import PushButton
 
 
 # ------------------------------------------------------------------------------
@@ -59,7 +64,9 @@ class Display(IDisplay):
 
         self._line1Text = ''
         self._line2Text = ''
-        self._lcd = Adafruit_CharLCDPlate()
+        self._lineWidth = config.lineWidth
+        logger.debug('Display line width: {}'.format(self._lineWidth))
+        self._lcd = LCD.Adafruit_CharLCDPlate()
 
     # --------------------------------------------------------------------------
     def __enter__(self):
@@ -108,6 +115,12 @@ class Display(IDisplay):
         self._lcd.stop()
 
     # --------------------------------------------------------------------------
+    def lineWidth(self):
+        """ Returns: the number of columns in a line of the display.
+        """
+        return self._lineWidth
+
+    # --------------------------------------------------------------------------
     def setLine1Text(self,
                      text):
         """Sets the text for line 1 of the display.
@@ -117,16 +130,10 @@ class Display(IDisplay):
 
         Args:
             text (string): The text to display.
-        Returns:
-            N/A.
-        Raises:
-            N/A.
-
         """
         self._line1Text = text
+        logger.debug('Setting Line 1 text to "%s"' % self._line1Text)
         self._refreshDisplay()
-        logger.debug('Setting Line 1 text. Display now reads "%s"[br]"%s"' %
-                     (self._line1Text, self._line2Text))
 
 
     # --------------------------------------------------------------------------
@@ -139,63 +146,54 @@ class Display(IDisplay):
 
         Args:
             text (string): The text to display.
-        Returns:
-            N/A.
-        Raises:
-            N/A.
-
         """
         self._line2Text = text
+        logger.debug('Setting Line 2 text to "%s"' % self._line2Text)
         self._refreshDisplay()
-        logger.debug('Setting Line 2 text. Display now reads "%s"[br]"%s"' %
-                     (self._line1Text, self._line2Text))
 
 
     # --------------------------------------------------------------------------
     def setText(self,
                 text):
-        """Sets the text for the entire display.
+        """ Sets the text for the entire display.
 
         Directly sets the text for the display. Multiple lines can be provided
         at once by separating with a '\n' character.
 
         Args:
             text (string): The text to display.
-        Returns:
-            N/A.
-        Raises:
-            N/A.
-
         """
-        idx = text.find('\n')
-
-        if idx != -1:
-            self._line1Text = text[:idx]
-            self._line2Text = text[idx+1:]
-        else:
-            self._line1Text = text
-            self._line2Text = ''
-
+        self._line1Text,self._line2Text = (text+'\n').split('\n')[0:2]
+        logger.debug('Setting line 1 and line 2 text to "%s"[br]"%s"' % (self._line1Text, self._line2Text))
         self._refreshDisplay()
-        logger.debug('Setting Line 2 text. Display now reads "%s"[br]"%s"' %
-                     (self._line1Text, self._line2Text))
 
     # --------------------------------------------------------------------------
-    def _refreshDisplay(self):
-        """TODO single-line comment
-
-        TODO multi-line
-        comment
-
-        Args:
-            N/A.
-        Returns:
-            N/A.
-        Raises:
-            N/A.
-
+    def showCursor(self, show=True):
+        """ Shows or hides the cursor.
+        
+        Make the cursor visible if show is True.  Otherwise, make the cursor
+        invisible.
         """
-        self.setText(self._line1Text + '\n' + self._line2Text)
+        self._lcd.blink(show)
+        self._lcd.show_cursor(show)
+        
+    # --------------------------------------------------------------------------
+    def setCursor(self, row=0, col=0):
+        """ Sets the position of the cursor.
+        """
+        self._lcd.set_cursor(col, row)
+        self.showCursor()
+        
+    # --------------------------------------------------------------------------
+    def _refreshDisplay(self):
+        """ Sends text to the display
+
+        Sends or resends the text stored in _line1Text and _line2Text to
+        the display
+        """
+        self.setCursor(0, 0)
+        self._lcd.message(self._line1Text + '\n' + self._line2Text)
+        logger.debug('Display now reads "%s"[br]"%s"' % (self._line1Text, self._line2Text))
 
 
 # ------------------------------------------------------------------------------
@@ -301,6 +299,21 @@ class PushButtonMonitor(IPushButtonMonitor):
     """
     TODO class comment
     """
+    
+    PRESSED = 1
+    RELEASED = -1
+    NEXT_STATE = (0, 1, 0, 3, 2, 3, 0, 3)
+    OUTPUT     = (0, 0, 0, PRESSED, 0, 0, RELEASED, 0)
+    NUM_STATES = len(NEXT_STATE)
+    BUTTONS = (LCD.SELECT, LCD.RIGHT, LCD.DOWN, LCD.UP, LCD.LEFT)
+#     BUTTONS = (Adafruit_CharLCDPlate.SELECT,
+#                Adafruit_CharLCDPlate.RIGHT,
+#                Adafruit_CharLCDPlate.DOWN,
+#                Adafruit_CharLCDPlate.UP,
+#                Adafruit_CharLCDPlate.LEFT)
+    NUM_BUTTONS = len(BUTTONS)
+    BUTTON_NAMES = ("SELECT", "RIGHT", "DOWN", "UP", "LEFT")
+    DEBOUNCE_INTERVAL = 0.05 # sec.  (= sampling rate of 20 Hz)
 
     # --------------------------------------------------------------------------
     def __init__(self):
@@ -321,6 +334,10 @@ class PushButtonMonitor(IPushButtonMonitor):
 
         """
         logger.debug('Constructing push button monitor')
+        
+        self._device = None  # button interface device
+        self._buttonStates = [0] * self.NUM_STATES  # last sampled state of each button
+        
         self._pushButtons = {}
         self._listening = False
         self._timeToExit = False
@@ -328,6 +345,12 @@ class PushButtonMonitor(IPushButtonMonitor):
         self._thread.daemon = True
         self._thread.start()
 
+    # --------------------------------------------------------------------------
+    def setDevice(self, dev):
+        """ Register the hardware device for the push buttons.
+        """
+        self._device = dev
+        
     # --------------------------------------------------------------------------
     def __enter__(self):
         logger.debug('Entering push button monitor')
@@ -434,6 +457,62 @@ class PushButtonMonitor(IPushButtonMonitor):
         # TODO[END]
 
     # --------------------------------------------------------------------------
+    def pollPushButtons(self):
+        """ Sample the current state of the push buttons, detect changes.
+        
+            Poll the input buttons.  Does a little debounce.  Not sure if it is
+            necessary.
+            
+            Button state transitions:
+        
+                                     |       button input
+                current state        |           0         |        1
+            ------------------------------------------------------------------
+                 0 (released)        |   0                 |  1                
+                 1 (maybe pressed)   |   0                 |  3 (emit PRESSED) 
+                 3 (pressed)         |   2                 |  3
+                 2 (maybe released)  |   0 (emit RELEASED) |  3
+        """
+        # Sample the current state of all buttons
+        buttonInputs = map(self._device.is_pressed, self.BUTTONS)
+        
+        # Convert prevState, input to an index = 2*state + input
+        buttonStateTransitions = map(lambda s,i: 2*s+(1 if i else 0), self._buttonStates, buttonInputs)
+            
+        # Use the transition to lookup the next state
+        self._buttonStates = [self.NEXT_STATE[i] for i in buttonStateTransitions]
+        
+        # Use the transition to lookup the output value
+        outputs = [self.OUTPUT[i] for i in buttonStateTransitions]
+        
+        # Make a list of buttons that changed to PRESSED and a list of buttons
+        # that changed to RELEASED
+        edges = ([i for i in range(self.NUM_BUTTONS) if outputs[i] == self.PRESSED],
+                 [i for i in range(self.NUM_BUTTONS) if outputs[i] == self.RELEASED])
+        
+        # Report the buttons that changed
+        if len(edges[0]):
+            self.deliverButtonPressEvents(edges[0])
+        if len(edges[1]):
+            self.deliverButtonReleaseEvents(edges[1])
+        
+    # --------------------------------------------------------------------------
+    def deliverButtonPressEvents(self, buttons):
+        """ Call the push callback for buttons that were pressed
+        """
+        for b in buttons:
+            button = self._pushButtons[self.BUTTON_NAMES[b]]
+            button.Handler(button.Name)
+            
+    # --------------------------------------------------------------------------
+    def deliverButtonReleaseEvents(self, buttons):
+        """ Call the push callback for buttons that were pressed
+        There are no handlers defined for release events, so this method
+        does nothing.
+        """
+        pass
+            
+    # --------------------------------------------------------------------------
     def run(self):
         """TODO strictly one-line summary
 
@@ -457,11 +536,9 @@ class PushButtonMonitor(IPushButtonMonitor):
             while not self._timeToExit:
                 try:
                     if self._listening:
+                        self.pollPushButtons()
 
-                        # TODO
-                        pass
-
-                    sleep(0.1)
+                    sleep(self.DEBOUNCE_INTERVAL)
                 except Exception, e:
                     exType, ex, tb = sys.exc_info()
                     logger.critical("Exception occurred of type %s in push button monitor" % (exType.__name__))

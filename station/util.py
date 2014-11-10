@@ -20,7 +20,7 @@ import logging
 import logging.handlers
 import select
 import sys
-import termios
+import termios  # @UnresolvedImport when not on R-Pi
 import tty
 
 

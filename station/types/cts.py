@@ -16,6 +16,7 @@
 Provides the definitions needed for the CTS station type.
 """
 
+import operator
 import logging
 import logging.handlers
 
@@ -60,13 +61,17 @@ class Station(IStation):
         self._display = displayClass(config.Display)
         self._display.setText("Initializing...")
 
+        logger.info('Initializing pushButtonMonitor')
         self._pushButtonMonitor = pushButtonMonitorClass()
+        self._pushButtonMonitor.setDevice(self._display._lcd)
 
         for i in config.PushButtons:
+            logger.info('  Setting button {}'.format(i))
             self._pushButtonMonitor.registerPushButton(i.Name,
                                                        self.buttonPressed,
                                                        i)
 
+        self._centerOffset = 0  # amount of space to left of displayed combination
         self._submitting = False
         self.ConnectionManager = None
 
@@ -174,7 +179,7 @@ class Station(IStation):
         """
         logger.info('CTS transitioned to Processing state with args [%s].' % (args))
 
-        self._combo = Combo(0, 0, 0)
+        self._combo = Combo(*args)
 
         self._display.setLine1Text("TODO: [Specify starting message here.]")
         self.refreshDisplayedCombo()
@@ -200,8 +205,11 @@ class Station(IStation):
 
         """
         s = self._combo.toString()
-        logger.debug('Setting display Line 2 to: %s.' % (s))
+        self._centerOffset = (self._display.lineWidth() - len(s)) // 2  # amount of space before s
+        s = "{0:>{width}}".format(s, width=len(s) + self._centerOffset)
+        logger.debug('Setting display Line 2 to: "%s".' % (s))
         self._display.setLine2Text(s)
+        self._display.setCursor(1, self._combo.formattedPosition() + self._centerOffset)
 
     # --------------------------------------------------------------------------
     def buttonPressed(self,
@@ -354,15 +362,17 @@ class Combo:
         logger.debug('Constructing combo')
 
         # TODO
+        self._wrap = True  # wrap the cursor around
         self._position = 0
-        self._digits = [0, 0, 0, 0, 0, 0]
+        self._digits = [0, 0, 0, 0, 0, 0]  # current state of entered combo
 
-        self._digits[0] = value1 / 10 % 10
-        self._digits[1] = value1 /  1 % 10
-        self._digits[2] = value2 / 10 % 10
-        self._digits[3] = value2 /  1 % 10
-        self._digits[4] = value3 / 10 % 10
-        self._digits[5] = value3 /  1 % 10
+        self._targetDigits = [0, 0, 0, 0, 0, 0]
+        self._targetDigits[0] = value1 / 10 % 10
+        self._targetDigits[1] = value1 /  1 % 10
+        self._targetDigits[2] = value2 / 10 % 10
+        self._targetDigits[3] = value2 /  1 % 10
+        self._targetDigits[4] = value3 / 10 % 10
+        self._targetDigits[5] = value3 /  1 % 10
 
     # --------------------------------------------------------------------------
     def __enter__(self):
@@ -408,106 +418,94 @@ class Combo:
         # TODO
 
     # --------------------------------------------------------------------------
-    def moveLeft(self,
-                 numPlaces):
-        """TODO strictly one-line summary
+    def isMatch(self):
+        """ Returns:  True if _digits == _targetDigits.
+        """
+        return reduce(operator.and_, map(operator.eq, self._combination, self._target))
 
-        TODO Detailed multi-line description if
-        necessary.
+    # --------------------------------------------------------------------------
+    def position(self):
+        """ Returns:  The current cursor digit position.
+        """
+        return self._position
+
+    # --------------------------------------------------------------------------
+    def formattedPosition(self):
+        """ Returns:  The cursor position in the formatted combination string.
+        """
+        return self._position + self._position//2  # one extra char for every 2 digits
+
+    # --------------------------------------------------------------------------
+    def moveLeft(self,
+                 numPlaces=1):
+        """ Move the digit cursor numplaces to the left.
+
+        Move the digit cursor position numplaces to the left.  If _wrap is True,
+        moving the cursor to the left of the first cursor position (0) will
+        place the cursor at the last cursor position.  If _wrap is False,
+        attempting to move the cursor to the left of the first cursor position
+        will have no effect.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+            numPlaces (int): number of digit positions to move (default 1)
         """
-        self._position -= 1
-        if self._position < 0:
-            self._position = len(self._digits) - 1
+        self._position -= numPlaces
+        if self._wrap:
+            self._position %= len(self._digits)
+        else: # clamp
+            self._position = max(self._position, 0)
         logger.debug('moved current combo pos to %s' % (self._position))
 
     # --------------------------------------------------------------------------
     def moveRight(self,
-                  numPlaces):
-        """TODO strictly one-line summary
+                  numPlaces=1):
+        """ Move the digit cursor numplaces to the right.
 
-        TODO Detailed multi-line description if
-        necessary.
+        Move the digit cursor position numplaces to the right.  If _wrap is True,
+        moving the cursor to the right of the last cursor position (0) will
+        place the cursor at the first cursor position.  If _wrap is False,
+        attempting to move the cursor to the right of the last cursor position
+        will have no effect.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+            numPlaces (int): number of digit positions to move (default 1)
         """
-        self._position += 1
-        if self._position >= len(self._digits):
-            self._position = 0
+        self._position += numPlaces
+        if self._wrap:
+            self._position %= len(self._digits)
+        else:
+            self._position = min(self._position, len(self._digits)-1)
         logger.debug('moved current combo pos to %s' % (self._position))
 
     # --------------------------------------------------------------------------
     def incCurrentDigit(self,
-                        incrementValue):
-        """TODO strictly one-line summary
+                        incrementValue=1):
+        """ Increase the current digit by incrementValue.
 
-        TODO Detailed multi-line description if
-        necessary.
+        Increases the current digit value by incrementValue.  If the current
+        value + incrementValue is greater than 10, higher digits are discarded.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
+            incrementValue (int): the increase amount (default 1)
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+            IndexError: if self._position is out of range
         """
-        value = self._digits[self._position]
-        value += 1
-
-        if value > 9:
-            value = 0
-
-        self._digits[self._position] = value
+        self._digits[self._position] = (self._digits[self._position] + incrementValue) % 10
 
     # --------------------------------------------------------------------------
     def decCurrentDigit(self,
-                        decrementValue):
-        """TODO strictly one-line summary
+                        decrementValue=1):
+        """ Decrease the current digit by decrementValue.
 
-        TODO Detailed multi-line description if
-        necessary.
+        Decreases the current digit value by decrementValue.  If the current
+        value - decrementValue is less than 0, the digit wraps around.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
+            decrementValue (int): the decrease amount (default 1)
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+            IndexError: if self._position is out of range
         """
-        value = self._digits[self._position]
-        value -= 1
-
-        if value < 0:
-            value = 9
-
-        self._digits[self._position] = value
+        self.incCurrentDigit(-decrementValue)
 
     # --------------------------------------------------------------------------
     def toList(self):
@@ -534,42 +532,13 @@ class Combo:
 
     # --------------------------------------------------------------------------
     def toString(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+        """ Convert list of digits to formatted combination string.
         Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+            A string formated as "nn:nn:nn"
         """
-        s = ''.join(str(x) for x in self._digits)
-        s = s[0:2] + ' ' + s[2:4] + ' ' + s[4:6]
-        logger.debug('s = "%s"' % (s))
-
-        idx = self._position
-        if idx > 3:
-            idx += 2
-        elif idx > 1:
-            idx += 1
-
-        logger.debug('idx = %s"' % (idx))
-
-        s = s[:idx] + '[' + s[idx] + ']' + s[idx+1:]
-        logger.debug('s = "%s"' % (s))
-
-        logger.debug('combo value for (%s, %s, %s) as string: "%s"' %
-                     (''.join(str(x) for x in self._digits[0:2]),
-                      ''.join(str(x) for x in self._digits[2:4]),
-                      ''.join(str(x) for x in self._digits[4:6]),
-                      s))
+        s = "{}{}:{}{}:{}{}".format(*self._digits[0:6])
+        logger.debug('combo value for ({}{}, {}{}, {}{})'.format(*self._digits[0:6]))
+        logger.debug('      as string: "{}"'.format(s))
 
         return s
 

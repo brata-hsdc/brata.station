@@ -104,6 +104,13 @@ class IDisplay:
 
     # --------------------------------------------------------------------------
     @abstractmethod
+    def lineWidth(self):
+        """ Returns: the number of columns in a line of the display.
+        """
+        pass
+    
+    # --------------------------------------------------------------------------
+    @abstractmethod
     def setLine1Text(self,
                      text):
         """Sets the text for line 1 of the display.
@@ -160,8 +167,24 @@ class IDisplay:
 
         """
         pass
-
-
+    
+    # --------------------------------------------------------------------------
+    @abstractmethod
+    def showCursor(self, show=True):
+        """ Shows or hides the cursor.
+        
+        Make the cursor visible if show is True.  Otherwise, make the cursor
+        invisible.
+        """
+        pass
+    
+    # --------------------------------------------------------------------------
+    @abstractmethod
+    def setCursor(self, row=0, col=0):
+        """ Sets the position of the cursor.
+        """
+        pass
+    
 # ------------------------------------------------------------------------------
 class ILed:
     """
