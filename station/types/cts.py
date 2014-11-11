@@ -181,7 +181,7 @@ class Station(IStation):
 
         self._combo = Combo(*args)
 
-        self._display.setLine1Text("TODO: [Specify starting message here.]")
+        self._display.setLine1Text("Enter code:")
         self.refreshDisplayedCombo()
 
         self._pushButtonMonitor.startListening()
@@ -207,7 +207,6 @@ class Station(IStation):
         s = self._combo.toString()
         self._centerOffset = (self._display.lineWidth() - len(s)) // 2  # amount of space before s
         s = "{0:>{width}}".format(s, width=len(s) + self._centerOffset)
-        logger.debug('Setting display Line 2 to: "%s".' % (s))
         self._display.setLine2Text(s)
         self._display.setCursor(1, self._combo.formattedPosition() + self._centerOffset)
 

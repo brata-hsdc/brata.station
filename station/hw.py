@@ -131,7 +131,7 @@ class Display(IDisplay):
         Args:
             text (string): The text to display.
         """
-        self._line1Text = text
+        self._line1Text = "{:<{width}}".format(text, width=self._lineWidth)
         logger.debug('Setting Line 1 text to "%s"' % self._line1Text)
         self._refreshDisplay()
 
@@ -147,7 +147,7 @@ class Display(IDisplay):
         Args:
             text (string): The text to display.
         """
-        self._line2Text = text
+        self._line2Text = "{:<{width}}".format(text, width=self._lineWidth)
         logger.debug('Setting Line 2 text to "%s"' % self._line2Text)
         self._refreshDisplay()
 
@@ -158,13 +158,15 @@ class Display(IDisplay):
         """ Sets the text for the entire display.
 
         Directly sets the text for the display. Multiple lines can be provided
-        at once by separating with a '\n' character.
+        at once by separating with a '\n' character.  The first two lines will
+        be displayed.  Other lines will be discarded.
 
         Args:
             text (string): The text to display.
         """
-        self._line1Text,self._line2Text = (text+'\n').split('\n')[0:2]
-        logger.debug('Setting line 1 and line 2 text to "%s"[br]"%s"' % (self._line1Text, self._line2Text))
+        lines = (text+'\n').split('\n')
+        self.setLine1Text(lines[0])
+        self.setLine2Text(lines[1])
         self._refreshDisplay()
 
     # --------------------------------------------------------------------------
@@ -537,8 +539,8 @@ class PushButtonMonitor(IPushButtonMonitor):
                 try:
                     if self._listening:
                         self.pollPushButtons()
-
                     sleep(self.DEBOUNCE_INTERVAL)
+
                 except Exception, e:
                     exType, ex, tb = sys.exc_info()
                     logger.critical("Exception occurred of type %s in push button monitor" % (exType.__name__))
