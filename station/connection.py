@@ -85,7 +85,7 @@ class ConnectionManager(IConnectionManager):
         logger.debug('Flask testing? %s' % (self._app.config['TESTING']))
         logger.debug('Flask logger? %s' % (self._app.config['LOGGER_NAME']))
         logger.debug('Flask server? %s' % (self._app.config['SERVER_NAME']))
-        self._connectUrl = config.ConnectUrl
+        self._joinUrl = config.JoinUrl
         self._disconnectUrl = config.DisconnectUrl
         self._timeExpiredUrl = config.TimeExpiredUrl
         self._submitUrl = config.SubmitUrl
@@ -108,12 +108,12 @@ class ConnectionManager(IConnectionManager):
 
         self._app.add_url_rule(config.StartChallengeUrlRule,
                                'start_challenge',
-                               self.start_challenge,
+                               self.startChallenge,
                                methods=['POST'])
 
-        self._app.add_url_rule(config.SubmitUrlRule,
-                               'submit',
-                               self.submit,
+        self._app.add_url_rule(config.HandleSubmissionUrlRule,
+                               'handle_submission',
+                               self.handleSubmission,
                                methods=['POST'])
 
         self._app.add_url_rule(config.ShutdownUrlRule,
@@ -222,7 +222,7 @@ class ConnectionManager(IConnectionManager):
                 if self._listening:
 
                     if (not self._connected):
-                        self.connect()
+                        self.join()
                         self._connected = True
 
                         # TODO named constant
@@ -355,7 +355,7 @@ class ConnectionManager(IConnectionManager):
     # ===
 
     # --------------------------------------------------------------------------
-    def connect(self):
+    def join(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -372,9 +372,10 @@ class ConnectionManager(IConnectionManager):
             TodoError2: if TODO.
 
         """
-        logger.debug('Station requesting connect with master server')
+        logger.debug('Station requesting join with master server')
+        url = self._joinUrl
         (status, response) = self.callService(
-            HttpMethod.POST, self._connectUrl,
+            HttpMethod.POST, url,
             {
                 'message_version'  : 0,
                 'message_timestamp': self.timestamp(),
@@ -384,11 +385,11 @@ class ConnectionManager(IConnectionManager):
             })
 
         if status == httplib.OK:
-            logger.debug('Service %s returned OK' % (self._connectUrl))
+            logger.debug('Service %s returned OK' % (url))
         elif status == httplib.NOT_FOUND:
-            logger.critical('Service %s returned NOT_FOUND' % (self._connectUrl))
+            logger.critical('Service %s returned NOT_FOUND' % (url))
         else:
-            logger.critical('Unexpected HTTP response %s received from service %s' % (status, self._connectUrl))
+            logger.critical('Unexpected HTTP response %s received from service %s' % (status, url))
 
 
     # --------------------------------------------------------------------------
@@ -410,17 +411,18 @@ class ConnectionManager(IConnectionManager):
 
         """
         logger.debug('Station requesting disconnect from master server')
+        url = self._disconnectUrl
         (status, response) = self.callService(
             HttpMethod.POST,
-            "{}/{}".format(self._disconnectUrl, self._stationId),
+            "{}/{}".format(url, self._stationId),
             {})
 
         if status == httplib.OK:
-            logger.debug('Service %s returned OK' % (self._disconnectUrl))
+            logger.debug('Service %s returned OK' % (url))
         elif status == httplib.NOT_FOUND:
-            logger.critical('Service %s returned NOT_FOUND' % (self._disconnectUrl))
+            logger.critical('Service %s returned NOT_FOUND' % (url))
         else:
-            logger.critical('Unexpected HTTP response %s received from service %s' % (status, self._disconnectUrl))
+            logger.critical('Unexpected HTTP response %s received from service %s' % (status, url))
 
 
     # --------------------------------------------------------------------------
@@ -446,17 +448,18 @@ class ConnectionManager(IConnectionManager):
         theatric_delay_ms = 0
         candidate_answer = 0
 
+        url = self._timeExpiredUrl
         (status, response) = self.callService(
             HttpMethod.POST,
-            "{}/{}".format(self._timeExpiredUrl, self._stationId),
+            "{}/{}".format(url, self._stationId),
             {})
 
         if status == httplib.OK:
-            logger.debug('Service %s returned OK' % (self._timeExpiredUrl))
+            logger.debug('Service %s returned OK' % (url))
         elif status == httplib.NOT_FOUND:
-            logger.critical('Service %s returned NOT_FOUND' % (self._timeExpiredUrl))
+            logger.critical('Service %s returned NOT_FOUND' % (url))
         else:
-            logger.critical('Unexpected HTTP response %s received from service %s' % (status, self._timeExpiredUrl))
+            logger.critical('Unexpected HTTP response %s received from service %s' % (status, url))
 
         self._callback.args = [theatric_delay_ms, candidate_answer]
         self._callback.State = State.FAILED
@@ -481,8 +484,9 @@ class ConnectionManager(IConnectionManager):
 
         """
         logger.debug('Station submitting answer to master server')
+        url = self._submitUrl
         (status, response) = self.callService(
-            HttpMethod.POST, self._connectUrl,
+            HttpMethod.POST, url,
             {
                 'message_version'            : 0,
                 'message_timestamp'          : self.timestamp(),
@@ -492,11 +496,11 @@ class ConnectionManager(IConnectionManager):
             }) # TODO
 
         if status == httplib.OK:
-            logger.debug('Service %s returned OK' % (self._connectUrl))
+            logger.debug('Service %s returned OK' % (url))
         elif status == httplib.NOT_FOUND:
-            logger.critical('Service %s returned NOT_FOUND' % (self._connectUrl))
+            logger.critical('Service %s returned NOT_FOUND' % (url))
         else:
-            logger.critical('Unexpected HTTP response %s received from service %s' % (status, self._connectUrl))
+            logger.critical('Unexpected HTTP response %s received from service %s' % (status, url))
 
 
     # --------------------------------------------------------------------------
@@ -519,8 +523,9 @@ class ConnectionManager(IConnectionManager):
 
         """
         logger.debug('Station submitting answer to master server')
+        url = self._submitUrl
         (status, response) = self.callService(
-            HttpMethod.POST, self._connectUrl,
+            HttpMethod.POST, url,
             {
                 'message_version'            : 0,
                 'message_timestamp'          : self.timestamp(),
@@ -530,11 +535,11 @@ class ConnectionManager(IConnectionManager):
             })
 
         if status == httplib.OK:
-            logger.debug('Service %s returned OK' % (self._connectUrl))
+            logger.debug('Service %s returned OK' % (url))
         elif status == httplib.NOT_FOUND:
-            logger.critical('Service %s returned NOT_FOUND' % (self._connectUrl))
+            logger.critical('Service %s returned NOT_FOUND' % (url))
         else:
-            logger.critical('Unexpected HTTP response %s received from service %s' % (status, self._connectUrl))
+            logger.critical('Unexpected HTTP response %s received from service %s' % (status, url))
 
 
     # ===
@@ -572,8 +577,8 @@ class ConnectionManager(IConnectionManager):
 
 
     # --------------------------------------------------------------------------
-    def start_challenge(self,
-                        teamId):
+    def startChallenge(self,
+                       teamId):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -639,9 +644,9 @@ class ConnectionManager(IConnectionManager):
 
 
     # --------------------------------------------------------------------------
-    def submit(self,
-               stationId,
-               teamId):
+    def handleSubmission(self,
+                         stationId,
+                         teamId):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -672,7 +677,7 @@ class ConnectionManager(IConnectionManager):
         is_correct = request.json['is_correct']
         challenge_incomplete = request.json['challenge_incomplete']
 
-        logger.debug('Master server submitting (ver %s) user answer to station ID %s for team ID %s at %s. Answer "%s" with theatric delay %s ms is correct? %s. Challenge incomplete? %s' % (message_version, stationId, teamId, message_timestamp, candidate_answer, theatric_delay_ms, is_correct, challenge_incomplete))
+        logger.debug('Master server relaying (ver %s) user answer to station ID %s for team ID %s at %s. Answer "%s" with theatric delay %s ms is correct? %s. Challenge incomplete? %s' % (message_version, stationId, teamId, message_timestamp, candidate_answer, theatric_delay_ms, is_correct, challenge_incomplete))
 
         self._callback.args = [theatric_delay_ms, candidate_answer]
 
