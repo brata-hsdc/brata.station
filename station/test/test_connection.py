@@ -195,7 +195,7 @@ class ConnectionManagerTestCase(unittest.TestCase):
         # TODO
 
     # --------------------------------------------------------------------------
-    def test_getTimestamp(self):
+    def test_timestamp(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -241,7 +241,7 @@ class ConnectionManagerTestCase(unittest.TestCase):
         # TODO
 
     # --------------------------------------------------------------------------
-    def test_reset(self):
+    def test_join(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -264,76 +264,7 @@ class ConnectionManagerTestCase(unittest.TestCase):
         # TODO
 
     # --------------------------------------------------------------------------
-    def test_activate(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
-        """
-
-        # TODO
-        #self.Target.setFlashing()
-        # TODO
-
-    # --------------------------------------------------------------------------
-    def test_submit(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
-        """
-
-        # TODO
-        #self.Target.setFlashing()
-        # TODO
-
-    # --------------------------------------------------------------------------
-    def test_connect(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
-        """
-
-        # TODO
-        #self.Target.setFlashing()
-        # TODO
-
-    # --------------------------------------------------------------------------
-    def test_disconnect(self):
+    def test_leave(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -357,6 +288,144 @@ class ConnectionManagerTestCase(unittest.TestCase):
 
     # --------------------------------------------------------------------------
     def test_timeExpired(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        # TODO
+        #self.Target.setFlashing()
+        # TODO
+
+    # --------------------------------------------------------------------------
+    def test_submitCtsComboToMS(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        # TODO
+        #self.Target.setFlashing()
+        # TODO
+
+    # --------------------------------------------------------------------------
+    def test_submitCpaDetectionToMS(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        # TODO
+        #self.Target.setFlashing()
+        # TODO
+
+    # --------------------------------------------------------------------------
+    def test_reset(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        # TODO
+        #self.Target.setFlashing()
+        # TODO
+
+    # --------------------------------------------------------------------------
+    def test_startChallenge(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        # TODO
+        #self.Target.setFlashing()
+        # TODO
+
+    # --------------------------------------------------------------------------
+    def test_handleSubmission(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        # TODO
+        #self.Target.setFlashing()
+        # TODO
+
+    # --------------------------------------------------------------------------
+    def test_shutdown(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if

@@ -716,6 +716,7 @@ class ConnectionManager(IConnectionManager):
 
         if pin == self._shutdownPin:
             logger.debug('Master server successfully requesting station shutdown with pin "%s"' % (pin))
+            # TODO move elsewhere - maybe hw.py?
             sys_bus = dbus.SystemBus()
             ck_srv = sys_bus.get_object('org.freedesktop.ConsoleKit',
                                         '/org/freedesktop/ConsoleKit/Manager')

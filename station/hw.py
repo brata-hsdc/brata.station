@@ -21,6 +21,8 @@ import logging.handlers
 import pibrella
 import signal
 import sys
+from time import sleep
+from threading import Thread
 import traceback
 
 from Adafruit_CharLCDPlate import Adafruit_CharLCDPlate
@@ -28,6 +30,7 @@ from interfaces import IDisplay
 from interfaces import ILed
 from interfaces import IPushButtonMonitor
 from interfaces import IVibrationMotor
+from station.util import NonBlockingConsole
 
 
 # ------------------------------------------------------------------------------
