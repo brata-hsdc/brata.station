@@ -350,6 +350,197 @@ class ConnectionManager(IConnectionManager):
         return (response.status_code, response.json)
 
 
+    # ===
+    # Messages from Station to MS
+    # ===
+
+    # --------------------------------------------------------------------------
+    def connect(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Station requesting connect with master server')
+        (status, response) = self.callService(
+            HttpMethod.POST, self._connectUrl,
+            {
+                'message_version'  : 0,
+                'message_timestamp': self.timestamp(),
+                'station_id'       : self._stationId,
+                'station_type'     : self._stationType,
+                'station_url'      : 'http://todo:5000/rpi/blah/blah/blah'
+            })
+
+        if status == httplib.OK:
+            logger.debug('Service %s returned OK' % (self._connectUrl))
+        elif status == httplib.NOT_FOUND:
+            logger.critical('Service %s returned NOT_FOUND' % (self._connectUrl))
+        else:
+            logger.critical('Unexpected HTTP response %s received from service %s' % (status, self._connectUrl))
+
+
+    # --------------------------------------------------------------------------
+    def disconnect(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Station requesting disconnect from master server')
+        (status, response) = self.callService(
+            HttpMethod.POST,
+            "{}/{}".format(self._disconnectUrl, self._stationId),
+            {})
+
+        if status == httplib.OK:
+            logger.debug('Service %s returned OK' % (self._disconnectUrl))
+        elif status == httplib.NOT_FOUND:
+            logger.critical('Service %s returned NOT_FOUND' % (self._disconnectUrl))
+        else:
+            logger.critical('Unexpected HTTP response %s received from service %s' % (status, self._disconnectUrl))
+
+
+    # --------------------------------------------------------------------------
+    def timeExpired(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Station informing master server that time for challenge has expired')
+
+        theatric_delay_ms = 0
+        candidate_answer = 0
+
+        (status, response) = self.callService(
+            HttpMethod.POST,
+            "{}/{}".format(self._timeExpiredUrl, self._stationId),
+            {})
+
+        if status == httplib.OK:
+            logger.debug('Service %s returned OK' % (self._timeExpiredUrl))
+        elif status == httplib.NOT_FOUND:
+            logger.critical('Service %s returned NOT_FOUND' % (self._timeExpiredUrl))
+        else:
+            logger.critical('Unexpected HTTP response %s received from service %s' % (status, self._timeExpiredUrl))
+
+        self._callback.args = [theatric_delay_ms, candidate_answer]
+        self._callback.State = State.FAILED
+
+
+    # --------------------------------------------------------------------------
+    def submitCtsComboToMS(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Station submitting answer to master server')
+        (status, response) = self.callService(
+            HttpMethod.POST, self._connectUrl,
+            {
+                'message_version'            : 0,
+                'message_timestamp'          : self.timestamp(),
+                'station_id'                 : self._stationId,
+                'candidate_answer'           : (31, 41, 59),
+                'is_correct'                 : "True"
+            }) # TODO
+
+        if status == httplib.OK:
+            logger.debug('Service %s returned OK' % (self._connectUrl))
+        elif status == httplib.NOT_FOUND:
+            logger.critical('Service %s returned NOT_FOUND' % (self._connectUrl))
+        else:
+            logger.critical('Unexpected HTTP response %s received from service %s' % (status, self._connectUrl))
+
+
+    # --------------------------------------------------------------------------
+    def submitCpaDetectionToMS(self,
+                               hitDetected):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Station submitting answer to master server')
+        (status, response) = self.callService(
+            HttpMethod.POST, self._connectUrl,
+            {
+                'message_version'            : 0,
+                'message_timestamp'          : self.timestamp(),
+                'station_id'                 : self._stationId,
+                'hit_detected_within_window' : hitDetected,
+                'is_correct'                 : "True" # TODO
+            })
+
+        if status == httplib.OK:
+            logger.debug('Service %s returned OK' % (self._connectUrl))
+        elif status == httplib.NOT_FOUND:
+            logger.critical('Service %s returned NOT_FOUND' % (self._connectUrl))
+        else:
+            logger.critical('Unexpected HTTP response %s received from service %s' % (status, self._connectUrl))
+
+
+    # ===
+    # Messages from MS to Station
+    # ===
+
     # --------------------------------------------------------------------------
     def reset(self,
               pin):
@@ -539,189 +730,6 @@ class ConnectionManager(IConnectionManager):
             resp.status_code = 400
 
         return resp
-
-
-    # --------------------------------------------------------------------------
-    def connect(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
-        """
-        logger.debug('Station requesting connect with master server')
-        (status, response) = self.callService(
-            HttpMethod.POST, self._connectUrl,
-            {
-                'message_version'  : 0,
-                'message_timestamp': self.timestamp(),
-                'station_id'       : self._stationId,
-                'station_type'     : self._stationType,
-                'station_url'      : 'http://todo:5000/rpi/blah/blah/blah'
-            })
-
-        if status == httplib.OK:
-            logger.debug('Service %s returned OK' % (self._connectUrl))
-        elif status == httplib.NOT_FOUND:
-            logger.critical('Service %s returned NOT_FOUND' % (self._connectUrl))
-        else:
-            logger.critical('Unexpected HTTP response %s received from service %s' % (status, self._connectUrl))
-
-
-    # --------------------------------------------------------------------------
-    def disconnect(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
-        """
-        logger.debug('Station requesting disconnect from master server')
-        (status, response) = self.callService(
-            HttpMethod.POST,
-            "{}/{}".format(self._disconnectUrl, self._stationId),
-            {})
-
-        if status == httplib.OK:
-            logger.debug('Service %s returned OK' % (self._disconnectUrl))
-        elif status == httplib.NOT_FOUND:
-            logger.critical('Service %s returned NOT_FOUND' % (self._disconnectUrl))
-        else:
-            logger.critical('Unexpected HTTP response %s received from service %s' % (status, self._disconnectUrl))
-
-
-    # --------------------------------------------------------------------------
-    def timeExpired(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
-        """
-        logger.debug('Station informing master server that time for challenge has expired')
-
-        theatric_delay_ms = 0
-        candidate_answer = 0
-
-        (status, response) = self.callService(
-            HttpMethod.POST,
-            "{}/{}".format(self._timeExpiredUrl, self._stationId),
-            {})
-
-        if status == httplib.OK:
-            logger.debug('Service %s returned OK' % (self._timeExpiredUrl))
-        elif status == httplib.NOT_FOUND:
-            logger.critical('Service %s returned NOT_FOUND' % (self._timeExpiredUrl))
-        else:
-            logger.critical('Unexpected HTTP response %s received from service %s' % (status, self._timeExpiredUrl))
-
-        self._callback.args = [theatric_delay_ms, candidate_answer]
-        self._callback.State = State.FAILED
-
-
-    # --------------------------------------------------------------------------
-    def submitCtsComboToMS(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
-        """
-        logger.debug('Station submitting answer to master server')
-        (status, response) = self.callService(
-            HttpMethod.POST, self._connectUrl,
-            {
-                'message_version'            : 0,
-                'message_timestamp'          : self.timestamp(),
-                'station_id'                 : self._stationId,
-                'candidate_answer'           : (31, 41, 59),
-                'is_correct'                 : "True"
-            }) # TODO
-
-        if status == httplib.OK:
-            logger.debug('Service %s returned OK' % (self._connectUrl))
-        elif status == httplib.NOT_FOUND:
-            logger.critical('Service %s returned NOT_FOUND' % (self._connectUrl))
-        else:
-            logger.critical('Unexpected HTTP response %s received from service %s' % (status, self._connectUrl))
-
-
-    # --------------------------------------------------------------------------
-    def submitCpaDetectionToMS(self,
-                               hitDetected):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
-        """
-        logger.debug('Station submitting answer to master server')
-        (status, response) = self.callService(
-            HttpMethod.POST, self._connectUrl,
-            {
-                'message_version'            : 0,
-                'message_timestamp'          : self.timestamp(),
-                'station_id'                 : self._stationId,
-                'hit_detected_within_window' : hitDetected,
-                'is_correct'                 : "True" # TODO
-            })
-
-        if status == httplib.OK:
-            logger.debug('Service %s returned OK' % (self._connectUrl))
-        elif status == httplib.NOT_FOUND:
-            logger.critical('Service %s returned NOT_FOUND' % (self._connectUrl))
-        else:
-            logger.critical('Unexpected HTTP response %s received from service %s' % (status, self._connectUrl))
 
 
 # ------------------------------------------------------------------------------
