@@ -86,7 +86,7 @@ class ConnectionManager(IConnectionManager):
         logger.debug('Flask logger? %s' % (self._app.config['LOGGER_NAME']))
         logger.debug('Flask server? %s' % (self._app.config['SERVER_NAME']))
         self._joinUrl = config.JoinUrl
-        self._disconnectUrl = config.DisconnectUrl
+        self._leaveUrl = config.LeaveUrl
         self._timeExpiredUrl = config.TimeExpiredUrl
         self._submitUrl = config.SubmitUrl
         self._stationType = stationTypeId
@@ -245,7 +245,7 @@ class ConnectionManager(IConnectionManager):
                 logger.critical("Exception occurred of type %s: %s" % (exType.__name__, str(e)))
                 traceback.print_tb(tb)
 
-        self.disconnect()
+        self.leave()
         logger.info('Stopping TODO thread for connection manager')
 
     # --------------------------------------------------------------------------
@@ -393,7 +393,7 @@ class ConnectionManager(IConnectionManager):
 
 
     # --------------------------------------------------------------------------
-    def disconnect(self):
+    def leave(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -410,8 +410,8 @@ class ConnectionManager(IConnectionManager):
             TodoError2: if TODO.
 
         """
-        logger.debug('Station requesting disconnect from master server')
-        url = self._disconnectUrl
+        logger.debug('Station requesting leave from master server')
+        url = self._leaveUrl
         (status, response) = self.callService(
             HttpMethod.POST,
             "{}/{}".format(url, self._stationId),
