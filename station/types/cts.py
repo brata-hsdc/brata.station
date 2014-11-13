@@ -19,6 +19,7 @@ Provides the definitions needed for the CTS station type.
 import operator
 import logging
 import logging.handlers
+import time
 
 from station.interfaces import IStation
 
@@ -34,10 +35,13 @@ class Station(IStation):
     def __init__(self,
                  config,
                  hwModule):
-        """TODO strictly one-line summary
+        """ Initialize the LCD display and the pushbutton monitor
 
-        TODO Detailed multi-line description if
-        necessary.
+        The LCD 2-line display will display a status message on the first line
+        and a 6-digit combination code on the second line.  The pushbuttons will
+        allow the user to move the digit entry cursor LEFT or RIGHT, increase (UP)
+        or decrease (DOWN) the value of the digit under the cursor, and submit
+        the code by pressing the SELECT button twice.
 
         Args:
             arg1 (type1): TODO describe arg, valid values, etc.
@@ -74,6 +78,11 @@ class Station(IStation):
         self._centerOffset = 0  # amount of space to left of displayed combination
         self._submitting = False
         self.ConnectionManager = None
+        
+        self._colorToggle = None
+        self.setToggleColors("WHITE")
+        self._pushButtonMonitor.setOnTickCallback(self.onTick)
+
 
     # --------------------------------------------------------------------------
     @property
@@ -183,6 +192,7 @@ class Station(IStation):
 
         self._display.setLine1Text("Enter code:")
         self.refreshDisplayedCombo()
+        self.setToggleColors(["YELLOW", "MAGENTA", "WHITE", "MAGENTA"], interval=1.0)
 
         self._pushButtonMonitor.startListening()
 
@@ -213,7 +223,7 @@ class Station(IStation):
     # --------------------------------------------------------------------------
     def buttonPressed(self,
                       pushButtonName):
-        """TODO strictly one-line summary
+        """ Handle combination input pushbutton events.
 
         TODO Detailed multi-line description if
         necessary.
@@ -229,21 +239,29 @@ class Station(IStation):
             TodoError2: if TODO.
 
         """
-        logger.info('Push button %s pressed.' % (pushButtonName))
+        #logger.info('Push button %s pressed.' % (pushButtonName))
 
         if pushButtonName == 'Up':
+            self.setToggleColors("CYAN")
+            self._display.setLine1Text("Enter code:")
             self._combo.incCurrentDigit(1)
             self.refreshDisplayedCombo()
             self._submitting = False
         elif pushButtonName == 'Down':
+            self.setToggleColors("CYAN")
+            self._display.setLine1Text("Enter code:")
             self._combo.decCurrentDigit(1)
             self.refreshDisplayedCombo()
             self._submitting = False
         elif pushButtonName == 'Left':
+            self.setToggleColors("CYAN")
+            self._display.setLine1Text("Enter code:")
             self._combo.moveLeft(1)
             self.refreshDisplayedCombo()
             self._submitting = False
         elif pushButtonName == 'Right':
+            self.setToggleColors("CYAN")
+            self._display.setLine1Text("Enter code:")
             self._combo.moveRight(1)
             self.refreshDisplayedCombo()
             self._submitting = False
@@ -253,11 +271,16 @@ class Station(IStation):
                             (self._combo.toList()))
                 # TODO submit combo to MS
                 self._submitting = False
+                self.setToggleColors("GREEN")
+                self._display.setLine1Text("=Code Submitted=")
+                self._pushButtonMonitor.stopListening()
             else:
                 logger.info('1st enter key press received. Waiting for 2nd.')
                 self._submitting = True
+                self.setToggleColors(["RED", "WHITE"], interval=0.15)
+                self._display.setLine1Text("2nd ENTER Sends")
         else:
-            pass #TODO log unexpected button press received
+            logger.debug("Invalid pushButtonName received: '{}'".format(pushButtonName))
 
     # --------------------------------------------------------------------------
     def onFailed(self,
@@ -330,7 +353,51 @@ class Station(IStation):
 
         self._pushButtonMonitor.stopListening()
 
+    # --------------------------------------------------------------------------
+    def setToggleColors(self, colors, interval=0.25):
+        """ Set a sequence of background colors to flip through at the specified interval
+        Args:
+            colors (list):  A sequence of color names or a single color name
+            interval (float):  The time interval in seconds between color switches
+        """
+        if self._colorToggle:
+            self._colorToggle.close()
+        if isinstance(colors, (str, unicode)):
+            colors = [colors]
+        if len(colors) < 1:
+            colors = ["WHITE"]
+        if len(colors) > 1:
+            self._colorToggle = self.toggleColors(colors, interval)
+        else:
+            # turn off toggle and display the single color
+            self._colorToggle = None
+            self._display.setBgColor(colors[0])
+        
+    # --------------------------------------------------------------------------
+    def toggleColors(self, colors, interval):
+        """ Toggle background colors every interval seconds.
+        
+        Args:
+            colors    (list):  A list of valid color name strings
+            interval (float):  Seconds between switching colors
+        """
+        tStart = 0.0 # make it toggle immediately
+        
+        while True:
+            tNow = time.time()
+            if tNow - tStart >= interval: # time to toggle
+                tStart = tNow                     # save the new start time
+                colors[:-1],colors[-1] = colors[1:],colors[0]
+                self._display.setBgColor(colors[-1])  # set the display
+            yield colors[-1]
 
+    # --------------------------------------------------------------------------
+    def onTick(self):
+        """ onTick callback to be attached to polling loop to animate bg color
+        """
+        if self._colorToggle:
+            self._colorToggle.next()
+        
 # ------------------------------------------------------------------------------
 class Combo:
     """
@@ -453,7 +520,7 @@ class Combo:
             self._position %= len(self._digits)
         else: # clamp
             self._position = max(self._position, 0)
-        logger.debug('moved current combo pos to %s' % (self._position))
+        #logger.debug('moved current combo pos to %s' % (self._position))
 
     # --------------------------------------------------------------------------
     def moveRight(self,
@@ -474,7 +541,7 @@ class Combo:
             self._position %= len(self._digits)
         else:
             self._position = min(self._position, len(self._digits)-1)
-        logger.debug('moved current combo pos to %s' % (self._position))
+        #logger.debug('moved current combo pos to %s' % (self._position))
 
     # --------------------------------------------------------------------------
     def incCurrentDigit(self,
@@ -536,8 +603,8 @@ class Combo:
             A string formated as "nn:nn:nn"
         """
         s = "{}{}:{}{}:{}{}".format(*self._digits[0:6])
-        logger.debug('combo value for ({}{}, {}{}, {}{})'.format(*self._digits[0:6]))
-        logger.debug('      as string: "{}"'.format(s))
+        #logger.debug('combo value for ({}{}, {}{}, {}{})'.format(*self._digits[0:6]))
+        #logger.debug('      as string: "{}"'.format(s))
 
         return s
 
