@@ -41,6 +41,16 @@ class Display(IDisplay):
     TODO class comment
     """
 
+    COLORS = {"BLACK":   (0.0, 0.0, 0.0), # backlight off
+              "RED":     (1.0, 0.0, 0.0),
+              "GREEN":   (0.0, 1.0, 0.0),
+              "BLUE":    (0.0, 0.0, 1.0),
+              "CYAN":    (0.0, 1.0, 1.0),
+              "MAGENTA": (1.0, 0.0, 1.0),
+              "YELLOW":  (1.0, 1.0, 0.0),
+              "WHITE":   (1.0, 1.0, 1.0),
+              }
+
     # --------------------------------------------------------------------------
     def __init__(self,
                  config):
@@ -70,34 +80,19 @@ class Display(IDisplay):
 
     # --------------------------------------------------------------------------
     def __enter__(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+        """ Called when the context of a "with" statement is entered
         Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+            Reference to self
         """
         logger.debug('Entering display')
-        self._lcd.begin(16, 2)
-        self._lcd.clear()
-        self._lcd.noCursor()
         return self
 
     # --------------------------------------------------------------------------
     def __exit__(self, type, value, traceback):
-        """TODO strictly one-line summary
+        """ Called when the context of a "with" statement is exited
 
-        TODO Detailed multi-line description if
-        necessary.
+        Clears the display text and hides the cursor.  The backlight is left in its
+        current state.
 
         Args:
             arg1 (type1): TODO describe arg, valid values, etc.
@@ -112,8 +107,21 @@ class Display(IDisplay):
         """
         logger.debug('Exiting display')
         self.setText('')
-        self._lcd.stop()
+        self.showCursor(False) # must call after setText(), which displays the cursor
 
+    # --------------------------------------------------------------------------
+    def setBgColor(self, color):
+        ''' Set the display background color to the specified color.
+        
+        Sets the display backlight to the color specified by the color name parameter.
+        The valid color names are "BLACK", "RED", "GREEN", "BLUE", "CYAN", "YELLOW",
+        "MAGENTA", "WHITE".
+
+        Raises:
+            KeyError if color is not one of the valid color string values.
+        '''
+        self._lcd.set_color(*self.COLORS[color])
+    
     # --------------------------------------------------------------------------
     def lineWidth(self):
         """ Returns: the number of columns in a line of the display.
@@ -132,7 +140,7 @@ class Display(IDisplay):
             text (string): The text to display.
         """
         self._line1Text = "{:<{width}}".format(text, width=self._lineWidth)
-        logger.debug('Setting Line 1 text to "%s"' % self._line1Text)
+        #logger.debug('Setting Line 1 text to "%s"' % self._line1Text)
         self._refreshDisplay()
 
 
@@ -148,7 +156,7 @@ class Display(IDisplay):
             text (string): The text to display.
         """
         self._line2Text = "{:<{width}}".format(text, width=self._lineWidth)
-        logger.debug('Setting Line 2 text to "%s"' % self._line2Text)
+        #logger.debug('Setting Line 2 text to "%s"' % self._line2Text)
         self._refreshDisplay()
 
 
@@ -181,7 +189,7 @@ class Display(IDisplay):
         
     # --------------------------------------------------------------------------
     def setCursor(self, row=0, col=0):
-        """ Sets the position of the cursor.
+        """ Sets the position of the cursor and makes it visible.
         """
         self._lcd.set_cursor(col, row)
         self.showCursor()
@@ -191,11 +199,11 @@ class Display(IDisplay):
         """ Sends text to the display
 
         Sends or resends the text stored in _line1Text and _line2Text to
-        the display
+        the display.  Also causes the cursor to be displayed.
         """
         self.setCursor(0, 0)
         self._lcd.message(self._line1Text + '\n' + self._line2Text)
-        logger.debug('Display now reads "%s"[br]"%s"' % (self._line1Text, self._line2Text))
+        #logger.debug('Display now reads "%s"[br]"%s"' % (self._line1Text, self._line2Text))
 
 
 # ------------------------------------------------------------------------------
@@ -308,11 +316,6 @@ class PushButtonMonitor(IPushButtonMonitor):
     OUTPUT     = (0, 0, 0, PRESSED, 0, 0, RELEASED, 0)
     NUM_STATES = len(NEXT_STATE)
     BUTTONS = (LCD.SELECT, LCD.RIGHT, LCD.DOWN, LCD.UP, LCD.LEFT)
-#     BUTTONS = (Adafruit_CharLCDPlate.SELECT,
-#                Adafruit_CharLCDPlate.RIGHT,
-#                Adafruit_CharLCDPlate.DOWN,
-#                Adafruit_CharLCDPlate.UP,
-#                Adafruit_CharLCDPlate.LEFT)
     NUM_BUTTONS = len(BUTTONS)
     BUTTON_NAMES = ("SELECT", "RIGHT", "DOWN", "UP", "LEFT")
     DEBOUNCE_INTERVAL = 0.05 # sec.  (= sampling rate of 20 Hz)
@@ -343,10 +346,18 @@ class PushButtonMonitor(IPushButtonMonitor):
         self._pushButtons = {}
         self._listening = False
         self._timeToExit = False
+        self._onTickCallback = None
+        
         self._thread = Thread(target = self.run)
         self._thread.daemon = True
         self._thread.start()
 
+    # --------------------------------------------------------------------------
+    def setOnTickCallback(self, cb=None):
+        """ Attach a callback that gets called once per iteration of the button polling loop.
+        """
+        self._onTickCallback = cb
+        
     # --------------------------------------------------------------------------
     def setDevice(self, dev):
         """ Register the hardware device for the push buttons.
@@ -513,7 +524,16 @@ class PushButtonMonitor(IPushButtonMonitor):
         does nothing.
         """
         pass
-            
+
+    # --------------------------------------------------------------------------
+    def onTick(self):
+        """ Calls user-supplied callback for each iteration of the polling loop.
+        
+        Attach a custom callback by calling self.setOnTickCallback().
+        """
+        if self._onTickCallback:
+            self._onTickCallback()
+    
     # --------------------------------------------------------------------------
     def run(self):
         """TODO strictly one-line summary
@@ -539,6 +559,7 @@ class PushButtonMonitor(IPushButtonMonitor):
                 try:
                     if self._listening:
                         self.pollPushButtons()
+                    self.onTick()  # event callback for animation
                     sleep(self.DEBOUNCE_INTERVAL)
 
                 except Exception, e:
