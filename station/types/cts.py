@@ -267,9 +267,10 @@ class Station(IStation):
             self._submitting = False
         elif pushButtonName == 'Enter':
             if self._submitting:
-                logger.info('2nd enter key press received. Submitting combo: %s' %
-                            (self._combo.toList()))
-                # TODO submit combo to MS
+                logger.info('2nd enter key press received.')
+                # Submit combo to MS
+                self.submitCombination()
+                
                 self._submitting = False
                 self.setToggleColors("GREEN")
                 self._display.setLine1Text("=Code Submitted=")
@@ -356,14 +357,23 @@ class Station(IStation):
     # --------------------------------------------------------------------------
     def setToggleColors(self, colors, interval=0.25):
         """ Set a sequence of background colors to flip through at the specified interval
+        
+        If a single color is passed in, the background is set, and the _colorToggle
+        generator is deactivated.  If a list of colors is passed in, they are
+        cycled at the specified interval until the generator's close() method is
+        called.  If the colors list is empty, it defaults to ["WHITE"].
+        
         Args:
-            colors (list):  A sequence of color names or a single color name
+            colors    (list):  A sequence of color names or a single color name
             interval (float):  The time interval in seconds between color switches
         """
         if self._colorToggle:
-            self._colorToggle.close()
+            self._colorToggle.close()  # stop the current generator
+            
+        # Make sure we have a list
         if isinstance(colors, (str, unicode)):
             colors = [colors]
+            
         if len(colors) < 1:
             colors = ["WHITE"]
         if len(colors) > 1:
@@ -377,18 +387,30 @@ class Station(IStation):
     def toggleColors(self, colors, interval):
         """ Toggle background colors every interval seconds.
         
+        This is a generator function.  When called, it returns a generator object.
+        Each time the generators next() method is called it evaluates the current
+        time.  If a sufficient time interval has passed, it cycles to the
+        next color in the colors list, and sets the LCD background color to the new
+        color.  It returns the new color.
+        
+        Sample usage:
+            colorCycle = self.toggleColors(["RED", "GREEN", "BLUE"], interval=1.0)
+            while cycleColors:
+                colorCycle.next()  # switch colors at approx. 1 Hz
+                sleep(0.1)
+        
         Args:
             colors    (list):  A list of valid color name strings
             interval (float):  Seconds between switching colors
         """
-        tStart = 0.0 # make it toggle immediately
+        tStart = 0.0  # make it toggle immediately
         
         while True:
             tNow = time.time()
-            if tNow - tStart >= interval: # time to toggle
-                tStart = tNow                     # save the new start time
-                colors[:-1],colors[-1] = colors[1:],colors[0]
-                self._display.setBgColor(colors[-1])  # set the display
+            if tNow - tStart >= interval: # time to switch colors
+                tStart = tNow                                  # save the new start time
+                colors[:-1],colors[-1] = colors[1:],colors[0]  # rotate the list
+                self._display.setBgColor(colors[-1])           # set the display
             yield colors[-1]
 
     # --------------------------------------------------------------------------
@@ -398,6 +420,18 @@ class Station(IStation):
         if self._colorToggle:
             self._colorToggle.next()
         
+    # --------------------------------------------------------------------------
+    def submitCombination(self):
+        """ Send the combination to the Master Server.
+        
+        This method is called when the user presses the SELECT (Enter) button
+        twice in succession.  The current value of the combination in the
+        display (self._combo.toList()) is transmitted to the Master Server.
+        """
+        combo = self._combo.toList()  # get combination as a list of 3 integers
+        # TODO: send combo to the MS
+        logger.info('Submitting combo: {}'.format(repr(combo)))
+    
 # ------------------------------------------------------------------------------
 class Combo:
     """
