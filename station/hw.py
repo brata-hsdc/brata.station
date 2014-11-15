@@ -587,6 +587,176 @@ class VibrationMotor(IVibrationMotor):
 
 
 # ------------------------------------------------------------------------------
+class Buzzer(IBuzzer):
+    """
+    The buzzer class enables a pibrella buzzer to be play or stop a
+    single note, or play a preconfigured song asynchronously.
+    """
+
+    # --------------------------------------------------------------------------
+    def __init__(self,
+                 name, 
+                 config):
+        """Initializes the Buzzer class
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            name (string): Name of this instance of the Buzzer class. Example "Bob"
+            config (Config): Configuration object for the Buzzer class
+        Returns:
+            N/A
+        Raises:
+            N/A
+
+        """
+        self.Name = name
+        # Copy the song to play
+        self._song = []
+        for i in config.Song:
+            # TODO verify tone is an int and Duration is a number
+            self._song.append(
+                TonesToPlay(i.Tone, i.Duration))
+        self._buzzer = getattr(pibrella, buzzer)
+        self._stopPlaying = True
+        self._thread = Thread(target = self.run)
+        self._thread.daemon = True
+        # Only start the thread to play the song when commanded.
+
+    # --------------------------------------------------------------------------
+    def __enter__(self):
+        logger.debug('Entering Buzzer')
+        return self
+
+    # --------------------------------------------------------------------------
+    def __exit__(self, type, value, traceback):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Exiting Buzzer')
+        self._stopPlaying = True
+        self._thread.join()
+
+    # --------------------------------------------------------------------------
+    def play(self):
+        """Asynchronously plays this Buzzer's song.
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Buzzer starting to play configured song')
+        if !self._stopPlaying:
+           # The song is already playing so need to restart it
+           self.off(self)
+        self._stopPlaying = False
+        self._thread.start()
+
+    # --------------------------------------------------------------------------
+    def note(self,
+             tone):
+        """Has the buzzer hold a note unit off is called.
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Buzzer playing note ', tone)
+        # TODO verify tone is an int
+        self._buzzer.note(tone)
+
+    # --------------------------------------------------------------------------
+    def off(self):
+        """Stops playing the buzzer's song or note.
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Stop playing Buzzer')
+        if !self._stopPlaying:
+           # Need to stop the song thread first
+           self._stopPlaying = True
+           self._thread.join()
+        self._buzzer.off()
+
+    # --------------------------------------------------------------------------
+    def run(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        for i in self._song:
+           try:  
+              if self._stopPlaying:
+                 self._buzzer.off()
+                 break
+              self._buzzer.note(i.Tone)
+              sleep(i.Duration)
+           except Exception, e:
+              exType, ex, tb = sys.exc_info()
+              logger.critical("Exception occurred of type %s in Buzzer run" % (exType.__name__))
+              logger.critical(str(e))
+              traceback.print_tb(tb)
+
+# ------------------------------------------------------------------------------
 # Module Initialization
 # ------------------------------------------------------------------------------
 logger = logging.getLogger(__name__)
