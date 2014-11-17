@@ -483,6 +483,71 @@ class IVibrationMotor:
         """
         pass
 
+# ------------------------------------------------------------------------------
+class IBuzzer:
+    """
+    Represents a single buzzer with a preconfigured song.
+    """
+    __metaclass__ = ABCMeta
+
+    # --------------------------------------------------------------------------
+    @abstractmethod
+    def off(self):
+        """Stops the buzzer.
+
+        Args:
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        pass
+
+    # --------------------------------------------------------------------------
+    @abstractmethod
+    def play(self):
+        """Plays or restarts the buzzer playing it's song asynchronously.
+
+        Args:
+            N/A.
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        pass
+
+    # --------------------------------------------------------------------------
+    @abstractmethod
+    def playSynchronously(self):
+        """Plays or restarts the buzzer playing it's song synchronously.
+
+        Args:
+            N/A.
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        pass
+
+    # --------------------------------------------------------------------------
+    @abstractmethod
+    def note(self, tone):
+        """Holds a specific note until off is called.
+
+        Args:
+            N/A.
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        pass
 
 # ------------------------------------------------------------------------------
 # Module Initialization

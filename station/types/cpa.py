@@ -54,9 +54,11 @@ class Station(IStation):
         # TODO - Jaron add code here
         ledClassName = config.LedClassName
         powerOutputClassName = config.PowerOutputClassName
+        buzzerClassName = config.BuzzerClassName
 
         ledClass = getattr(hwModule, ledClassName)
         powerOutputClass = getattr(hwModule, powerOutputClassName)
+        buzzerClass = getattr(hwModule, buzzerClassName)
 
         self._powerOutputs = {}
 
@@ -68,6 +70,11 @@ class Station(IStation):
 
         for i in config.Leds:
             self._leds[i.Name] = ledClass(i.Name, i) # TODO: SS - Should I be placing the color from the config file here?
+
+        self._buzzers = {}
+
+        for i in config.Buzzers:
+            self._buzzers[i.Name] = buzzerClass(i.Name, i)
 
          # TODO is the expired timer common to all stations? Should both of these be moved up?
         self.expiredTimer = None
@@ -204,23 +211,25 @@ class Station(IStation):
               self._leds[name].turnOff()
            for name in self._powerOutputs.keys():
               self._powerOutputs[name].start()
+           for name in self._buzzers.keys():
+              self._buzzers[name].off()
            self._leds['red'].turnOn()
-           pibrella.buzzer.note(0)
+           self._buzzers['SuccessBuzzer'].note(0)
            time.sleep(1)
            self._leds['red'].turnOff()
            self._leds['yellow'].turnOn()
-           pibrella.buzzer.note(1)
+           self._buzzers['SuccessBuzzer'].note(1)
            time.sleep(1)
            self._leds['yellow'].turnOff()
            self._leds['green'].turnOn()
-           pibrella.buzzer.note(2)
+           self._buzzers['SuccessBuzzer'].note(2)
            self._startTime = time.time();
            self._currentlyStarted = True
            self.expiredTimer = Timer(self._maxTimeForCompleteFlash, self.onTimeExpired)
            self.expiredTimer.start()
            time.sleep(1)
            self._leds['green'].turnOff()
-           pibrella.buzzer.off()
+           self._buzzers['SuccessBuzzer'].off()
         else:
             logger.critical("Mismatched argument length. Cannot start.")
 
@@ -251,6 +260,8 @@ class Station(IStation):
            self._leds[name].turnOff()
         for name in self._powerOutputs.keys():
            self._powerOutputs[name].stop()
+        for name in self._buzzers.keys():
+           self._buzzers[name].off()
 
         # Report time out TODO I thought this was the same as fail?
         if self.ConnectionManager != None:
@@ -280,6 +291,13 @@ class Station(IStation):
         # TODO - Jaron add code here
         for name in self._leds.keys():
             self._leds[name].turnOff()
+        for name in self._powerOutputs.keys():
+           self._powerOutputs[name].stop()
+        for name in self._buzzers.keys():
+           self._buzzers[name].off()
+        self._leds['red'].turnOn()
+        self._buzzers['FailBuzzer'].playSynchronously()
+        self._leds['red'].turnOff()
 
     # --------------------------------------------------------------------------
     def onPassed(self,
@@ -305,6 +323,13 @@ class Station(IStation):
         # TODO - Jaron add code here
         for name in self._leds.keys():
             self._leds[name].turnOff()
+        for name in self._powerOutputs.keys():
+           self._powerOutputs[name].stop()
+        for name in self._buzzers.keys():
+           self._buzzers[name].off()
+        self._leds['red'].turnOn()
+        self._buzzers['SuccessBuzzer'].playSyncrhonously()
+        self._leds['red'].turnOff()
 
     # --------------------------------------------------------------------------
     def onUnexpectedState(self, value):

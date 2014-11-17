@@ -29,6 +29,7 @@ from interfaces import ILed
 from interfaces import IPushButtonMonitor
 from interfaces import IVibrationMotor
 
+from mido import MidiFile
 
 # ------------------------------------------------------------------------------
 class Display(IDisplay):
@@ -604,7 +605,10 @@ class Buzzer(IBuzzer):
 
         Args:
             name (string): Name of this instance of the Buzzer class. Example "Bob"
-            config (Config): Configuration object for the Buzzer class
+            config (Config): Conifg object containing an array named Song which is an
+                             array of configuration objects with Tone and Duration.
+                             Where Tone is an int from 0-TBD and Duration is a number
+                             with the duration of time in seconds. 
         Returns:
             N/A
         Raises:
@@ -614,10 +618,12 @@ class Buzzer(IBuzzer):
         self.Name = name
         # Copy the song to play
         self._song = []
+        self.TotalDuration = 0
         for i in config.Song:
             # TODO verify tone is an int and Duration is a number
             self._song.append(
                 TonesToPlay(i.Tone, i.Duration))
+            self.TotalDuration += i.Duration
         self._buzzer = getattr(pibrella, buzzer)
         self._stopPlaying = True
         self._thread = Thread(target = self.run)
@@ -670,19 +676,47 @@ class Buzzer(IBuzzer):
 
         """
         logger.debug('Buzzer starting to play configured song')
-        if !self._stopPlaying:
+        if not self._stopPlaying:
            # The song is already playing so need to restart it
            self.off(self)
         self._stopPlaying = False
         self._thread.start()
 
     # --------------------------------------------------------------------------
+    def playSynchronously(self):
+        """Synchronously plays this Buzzer's song.
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Buzzer starting to play configured song')
+        if not self._stopPlaying:
+           # The song is already playing so need to restart it
+           self.off(self)
+        self._stopPlaying = False
+        self.run()
+
+    # --------------------------------------------------------------------------
     def note(self,
              tone):
         """Has the buzzer hold a note unit off is called.
 
-        TODO Detailed multi-line description if
-        necessary.
+        So pibrella docs are light but looking at it's source code would suggest
+        that the tone field is the standard midi value minus 69 so negative is
+        allowed and 0-11 would be with higher or lower values just in different
+        octaves:
+        note_key = ['A','A#','B','C','C#','D','D#','E','F','F#','G','G#']
 
         Args:
             arg1 (type1): TODO describe arg, valid values, etc.
@@ -718,7 +752,7 @@ class Buzzer(IBuzzer):
 
         """
         logger.debug('Stop playing Buzzer')
-        if !self._stopPlaying:
+        if not self._stopPlaying:
            # Need to stop the song thread first
            self._stopPlaying = True
            self._thread.join()
@@ -744,17 +778,45 @@ class Buzzer(IBuzzer):
         """
 
         for i in self._song:
-           try:  
-              if self._stopPlaying:
-                 self._buzzer.off()
-                 break
-              self._buzzer.note(i.Tone)
-              sleep(i.Duration)
-           except Exception, e:
-              exType, ex, tb = sys.exc_info()
-              logger.critical("Exception occurred of type %s in Buzzer run" % (exType.__name__))
-              logger.critical(str(e))
-              traceback.print_tb(tb)
+           # first assess if this is a string of notes or a midi file
+           if i.File is None:
+              try:  
+                 if self._stopPlaying:
+                    self._buzzer.off()
+                    break
+                 self._buzzer.note(i.Tone)
+                 sleep(i.Duration)
+              except Exception, e:
+                 exType, ex, tb = sys.exc_info()
+                 logger.critical("Exception occurred of type %s in Buzzer run" % (exType.__name__))
+                 logger.critical(str(e))
+                 traceback.print_tb(tb)
+           else:
+              # this is likely a midi
+              try:
+                 mid = MidiFile(i.File)
+                 # now find the track
+                 for i, track in enumerate(mid.tracks):
+                    if track.name == i.Track:
+                       for message in track:
+                          if message.type == 'note_on':
+                             note = message.note - 69
+                             pibrella.buzzer.note(note)
+                             # need to force data type to avoid int division
+                             duration = 0.0 + message.time
+                          elif message.type == 'note_off':
+                             duration = message.time - duration
+                             if duration > 0:
+                                sleep(duration/1000.0)
+                             pibrella.buzzer.off()
+                 pibrella.buzzer.off()
+              except Exception, e:
+                 exType, ex, tb = sys.exc_info()
+                 logger.critical("Exception occurred of type %s in Buzzer run" % (exType.__name__))
+                 logger.critical(str(e))
+                 traceback.print_tb(tb)
+
+        self._stopPlaying = True
 
 # ------------------------------------------------------------------------------
 # Module Initialization
