@@ -819,6 +819,55 @@ class Buzzer(IBuzzer):
         self._stopPlaying = True
 
 # ------------------------------------------------------------------------------
+class Input(IInput):
+    """
+    TODO class comment
+    """
+
+    # --------------------------------------------------------------------------
+    def __init__(self,
+                 name,
+                 inputPin):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            name (string): Name of this input, example "lightDetector"
+            inputPin (string): Letter Designation of Pin , "a", "b", "c", or"d"
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        self.Name = name
+        self._inputPin = getattr(pibrella.input, inputPin)
+
+    # --------------------------------------------------------------------------
+    def read(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        return self._inputPin.read()
+
+# ------------------------------------------------------------------------------
 # Module Initialization
 # ------------------------------------------------------------------------------
 logger = logging.getLogger(__name__)

@@ -550,6 +550,27 @@ class IBuzzer:
         pass
 
 # ------------------------------------------------------------------------------
+class IInput:
+    """
+    Represents a single input.
+    """
+    __metaclass__ = ABCMeta
+
+    # --------------------------------------------------------------------------
+    @abstractmethod
+    def read(self):
+        """Reads the input.
+
+        Args:
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        pass
+
+# ------------------------------------------------------------------------------
 # Module Initialization
 # ------------------------------------------------------------------------------
 logger = logging.getLogger(__name__)
