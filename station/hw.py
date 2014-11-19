@@ -620,10 +620,38 @@ class Buzzer(IBuzzer):
         self._song = []
         self.TotalDuration = 0
         for i in config.Song:
-            # TODO verify tone is an int and Duration is a number
-            self._song.append(
-                TonesToPlay(i.Tone, i.Duration))
-            self.TotalDuration += i.Duration
+           # TODO verify there is not just a copy constructor for config
+           # TODO verify tone is an int and Duration is a number
+           tmp = Config()
+           tmp.File = i.File # might be None
+           tmp.Track = i.Track # might be None
+           tmp.Tone = i.Tone
+           tmp.Duration = i.Duration
+           self._song.append(tmp)
+           
+           if i.File is None:
+              # duration is easy just add em up
+              self.TotalDuration += i.Duration
+           else:
+              # this is likely a midi now things get hard
+              try:
+                 mid = MidiFile(i.File)
+                 # now find the track
+                 for i, track in enumerate(mid.tracks):
+                    if track.name == i.Track:
+                       for message in track:
+                          if message.type == 'note_on':
+                             # need to force data type to avoid int division
+                             duration = 0.0 + message.time
+                          elif message.type == 'note_off':
+                             duration = message.time - duration
+                             if duration > 0:  
+                                self.TotalDuration += duration/1000.0
+              except Exception, e:
+                 exType, ex, tb = sys.exc_info()
+                 logger.critical("Exception occurred of type %s in Buzzer run" % (exType.__name__))
+                 logger.critical(str(e))
+                 traceback.print_tb(tb)
         self._buzzer = getattr(pibrella, buzzer)
         self._stopPlaying = True
         self._thread = Thread(target = self.run)
