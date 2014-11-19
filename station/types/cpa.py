@@ -60,7 +60,7 @@ class Station(IStation):
         ledClass = getattr(hwModule, ledClassName)
         powerOutputClass = getattr(hwModule, powerOutputClassName)
         buzzerClass = getattr(hwModule, buzzerClassName)
-        inputClass = getattr(hwModule, InputClassName)
+        inputClass = getattr(hwModule, inputClassName)
 
         self._powerOutputs = {}
 
