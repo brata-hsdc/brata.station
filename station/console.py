@@ -28,8 +28,11 @@ from station.interfaces import IDisplay
 from station.interfaces import ILed
 from station.interfaces import IPushButtonMonitor
 from station.interfaces import IVibrationMotor
+from station.interfaces import IBuzzer
+from station.interfaces import IInput
 from station.util import NonBlockingConsole
-
+import station.util
+from mido import MidiFile
 
 # ------------------------------------------------------------------------------
 class Display(IDisplay):
@@ -631,27 +634,32 @@ class Buzzer(IBuzzer):
 
         """
         self.Name = name
-        logger.debug('Init buzzer \"%s\".', self.Name)
+        logger.debug('Init buzzer \"%s\".' % self.Name)
         # Copy the song to play
         self._song = []
         self.TotalDuration = 0
         for i in config.Song:
            # TODO verify there is not just a copy constructor for config
            # TODO verify tone is an int and Duration is a number
-           tmp = Config()
-           tmp.File = i.File # might be None
-           tmp.Track = i.Track # might be None
-           tmp.Tone = i.Tone
-           tmp.Duration = i.Duration
+           tmp = station.util.Config()
+
+           # Depending on how used these might not be there
+           if hasattr(i, 'File') and i.File != None:
+               tmp.File = i.File 
+           if hasattr(i, 'Track') and i.Track != None:
+               tmp.Track = i.Track
+           if hasattr(i, 'Tone') and i.Tone != None:
+               tmp.Tone = i.Tone
+           if hasattr(i, 'Duration') and i.Duration != None:
+               tmp.Duration = i.Duration
            self._song.append(tmp)
 
-           if i.File is None:
-              # duration is easy just add em up
-              self.TotalDuration += i.Duration
-           else:
+           if hasattr(i, 'File') and i.File != None:
               # this is likely a midi now things get hard
               try:
+                 logger.debug('Opening midi file \"%s\".' % i.File)
                  mid = MidiFile(i.File)
+                 logger.debug('Opened midi file \"%s\".' % i.File)
                  # now find the track
                  for i, track in enumerate(mid.tracks):
                     if track.name == i.Track:
@@ -668,6 +676,9 @@ class Buzzer(IBuzzer):
                  logger.critical("Exception occurred of type %s in Buzzer run" % (exType.__name__))
                  logger.critical(str(e))
                  traceback.print_tb(tb)
+           else:
+              # duration is easy just add em up
+              self.TotalDuration += i.Duration
         self._stopPlaying = True
         self._thread = Thread(target = self.run)
         self._thread.daemon = True
@@ -772,7 +783,7 @@ class Buzzer(IBuzzer):
             TodoError2: if TODO.
 
         """
-        logger.debug('Buzzer playing note ', tone)
+        logger.debug('Buzzer playing note %s' % tone)
         # TODO verify tone is an int
 
     # --------------------------------------------------------------------------
@@ -821,19 +832,7 @@ class Buzzer(IBuzzer):
 
         for i in self._song:
            # first assess if this is a string of notes or a midi file
-           if i.File is None:
-              try:  
-                 if self._stopPlaying:
-                    logger.debug('Buzzer turning off')
-                    break
-                 logger.debug('Buzzer playing note ', tone)
-                 sleep(i.Duration)
-              except Exception, e:
-                 exType, ex, tb = sys.exc_info()
-                 logger.critical("Exception occurred of type %s in Buzzer run" % (exType.__name__))
-                 logger.critical(str(e))
-                 traceback.print_tb(tb)
-           else:
+           if hasattr(i,'File'):
               # this is likely a midi
               try:
                  mid = MidiFile(i.File)
@@ -843,7 +842,7 @@ class Buzzer(IBuzzer):
                        for message in track:
                           if message.type == 'note_on':
                              note = message.note - 69
-                             logger.debug('Buzzer playing note ', tone)
+                             logger.debug('Buzzer playing note %s' % note)
                              # need to force data type to avoid int division
                              duration = 0.0 + message.time
                           elif message.type == 'note_off':
@@ -852,6 +851,18 @@ class Buzzer(IBuzzer):
                                 sleep(duration/1000.0)
                              logger.debug('Buzzer turning off')
                  logger.debug('Buzzer turning off')
+              except Exception, e:
+                 exType, ex, tb = sys.exc_info()
+                 logger.critical("Exception occurred of type %s in Buzzer run" % (exType.__name__))
+                 logger.critical(str(e))
+                 traceback.print_tb(tb)
+           else:
+              try:  
+                 if self._stopPlaying:
+                    logger.debug('Buzzer turning off')
+                    break
+                 logger.debug('Buzzer playing note %s' % i.Tone)
+                 sleep(i.Duration)
               except Exception, e:
                  exType, ex, tb = sys.exc_info()
                  logger.critical("Exception occurred of type %s in Buzzer run" % (exType.__name__))

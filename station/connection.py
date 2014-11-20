@@ -192,7 +192,7 @@ class ConnectionManager(IConnectionManager):
 
         """
         logger.debug('Exiting connection manager')
-        stopListening(self)
+        self.stopListening(self)
         self._timeToExit = True
         self._thread.join()
 
@@ -649,7 +649,7 @@ class ConnectionManager(IConnectionManager):
 
 
     # --------------------------------------------------------------------------
-    def submitToMS(self):
+    def submitToMS(self, messageValues):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -667,11 +667,24 @@ class ConnectionManager(IConnectionManager):
 
         """
         logger.debug('Station submitting answer to master server')
-        (status, response) = self.callService(
-            HttpMethod.POST, self._connectUrl,
-            {'message_version':  0,
-             'station_id':      self._stationId,
-             'submitted_answer': (31, 41, 59)}) # TODO
+        hitParamValue = None
+        for param in messageValues:
+            if param.Name == 'hit_detected_within_window':
+               hitParamValue = param.Value
+            elif param.Name == 'is_correct':
+                (status, response) = self.callService(
+                    HttpMethod.POST, self._connectUrl,
+                    {'message_version':  0,
+                     'station_id':      self._stationId,
+                     'hit_detected_within_window':      param.Value,
+                     'is_correct':      hitParamValue})
+            else:
+                # TODO CTS param handling
+                (status, response) = self.callService(
+                    HttpMethod.POST, self._connectUrl,
+                    {'message_version':  0,
+                     'station_id':      self._stationId,
+                     'submitted_answer': (31, 41, 59)}) # TODO
 
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (self._connectUrl))

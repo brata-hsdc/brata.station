@@ -28,6 +28,8 @@ from interfaces import IDisplay
 from interfaces import ILed
 from interfaces import IPushButtonMonitor
 from interfaces import IVibrationMotor
+from interfaces import IBuzzer
+from interfaces import IInput
 
 from mido import MidiFile
 
@@ -807,19 +809,7 @@ class Buzzer(IBuzzer):
 
         for i in self._song:
            # first assess if this is a string of notes or a midi file
-           if i.File is None:
-              try:  
-                 if self._stopPlaying:
-                    self._buzzer.off()
-                    break
-                 self._buzzer.note(i.Tone)
-                 sleep(i.Duration)
-              except Exception, e:
-                 exType, ex, tb = sys.exc_info()
-                 logger.critical("Exception occurred of type %s in Buzzer run" % (exType.__name__))
-                 logger.critical(str(e))
-                 traceback.print_tb(tb)
-           else:
+           if hasattr(i,'File'):
               # this is likely a midi
               try:
                  mid = MidiFile(i.File)
@@ -843,7 +833,18 @@ class Buzzer(IBuzzer):
                  logger.critical("Exception occurred of type %s in Buzzer run" % (exType.__name__))
                  logger.critical(str(e))
                  traceback.print_tb(tb)
-
+           else:
+              try:  
+                 if self._stopPlaying:
+                    self._buzzer.off()
+                    break
+                 self._buzzer.note(i.Tone)
+                 sleep(i.Duration)
+              except Exception, e:
+                 exType, ex, tb = sys.exc_info()
+                 logger.critical("Exception occurred of type %s in Buzzer run" % (exType.__name__))
+                 logger.critical(str(e))
+                 traceback.print_tb(tb)
         self._stopPlaying = True
 
 # ------------------------------------------------------------------------------
