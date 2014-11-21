@@ -829,7 +829,7 @@ class Buzzer(IBuzzer):
               try:
                  mid = MidiFile(i.File)
                  # now find the track
-                 for i, track in enumerate(mid.tracks):
+                 for track in mid.tracks:
                     if track.name == i.Track:
                        for message in track:
                           # if asynch give a way to stop
@@ -867,6 +867,281 @@ class Buzzer(IBuzzer):
                  logger.critical(str(e))
                  traceback.print_tb(tb)
         # End for i
+
+        self._stopPlaying = True
+
+# TODO use inheritance to deduplicate this class and the console.Buzzer class.
+# ------------------------------------------------------------------------------
+class SilentBuzzer(IBuzzer):
+    """
+    The buzzer class enables a fake console buzzer to be play or stop a
+    single note, or play a preconfigured song asynchronously.
+    """
+
+    # --------------------------------------------------------------------------
+    def __init__(self,
+                 name, 
+                 config):
+        """Initializes the Buzzer class
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            name (string): Name of this instance of the Buzzer class. Example "Bob"
+            config (Config): Conifg object containing an array named Song which is an
+                             array of configuration objects with Tone and Duration.
+                             Where Tone is an int from 0-TBD and Duration is a number
+                             with the duration of time in seconds. 
+        Returns:
+            N/A
+        Raises:
+            N/A
+
+        """
+        self.Name = name
+        logger.debug('Init buzzer \"%s\".' % self.Name)
+        # Copy the song to play
+        self._song = []
+        self.TotalDuration = 0
+        for i in config.Song:
+           # TODO verify there is not just a copy constructor for config
+           # TODO verify tone is an int and Duration is a number
+           tmp = station.util.Config()
+
+           # Depending on how used these might not be there
+           if hasattr(i, 'File') and i.File != None:
+               tmp.File = i.File 
+           if hasattr(i, 'Track') and i.Track != None:
+               tmp.Track = i.Track
+           if hasattr(i, 'Tone') and i.Tone != None:
+               tmp.Tone = i.Tone
+           if hasattr(i, 'Duration') and i.Duration != None:
+               tmp.Duration = i.Duration
+           self._song.append(tmp)
+
+           if hasattr(i, 'File') and i.File != None:
+              if os.path.isfile(i.File):
+                 # this is likely a midi now things get hard
+                 try:
+                    logger.debug('Opening midi file \"%s\".' % i.File)
+                    mid = MidiFile(i.File)
+                    logger.debug('Opened midi file \"%s\".' % i.File)
+                    # now find the track
+                    for track in mid.tracks:
+                       if track.name == i.Track:
+                          for message in track:
+                             if message.type == 'note_on':
+                                # need to force data type to avoid int division
+                                duration = 0.0 + message.time
+                             elif message.type == 'note_off':
+                                duration = message.time - duration
+                                if duration > 0:  
+                                   self.TotalDuration += duration/1000.0
+                 except Exception, e:
+                    exType, ex, tb = sys.exc_info()
+                    logger.critical("Exception occurred of type %s in Buzzer run" % (exType.__name__))
+                    logger.critical(str(e))
+                    traceback.print_tb(tb)
+              else:
+                 # The file does not exist
+                 logger.critical("The buzzer %s file %s does not exist", self.Name, i.File)
+           else:
+              # duration is easy just add em up
+              self.TotalDuration += i.Duration
+        self._stopPlaying = True
+        self._thread = Thread(target=self.run)
+        #self._thread.daemon = True
+        # Only start the thread to play the song when commanded.
+
+    # --------------------------------------------------------------------------
+    def __enter__(self):
+        logger.debug('Entering Buzzer')
+        return self
+
+    # --------------------------------------------------------------------------
+    def __exit__(self, type, value, traceback):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Exiting Buzzer')
+        self._stopPlaying = True
+        self._thread.join()
+
+    # --------------------------------------------------------------------------
+    def play(self):
+        """Asynchronously plays this Buzzer's song.
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Buzzer starting to play configured song')
+        if not self._stopPlaying:
+           # The song is already playing so need to restart it
+           self.off(self)
+        self._stopPlaying = False
+        self._thread.start()
+
+    # --------------------------------------------------------------------------
+    def playSynchronously(self):
+        """Synchronously plays this Buzzer's song.
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Buzzer starting to play configured song')
+        if not self._stopPlaying:
+           # The song is already playing so need to restart it
+           self.off(self)
+        self._stopPlaying = False
+        self.run()
+
+    # --------------------------------------------------------------------------
+    def note(self,
+             tone):
+        """Has the buzzer hold a note unit off is called.
+
+        So pibrella docs are light but looking at it's source code would suggest
+        that the tone field is the standard midi value minus 69 so negative is
+        allowed and 0-11 would be with higher or lower values just in different
+        octaves:
+        note_key = ['A','A#','B','C','C#','D','D#','E','F','F#','G','G#']
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Buzzer playing note %s' % tone)
+        # TODO verify tone is an int
+
+    # --------------------------------------------------------------------------
+    def off(self):
+        """Stops playing the buzzer's song or note.
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Stop playing Buzzer')
+        if not self._stopPlaying:
+           # Need to stop the song thread first
+           self._stopPlaying = True
+           self._thread.join()
+        logger.debug('Buzzer turning off')
+
+    # --------------------------------------------------------------------------
+    def run(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        for i in self._song:
+           # first assess if this is a string of notes or a midi file
+           if hasattr(i,'File'):
+              if os.path.isfile(i.File):
+                 # this is likely a midi
+                 try:
+                    mid = MidiFile(i.File)
+                    # now find the track
+                    for i, track in enumerate(mid.tracks):
+                       if track.name == i.Track:
+                          for message in track:
+                             if message.type == 'note_on':
+                                note = message.note - 69
+                                logger.debug('Buzzer playing note %s' % note)
+                                # need to force data type to avoid int division
+                                duration = 0.0 + message.time
+                             elif message.type == 'note_off':
+                                duration = message.time - duration
+                                if duration > 0:
+                                   sleep(duration/1000.0)
+                                logger.debug('Buzzer turning off')
+                    logger.debug('Buzzer turning off')
+                 except Exception, e:
+                    exType, ex, tb = sys.exc_info()
+                    logger.critical("Exception occurred of type %s in Buzzer run" % (exType.__name__))
+                    logger.critical(str(e))
+                    traceback.print_tb(tb)
+              else:
+                 # The file does not exist
+                 logger.critical("The buzzer %s file %s does not exist", self.Name, i.File)
+           else:
+              try:  
+                 if self._stopPlaying:
+                    logger.debug('Buzzer turning off')
+                    break
+                 logger.debug('Buzzer playing note %s' % i.Tone)
+                 sleep(i.Duration)
+              except Exception, e:
+                 exType, ex, tb = sys.exc_info()
+                 logger.critical("Exception occurred of type %s in Buzzer run" % (exType.__name__))
+                 logger.critical(str(e))
+                 traceback.print_tb(tb)
 
         self._stopPlaying = True
 

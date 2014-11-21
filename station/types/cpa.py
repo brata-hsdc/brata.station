@@ -111,6 +111,7 @@ class Station(IStation):
         # These defaults will be overriden in the start of onProcessing
         self._maxTimeForCompleteFlash = 10.0
         self._minTimeForFlashStart = 9.0
+        self._maxTimeForFlashStart = 9.5
         self._goTimeBeforeFinalLight = 6.0
         self._cpa_pulse_width_s = 0.1
         self._cpa_pulse_width_tolerance_s = 0.01
@@ -167,9 +168,12 @@ class Station(IStation):
         """
 
         while not self._isTimeToShutdown:
+          self._flashStartTime = time.time() # fake reset value just to ensure initialized
+          self._correctFlashDetected = False
           while self._isRunning:
             try:
                 elapsed_time = time.time() - self._startTime
+                elapsed_flash_time = time.time() - self._flashStartTime
                 # TODO see if can convert inputs to event based in this framework
                 if self._inputs['lightDetector'].read() == 1:
                     if elapsed_time < self._minTimeForFlashStart:
@@ -177,15 +181,16 @@ class Station(IStation):
                         logger.info('Flash detected too soon.')
                         self.onFailed(self._correctFlashDetected)
                         break
-                    elif elapsed_time > self._maxTimeForCompleteFlash:
-                        # in theory time out logic should have caught this by now
-                        # but as written this is currently a race condition
-                        # TODO as we are running this without events should get rid
-                        # of the timer and just catch this case for reporting?
+                    elif self._correctFlashDetected and elapsed_flash_time > self._cpa_pulse_width_s + self._cpa_pulse_width_tolerance_s:
+                        logger.info('Flash remained on too long.')
+                        self.onFailed(self._correctFlashDetected)
+                        break
+                    elif (not self._correctFlashDetected) and elapsed_time > self._maxTimeForCompleteFlash:
+                        # this is a rising edge past the deadline to start a flash
                         logger.info('Flash detected too late.')
                         self.onFailed(self._correctFlashDetected)
                         break
-                    else:
+                    elif not self._correctFlashDetected:
                         # Great they at least hit it at the right time
                         self._correctFlashDetected = True
                         self._flashStartTime = time.time()
@@ -193,7 +198,6 @@ class Station(IStation):
                     # Either should be falling edge or is to long or should not see it yet
                     if self._correctFlashDetected:
                         # This is the falling edge so was it in tollerance
-                        elapsed_flash_time = time.time() - self._flashStartTime
                         if elapsed_flash_time > self._cpa_pulse_width_s - self._cpa_pulse_width_tolerance_s:
                             if elapsed_flash_time < self._cpa_pulse_width_s + self._cpa_pulse_width_tolerance_s:
                                 #Success!
@@ -203,17 +207,21 @@ class Station(IStation):
                                 # The flash was too long so fail it, however, indicate
                                 # that a hit was detected
                                 logger.info('Flash was too long.')
+                                logger.debug('Elapsed time was %s', elapsed_flash_time)
+                                logger.debug('Max flash width was %s', self._cpa_pulse_width_s + self._cpa_pulse_width_tolerance_s)
                                 self.onFailed(self._correctFlashDetected)
                                 break
                         else:
                             # The flash was not long enough so fail it, however, indicate
                             # that a hit was detected
                             logger.info('Flash was not long enough.')
+                            logger.debug('Elapsed time was %s', elapsed_flash_time)
+                            logger.debug('Min flash width was %s', self._cpa_pulse_width_s - self._cpa_pulse_width_tolerance_s)
                             self.onFailed(self._correctFlashDetected)
                             break
-                    elif elapsed_time > self._minTimeForFlashStart:
+                    elif elapsed_time > self._maxTimeForFlashStart:
                         # Too long without a flash
-                        logger.info('Flash was not detected in time.')
+                        logger.info('Flash was not detected in allowed time.')
                         self.onFailed(self._correctFlashDetected)
                         break
                 if elapsed_time > self._goTimeBeforeFinalLight and elapsed_time < self._goTimeBeforeFinalLight + self._DISPLAY_LED_BLINK_DURATION:
@@ -374,8 +382,14 @@ class Station(IStation):
         # would be nice if these were named value pairs but for now 
         # follow the existing design
         if 6 == len(args):
+            # time to flash the green light
             self._goTimeBeforeFinalLight = toFloat(args[0], 0.0) / 1000.0
+
+            # earliest possible time a start of a flash would be acceptable
             self._minTimeForFlashStart = (toFloat(args[2], 0.0)-toFloat(args[3], 0.0)) / 1000.0
+
+            # the absolute latest time you could start a flash and still finish it within tolerance of the shortest flash duration
+            self._maxTimeForFlashStart = (toFloat(args[2], 0.0)+toFloat(args[3], 0.0)-toFloat(args[4], 0.0)+toFloat(args[5], 0.0)) / 1000.0
             self._maxTimeForCompleteFlash = (toFloat(args[2], 0.0)+toFloat(args[3], 0.0)) / 1000.0
             self._cpa_pulse_width_s = toFloat(args[4], 0.0) / 1000.0
             self._cpa_pulse_width_tolerance_s = toFloat(args[5], 0.0) / 1000.0
@@ -490,7 +504,7 @@ class Station(IStation):
             passArgs.append(arg2)
             self.ConnectionManager.submitToMS(passArgs)
 
-        self._buzzers['SuccessBuzzer'].playSyncrhonously()
+        self._buzzers['SuccessBuzzer'].playSynchronously()
         self._leds['green'].turnOff()
 
     # --------------------------------------------------------------------------
