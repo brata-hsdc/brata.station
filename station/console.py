@@ -33,6 +33,7 @@ from station.interfaces import IInput
 from station.util import NonBlockingConsole
 import station.util
 from mido import MidiFile
+import os
 
 # ------------------------------------------------------------------------------
 class Display(IDisplay):
@@ -655,33 +656,37 @@ class Buzzer(IBuzzer):
            self._song.append(tmp)
 
            if hasattr(i, 'File') and i.File != None:
-              # this is likely a midi now things get hard
-              try:
-                 logger.debug('Opening midi file \"%s\".' % i.File)
-                 mid = MidiFile(i.File)
-                 logger.debug('Opened midi file \"%s\".' % i.File)
-                 # now find the track
-                 for i, track in enumerate(mid.tracks):
-                    if track.name == i.Track:
-                       for message in track:
-                          if message.type == 'note_on':
-                             # need to force data type to avoid int division
-                             duration = 0.0 + message.time
-                          elif message.type == 'note_off':
-                             duration = message.time - duration
-                             if duration > 0:  
-                                self.TotalDuration += duration/1000.0
-              except Exception, e:
-                 exType, ex, tb = sys.exc_info()
-                 logger.critical("Exception occurred of type %s in Buzzer run" % (exType.__name__))
-                 logger.critical(str(e))
-                 traceback.print_tb(tb)
+              if os.path.isfile(i.File):
+                 # this is likely a midi now things get hard
+                 try:
+                    logger.debug('Opening midi file \"%s\".' % i.File)
+                    mid = MidiFile(i.File)
+                    logger.debug('Opened midi file \"%s\".' % i.File)
+                    # now find the track
+                    for i, track in enumerate(mid.tracks):
+                       if track.name == i.Track:
+                          for message in track:
+                             if message.type == 'note_on':
+                                # need to force data type to avoid int division
+                                duration = 0.0 + message.time
+                             elif message.type == 'note_off':
+                                duration = message.time - duration
+                                if duration > 0:  
+                                   self.TotalDuration += duration/1000.0
+                 except Exception, e:
+                    exType, ex, tb = sys.exc_info()
+                    logger.critical("Exception occurred of type %s in Buzzer run" % (exType.__name__))
+                    logger.critical(str(e))
+                    traceback.print_tb(tb)
+              else:
+                 # The file does not exist
+                 logger.critical("The buzzer %s file %s does not exist", self.Name, i.File)
            else:
               # duration is easy just add em up
               self.TotalDuration += i.Duration
         self._stopPlaying = True
-        self._thread = Thread(target = self.run)
-        self._thread.daemon = True
+        self._thread = Thread(target=self.run)
+        #self._thread.daemon = True
         # Only start the thread to play the song when commanded.
 
     # --------------------------------------------------------------------------

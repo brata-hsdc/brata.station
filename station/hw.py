@@ -21,17 +21,20 @@ import logging.handlers
 import pibrella
 import signal
 import sys
+from threading import Thread
+from time import sleep
 import traceback
 
-from Adafruit_CharLCDPlate import Adafruit_CharLCDPlate
+#from Adafruit_CharLCDPlate import Adafruit_CharLCDPlate
 from interfaces import IDisplay
 from interfaces import ILed
 from interfaces import IPushButtonMonitor
 from interfaces import IVibrationMotor
 from interfaces import IBuzzer
 from interfaces import IInput
-
+import station.util
 from mido import MidiFile
+import os
 
 # ------------------------------------------------------------------------------
 class Display(IDisplay):
@@ -624,39 +627,51 @@ class Buzzer(IBuzzer):
         for i in config.Song:
            # TODO verify there is not just a copy constructor for config
            # TODO verify tone is an int and Duration is a number
-           tmp = Config()
-           tmp.File = i.File # might be None
-           tmp.Track = i.Track # might be None
-           tmp.Tone = i.Tone
-           tmp.Duration = i.Duration
+           tmp = station.util.Config()
+
+           # Depending on how used these might not be there
+           if hasattr(i, 'File') and i.File != None:
+               tmp.File = i.File 
+           if hasattr(i, 'Track') and i.Track != None:
+               tmp.Track = i.Track
+           if hasattr(i, 'Tone') and i.Tone != None:
+               tmp.Tone = i.Tone
+           if hasattr(i, 'Duration') and i.Duration != None:
+               tmp.Duration = i.Duration
            self._song.append(tmp)
            
-           if i.File is None:
+           if hasattr(i, 'File') and i.File != None:
+              if os.path.isfile(i.File):
+                 # this is likely a midi now things get hard
+                 try:
+                    logger.debug('Opening midi file \"%s\".' % (i.File))
+                    mid = MidiFile(i.File)
+                    logger.debug('Opened midi file \"%s\".' % (i.File))
+                    # now find the track
+                    for i, track in enumerate(mid.tracks):
+                       if track.name == i.Track:
+                          for message in track:
+                             if message.type == 'note_on':
+                                # need to force data type to avoid int division
+                                duration = 0.0 + message.time
+                             elif message.type == 'note_off':
+                                duration = message.time - duration
+                                if duration > 0:  
+                                   self.TotalDuration += duration/1000.0
+                 except Exception, e:
+                    exType, ex, tb = sys.exc_info()
+                    logger.critical("Exception occurred of type %s in Buzzer run" % (exType.__name__))
+                    logger.critical(str(e))
+                    traceback.print_tb(tb)
+              else:
+                 # The file does not exist
+                 logger.critical("The buzzer %s file %s does not exist", self.Name, i.File)
+           else:
               # duration is easy just add em up
               self.TotalDuration += i.Duration
-           else:
-              # this is likely a midi now things get hard
-              try:
-                 mid = MidiFile(i.File)
-                 # now find the track
-                 for i, track in enumerate(mid.tracks):
-                    if track.name == i.Track:
-                       for message in track:
-                          if message.type == 'note_on':
-                             # need to force data type to avoid int division
-                             duration = 0.0 + message.time
-                          elif message.type == 'note_off':
-                             duration = message.time - duration
-                             if duration > 0:  
-                                self.TotalDuration += duration/1000.0
-              except Exception, e:
-                 exType, ex, tb = sys.exc_info()
-                 logger.critical("Exception occurred of type %s in Buzzer run" % (exType.__name__))
-                 logger.critical(str(e))
-                 traceback.print_tb(tb)
-        self._buzzer = getattr(pibrella, buzzer)
+        self._buzzer = getattr(pibrella, 'buzzer')
         self._stopPlaying = True
-        self._thread = Thread(target = self.run)
+        self._thread = Thread(target=self.run)
         self._thread.daemon = True
         # Only start the thread to play the song when commanded.
 
@@ -759,7 +774,7 @@ class Buzzer(IBuzzer):
             TodoError2: if TODO.
 
         """
-        logger.debug('Buzzer playing note ', tone)
+        logger.debug('Buzzer playing note %s' % tone)
         # TODO verify tone is an int
         self._buzzer.note(tone)
 
@@ -817,6 +832,10 @@ class Buzzer(IBuzzer):
                  for i, track in enumerate(mid.tracks):
                     if track.name == i.Track:
                        for message in track:
+                          # if asynch give a way to stop
+                          if self._stopPlaying:
+                             self._buzzer.off()
+                             break
                           if message.type == 'note_on':
                              note = message.note - 69
                              pibrella.buzzer.note(note)
@@ -835,16 +854,20 @@ class Buzzer(IBuzzer):
                  traceback.print_tb(tb)
            else:
               try:  
+                 # if asynch give a way to stop
                  if self._stopPlaying:
                     self._buzzer.off()
                     break
                  self._buzzer.note(i.Tone)
                  sleep(i.Duration)
+                 self._buzzer.off()
               except Exception, e:
                  exType, ex, tb = sys.exc_info()
                  logger.critical("Exception occurred of type %s in Buzzer run" % (exType.__name__))
                  logger.critical(str(e))
                  traceback.print_tb(tb)
+        # End for i
+
         self._stopPlaying = True
 
 # ------------------------------------------------------------------------------

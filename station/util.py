@@ -49,7 +49,7 @@ def toFloat(floatString, defaultValueOnException):
 
     returnValue = defaultValueOnException
     try:
-        defaultValueOnException = float(floatString)
+        returnValue = float(floatString)
     except ValueError, e:
         exType, ex, tb = sys.exc_info()
         logger.critical("String %s could not be converted to a float" % floatString)

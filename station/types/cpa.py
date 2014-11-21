@@ -83,6 +83,7 @@ class Station(IStation):
 
             for i in config.Buzzers:
                 self._buzzers[i.Name] = buzzerClass(i.Name, i)
+                logger.debug('CPA added buzzer named [%s].' % (i.Name))
 
             self._inputs = {}
 
@@ -103,6 +104,7 @@ class Station(IStation):
         self._startTime = 0.0
         self._flashStartTime = 0.0
         self._isRunning = False
+        self._isTimeToShutdown = False
         self._correctFlashDetected = False
         self._DISPLAY_LED_BLINK_DURATION = 0.1
 
@@ -114,7 +116,8 @@ class Station(IStation):
         self._cpa_pulse_width_tolerance_s = 0.01
 
         self._thread = Thread(target=self.run)
-        self._thread.daemon = True
+        self._thread.daemon = True # TODO why daemon
+        self._thread.start()
 
     # --------------------------------------------------------------------------
     def __enter__(self):
@@ -140,6 +143,7 @@ class Station(IStation):
 
         """
         logger.debug('Exiting CPA')
+        self._isTimeToShutdown = True
         self._isRunning = False
         self._thread.join()
 
@@ -161,7 +165,9 @@ class Station(IStation):
             TodoError2: if TODO.
 
         """
-        while self._isRunning:
+
+        while not self._isTimeToShutdown:
+          while self._isRunning:
             try:
                 elapsed_time = time.time() - self._startTime
                 # TODO see if can convert inputs to event based in this framework
@@ -210,7 +216,6 @@ class Station(IStation):
                         logger.info('Flash was not detected in time.')
                         self.onFailed(self._correctFlashDetected)
                         break
-
                 if elapsed_time > self._goTimeBeforeFinalLight and elapsed_time < self._goTimeBeforeFinalLight + self._DISPLAY_LED_BLINK_DURATION:
                     # TODO this needs to be replaced with the series of LEDs ending with last light
                     self._leds['green'].turnOn()
@@ -224,8 +229,8 @@ class Station(IStation):
                 logger.critical(str(e))
                 traceback.print_tb(tb)
 
-        self._isRunning = False
-        logger.info('CPA waiting to start again.')
+          self._isRunning = False
+          time.sleep(0.001) # wait to start again or exit
 
     # --------------------------------------------------------------------------
     @property
@@ -383,23 +388,16 @@ class Station(IStation):
             for name in self._buzzers.keys():
                 self._buzzers[name].off()
             self._leds['red'].turnOn()
-            self._buzzers['SuccessBuzzer'].note(0)
-            time.sleep(1)
+            self._buzzers['red'].playSynchronously()
             self._leds['red'].turnOff()
             self._leds['yellow'].turnOn()
-            self._buzzers['SuccessBuzzer'].note(1)
-            time.sleep(1)
+            self._buzzers['yellow'].playSynchronously()
             self._leds['yellow'].turnOff()
             self._leds['green'].turnOn()
-            self._buzzers['SuccessBuzzer'].note(2)
             self._startTime = time.time()
             self._isRunning = True
-            #self.expiredTimer = Timer(self._maxTimeForCompleteFlash, self.onTimeExpired)
-            #self.expiredTimer.start()
-            self._thread.start()
-            time.sleep(1)
+            self._buzzers['green'].playSynchronously()
             self._leds['green'].turnOff()
-            self._buzzers['SuccessBuzzer'].off()
         else:
             logger.critical('Mismatched argument length. Cannot start.')
 
