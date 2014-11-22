@@ -16,6 +16,7 @@
 TODO module description
 """
 
+# TODO There should be no problem with Mock on a non-Pi.
 from mock import Mock  # @UnresolvedImport when not on R-Pi
 import sys
 import unittest

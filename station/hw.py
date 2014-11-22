@@ -18,6 +18,7 @@ TODO module description
 
 import logging
 import logging.handlers
+# TODO Is UnresolvedImport needed? hw.py should not be enabled on a non-Pi; same for LCD below.
 import pibrella  # @UnresolvedImport when not on R-Pi
 import signal
 import sys
@@ -33,6 +34,7 @@ from interfaces import IDisplay
 from interfaces import ILed
 from interfaces import IPushButtonMonitor
 from interfaces import IVibrationMotor
+# TODO NonBlockingConsole was meant to be used with station.console to get keyboard input; it should not be needed in hw.py
 from station.util import NonBlockingConsole
 from station.console import PushButton # TODO shouldn't have a console import in this file
 
@@ -52,6 +54,7 @@ class Display(IDisplay):
               "YELLOW":  (1.0, 1.0, 0.0),
               "WHITE":   (1.0, 1.0, 1.0),
               }
+
 
     # --------------------------------------------------------------------------
     def __init__(self,
@@ -77,8 +80,9 @@ class Display(IDisplay):
         self._line1Text = ''
         self._line2Text = ''
         self._lineWidth = config.lineWidth
-        logger.debug('Display line width: {}'.format(self._lineWidth))
+        logger.debug('Display line width: {} chars'.format(self._lineWidth))
         self._lcd = LCD.Adafruit_CharLCDPlate()
+
 
     # --------------------------------------------------------------------------
     def __enter__(self):
@@ -88,6 +92,7 @@ class Display(IDisplay):
         """
         logger.debug('Entering display')
         return self
+
 
     # --------------------------------------------------------------------------
     def __exit__(self, type, value, traceback):
@@ -111,6 +116,7 @@ class Display(IDisplay):
         self.setText('')
         self.showCursor(False) # must call after setText(), which displays the cursor
 
+
     # --------------------------------------------------------------------------
     def setBgColor(self, color):
         ''' Set the display background color to the specified color.
@@ -124,11 +130,13 @@ class Display(IDisplay):
         '''
         self._lcd.set_color(*self.COLORS[color])
     
+
     # --------------------------------------------------------------------------
     def lineWidth(self):
         """ Returns: the number of columns in a line of the display.
         """
         return self._lineWidth
+
 
     # --------------------------------------------------------------------------
     def setLine1Text(self,
@@ -179,6 +187,7 @@ class Display(IDisplay):
         self.setLine2Text(lines[1])
         self._refreshDisplay()
 
+
     # --------------------------------------------------------------------------
     def showCursor(self, show=True):
         """ Shows or hides the cursor.
@@ -188,6 +197,7 @@ class Display(IDisplay):
         """
         self._lcd.blink(show)
         self._lcd.show_cursor(show)
+
         
     # --------------------------------------------------------------------------
     def setCursor(self, row=0, col=0):
@@ -195,6 +205,7 @@ class Display(IDisplay):
         """
         self._lcd.set_cursor(col, row)
         self.showCursor()
+
         
     # --------------------------------------------------------------------------
     def _refreshDisplay(self):

@@ -20,6 +20,7 @@ import logging
 import logging.handlers
 import select
 import sys
+# TODO There should be no problem with termios on a non-Pi
 import termios  # @UnresolvedImport when not on R-Pi
 import tty
 
