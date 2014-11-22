@@ -16,7 +16,7 @@
 TODO module description
 """
 
-from mock import Mock
+from mock import Mock  # @UnresolvedImport when not on R-Pi
 import sys
 import unittest
 

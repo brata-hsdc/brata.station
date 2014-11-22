@@ -20,7 +20,7 @@ import logging
 import logging.handlers
 import select
 import sys
-import termios
+import termios  # @UnresolvedImport when not on R-Pi
 import tty
 
 
@@ -80,7 +80,7 @@ class NonBlockingConsole(object):
             TodoError2: if TODO.
 
         """
-        self.old_settings = termios.tcgetattr(sys.stdin)
+        self.old_settings = termios.tcgetattr(sys.stdin.fileno())
         tty.setcbreak(sys.stdin.fileno())
         return self
 
@@ -102,7 +102,7 @@ class NonBlockingConsole(object):
             TodoError2: if TODO.
 
         """
-        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_settings)
+        termios.tcsetattr(sys.stdin.fileno(), termios.TCSADRAIN, self.old_settings)
 
     # --------------------------------------------------------------------------
     def get_data(self):
