@@ -16,9 +16,11 @@
 TODO module description
 """
 
+from mock import Mock
 import unittest
 
 from station.connection import ConnectionManager
+from station.state import State
 
 # ------------------------------------------------------------------------------
 class ConnectionManagerTestCase(unittest.TestCase):
@@ -45,8 +47,14 @@ class ConnectionManagerTestCase(unittest.TestCase):
 
         """
 
-        #TODO
-        #self.Target = Led('three')
+        station = Mock()
+        stationTypeId = 'hoiven-glaven'
+        config = Mock()
+        config.ResetUrlRule = '/path/to/reset/<int:pin>'
+        config.StartChallengeUrlRule = '/path/to/sc'
+        config.HandleSubmissionUrlRule = '/path/to/hs'
+        config.ShutdownUrlRule = '/path/to/hd'
+        self.Target = ConnectionManager(station, stationTypeId, config)
 
 
     # --------------------------------------------------------------------------
@@ -356,7 +364,7 @@ class ConnectionManagerTestCase(unittest.TestCase):
         # TODO
 
     # --------------------------------------------------------------------------
-    def test_reset(self):
+    def test_resetExpectedPin(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -374,9 +382,41 @@ class ConnectionManagerTestCase(unittest.TestCase):
 
         """
 
-        # TODO
-        #self.Target.setFlashing()
-        # TODO
+        self._callback = Mock()
+        self._callback.State = State.PROCESSING
+        self.Target._resetPin = 'expectedPin'
+        pin = self.Target._resetPin
+        resp = self.Target.reset(pin)
+        self.assertEqual(State.READY, self._callback.State)
+        self.assertEqual(200, resp.status_code)
+
+    # --------------------------------------------------------------------------
+    def test_resetUnexpectedPin(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        self._callback = Mock()
+        self._callback.State = State.PROCESSING
+        self.Target._resetPin = 'expectedPin'
+        pin = 'unexpectedPin'
+        resp = self.Target.reset(pin)
+        # TODO verify non-debug log message
+        self.assertEqual(State.PROCESSING, self._callback.State)
+        self.assertEqual(400, resp.status_code)
 
     # --------------------------------------------------------------------------
     def test_startChallenge(self):

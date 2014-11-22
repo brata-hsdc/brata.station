@@ -570,7 +570,7 @@ class ConnectionManager(IConnectionManager):
             self._callback.State = State.READY
             resp.status_code = 200
         else:
-            logger.debug('Master server requesting station reset with invalid pin "%s"' % (pin))
+            logger.warning('Master server requesting station reset with invalid pin "%s"' % (pin))
             resp.status_code = 400
 
         return resp
@@ -732,7 +732,7 @@ class ConnectionManager(IConnectionManager):
 
             resp.status_code = 200
         else:
-            logger.debug('Master server requesting station shutdown with invalid pin "%s"' % (pin))
+            logger.warning('Master server requesting station shutdown with invalid pin "%s"' % (pin))
             resp.status_code = 400
 
         return resp
