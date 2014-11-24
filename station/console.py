@@ -644,18 +644,22 @@ class Buzzer(IBuzzer):
            # TODO verify tone is an int and Duration is a number
            tmp = station.util.Config()
 
+           isFile = False
+           hasTrack = False
            # Depending on how used these might not be there
            if hasattr(i, 'File') and i.File != None:
-               tmp.File = i.File 
+               tmp.File = i.File
+               isFile = True
            if hasattr(i, 'Track') and i.Track != None:
                tmp.Track = i.Track
+               hasTrack = True
            if hasattr(i, 'Tone') and i.Tone != None:
                tmp.Tone = i.Tone
            if hasattr(i, 'Duration') and i.Duration != None:
                tmp.Duration = i.Duration
            self._song.append(tmp)
 
-           if hasattr(i, 'File') and i.File != None:
+           if isFile and hasTrack:
               if os.path.isfile(i.File):
                  # this is likely a midi now things get hard
                  try:
@@ -663,8 +667,8 @@ class Buzzer(IBuzzer):
                     mid = MidiFile(i.File)
                     logger.debug('Opened midi file \"%s\".' % i.File)
                     # now find the track
-                    for i, track in enumerate(mid.tracks):
-                       if track.name == i.Track:
+                    for track in enumerate(mid.tracks):
+                       if hasattr(track, 'name') and track.name == i.Track:
                           for message in track:
                              if message.type == 'note_on':
                                 # need to force data type to avoid int division
@@ -842,7 +846,7 @@ class Buzzer(IBuzzer):
               try:
                  mid = MidiFile(i.File)
                  # now find the track
-                 for i, track in enumerate(mid.tracks):
+                 for track in enumerate(mid.tracks):
                     if track.name == i.Track:
                        for message in track:
                           if message.type == 'note_on':
