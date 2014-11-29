@@ -17,8 +17,11 @@ TODO module description
 """
 
 from mock import Mock
+from mock import MagicMock
+import sys
 import unittest
 
+sys.modules['flask'] = MagicMock()
 from station.connection import ConnectionManager
 from station.state import State
 
@@ -54,6 +57,7 @@ class ConnectionManagerTestCase(unittest.TestCase):
         config.StartChallengeUrlRule = '/path/to/sc'
         config.HandleSubmissionUrlRule = '/path/to/hs'
         config.ShutdownUrlRule = '/path/to/hd'
+
         self.Target = ConnectionManager(station, stationTypeId, config)
 
 
@@ -387,7 +391,7 @@ class ConnectionManagerTestCase(unittest.TestCase):
         self.Target._resetPin = 'expectedPin'
         pin = self.Target._resetPin
         resp = self.Target.reset(pin)
-        self.assertEqual(State.READY, self._callback.State)
+        self.assertEqual(State.READY, self.Target._callback.State, 'incorrect state: {}'.format(self._callback.State))
         self.assertEqual(200, resp.status_code)
 
     # --------------------------------------------------------------------------

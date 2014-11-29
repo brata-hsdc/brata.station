@@ -1,5 +1,10 @@
-import pibrella, signal
+from mock import Mock
+import signal
+import sys
 import time
+
+sys.modules['pibrella'] = Mock()
+import pibrella
 
 # Keep track of when the CPA starts
 start_time = 0

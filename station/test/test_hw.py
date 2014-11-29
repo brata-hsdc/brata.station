@@ -22,6 +22,7 @@ import sys
 import unittest
 
 sys.modules['pibrella'] = Mock()
+sys.modules['Adafruit_CharLCD'] = Mock()
 sys.modules['smbus'] = Mock()
 from station.hw import Led
 from station.hw import PushButtonMonitor
