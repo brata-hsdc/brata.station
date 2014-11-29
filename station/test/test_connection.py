@@ -16,8 +16,9 @@
 TODO module description
 """
 
-from mock import Mock
 from mock import MagicMock
+from mock import Mock
+from mock import patch
 import sys
 import unittest
 
@@ -368,7 +369,9 @@ class ConnectionManagerTestCase(unittest.TestCase):
         # TODO
 
     # --------------------------------------------------------------------------
-    def test_resetExpectedPin(self):
+    @patch('station.connection.logger')
+    def test_resetExpectedPin(self,
+                              mock_logger):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -391,11 +394,14 @@ class ConnectionManagerTestCase(unittest.TestCase):
         self.Target._resetPin = 'expectedPin'
         pin = self.Target._resetPin
         resp = self.Target.reset(pin)
+        self.assertFalse(mock_logger.warning.called)
         self.assertEqual(State.READY, self.Target._callback.State, 'incorrect state: {}'.format(self._callback.State))
         self.assertEqual(200, resp.status_code)
 
     # --------------------------------------------------------------------------
-    def test_resetUnexpectedPin(self):
+    @patch('station.connection.logger')
+    def test_resetUnexpectedPin(self,
+                                mock_logger):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -418,7 +424,7 @@ class ConnectionManagerTestCase(unittest.TestCase):
         self.Target._resetPin = 'expectedPin'
         pin = 'unexpectedPin'
         resp = self.Target.reset(pin)
-        # TODO verify non-debug log message
+        self.assertTrue(mock_logger.warning.called)
         self.assertEqual(State.PROCESSING, self._callback.State)
         self.assertEqual(400, resp.status_code)
 
