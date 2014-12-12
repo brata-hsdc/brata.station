@@ -1,7 +1,7 @@
 {
    "request": {
       "method": "POST",
-      "url": "/m/rpi/join/cts01"
+      "url": "/m/rpi/leave/cts01"
    },
    "response": {
       "status": 202,
