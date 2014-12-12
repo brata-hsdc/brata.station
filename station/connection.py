@@ -414,11 +414,8 @@ class ConnectionManager(IConnectionManager):
 
         """
         logger.debug('Station requesting leave from master server')
-        url = self._leaveUrl
-        (status, response) = self.callService(
-            HttpMethod.POST,
-            "{}/{}".format(url, self._stationId),
-            {})
+        url = "{}/{}".format(self._leaveUrl, self._stationId)
+        (status, response) = self.callService(HttpMethod.POST, url, {})
 
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (url))
@@ -451,16 +448,11 @@ class ConnectionManager(IConnectionManager):
         theatric_delay_ms = 0
         candidate_answer = 0
 
-        url = self._timeExpiredUrl
-        (status, response) = self.callService(
-            HttpMethod.POST,
-            "{}/{}".format(url, self._stationId),
-            {})
+        url = "{}/{}".format(self._timeExpiredUrl, self._stationId)
+        (status, response) = self.callService(HttpMethod.POST, url, {})
 
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (url))
-        elif status == httplib.NOT_FOUND:
-            logger.critical('Service %s returned NOT_FOUND' % (url))
         else:
             logger.critical('Unexpected HTTP response %s received from service %s' % (status, url))
 
@@ -469,7 +461,9 @@ class ConnectionManager(IConnectionManager):
 
 
     # --------------------------------------------------------------------------
-    def submitCtsComboToMS(self):
+    def submitCtsComboToMS(self,
+                           combo,
+                           isCorrect):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -487,16 +481,24 @@ class ConnectionManager(IConnectionManager):
 
         """
         logger.debug('Station submitting answer to master server')
-        url = self._submitUrl
+
+        isCorrect = "False"
+        failMessage = "Incorrect combo provided."
+
+        if isCorrect:
+            isCorrect = "True"
+            failMessage = ""
+
+        url = self._submitUrl + "/" + self._stationId
         (status, response) = self.callService(
             HttpMethod.POST, url,
             {
-                'message_version'            : 0,
-                'message_timestamp'          : self.timestamp(),
-                'station_id'                 : self._stationId,
-                'candidate_answer'           : (31, 41, 59),
-                'is_correct'                 : "True"
-            }) # TODO
+                'message_version'   : 0,
+                'message_timestamp' : self.timestamp(),
+                'candidate_answer'  : combo,
+                'is_correct'        : isCorrect,
+                'fail_message'      : failMessage
+            })
 
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (url))
@@ -508,7 +510,8 @@ class ConnectionManager(IConnectionManager):
 
     # --------------------------------------------------------------------------
     def submitCpaDetectionToMS(self,
-                               hitDetected):
+                               hitDetected,
+                               failMessage):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -534,7 +537,8 @@ class ConnectionManager(IConnectionManager):
                 'message_timestamp'          : self.timestamp(),
                 'station_id'                 : self._stationId,
                 'hit_detected_within_window' : hitDetected,
-                'is_correct'                 : "True" # TODO
+                'is_correct'                 : "True", # TODO
+                'fail_message'               : failMessage
             })
 
         if status == httplib.OK:
@@ -566,6 +570,7 @@ class ConnectionManager(IConnectionManager):
 
         """
 
+        logger.debug('Received reset message from MS with json %s' % (json.dumps(request.json)))
         resp = jsonify()
 
         if pin == self._resetPin:
@@ -580,8 +585,7 @@ class ConnectionManager(IConnectionManager):
 
 
     # --------------------------------------------------------------------------
-    def startChallenge(self,
-                       teamId):
+    def startChallenge(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -599,6 +603,7 @@ class ConnectionManager(IConnectionManager):
 
         """
 
+        logger.debug('Received startChallenge message from MS with json %s' % (json.dumps(request.json)))
         # TODO...
         #if not request.json or not 'title' in request.json:
         if not request.json:
@@ -613,7 +618,7 @@ class ConnectionManager(IConnectionManager):
             logger.debug('Received a start_challenge request for HMB station')
             hmb_vibration_pattern_ms = request.json['hmb_vibration_pattern_ms']
             self._callback.args = hmb_vibration_pattern_ms
-            logger.debug('Master server requesting station start_challenge (ver %s) for team ID %s at %s with theatric delay of %s ms, HMB vibration pattern %s' % (message_version, teamId, message_timestamp, theatric_delay_ms, hmb_vibration_pattern_ms))
+            logger.debug('Master server requesting station start_challenge (ver %s) at %s with theatric delay of %s ms, HMB vibration pattern %s' % (message_version, message_timestamp, theatric_delay_ms, hmb_vibration_pattern_ms))
         elif 'cpa_velocity' in request.json:
             logger.debug('Received a start_challenge request for CPA station')
             cpa_velocity = request.json['cpa_velocity']
@@ -623,12 +628,12 @@ class ConnectionManager(IConnectionManager):
             cpa_pulse_width_ms = request.json['cpa_pulse_width_ms']
             cpa_pulse_width_tolerance_ms = request.json['cpa_pulse_width_tolerance_ms']
             self._callback.args = [cpa_velocity, cpa_velocity_tolerance_ms, cpa_window_time_ms, cpa_window_time_tolerance_ms, cpa_pulse_width_ms, cpa_pulse_width_tolerance_ms]
-            logger.debug('Master server requesting station start_challenge (ver %s) for team ID %s at %s with theatric delay of %s ms, CPA velocity %s with tolerance %s, window time %s ms with tolerance %s ms, and pulse width %s ms with tolerance %s ms' % (message_version, teamId, message_timestamp, theatric_delay_ms, cpa_velocity, cpa_velocity_tolerance_ms, cpa_window_time_ms, cpa_window_time_tolerance_ms, cpa_pulse_width_ms, cpa_pulse_width_tolerance_ms))
+            logger.debug('Master server requesting station start_challenge (ver %s) at %s with theatric delay of %s ms, CPA velocity %s with tolerance %s, window time %s ms with tolerance %s ms, and pulse width %s ms with tolerance %s ms' % (message_version, message_timestamp, theatric_delay_ms, cpa_velocity, cpa_velocity_tolerance_ms, cpa_window_time_ms, cpa_window_time_tolerance_ms, cpa_pulse_width_ms, cpa_pulse_width_tolerance_ms))
         elif 'cts_combo' in request.json:
             logger.debug('Received a start_challenge request for CTS station')
             cts_combo = request.json['cts_combo']
             self._callback.args = cts_combo
-            logger.debug('Master server requesting station start_challenge (ver %s) for team ID %s at %s with theatric delay of %s ms, CTS combo %s' % (message_version, teamId, message_timestamp, theatric_delay_ms, cts_combo))
+            logger.debug('Master server requesting station start_challenge (ver %s) at %s with theatric delay of %s ms, CTS combo %s' % (message_version, message_timestamp, theatric_delay_ms, cts_combo))
         else:
             logger.critical('Received a start_challenge request for unrecognized station')
 
@@ -640,7 +645,7 @@ class ConnectionManager(IConnectionManager):
         # TODO can't pass-in self - how to get handle to self? is it needed?
 
         # TODO
-        resp = jsonify({'foo': 'bar'})
+        resp = jsonify({})
         resp.status_code = httplib.OK
         return resp
 
@@ -666,6 +671,8 @@ class ConnectionManager(IConnectionManager):
             TodoError2: if TODO.
 
         """
+
+        logger.debug('Received handleSubmission message from MS with json %s' % (json.dumps(request.json)))
 
         # TODO...
         #if not request.json or not 'title' in request.json:
@@ -715,6 +722,8 @@ class ConnectionManager(IConnectionManager):
             N/A.
 
         """
+
+        logger.debug('Received shutdown message from MS with json %s' % (json.dumps(request.json)))
         resp = jsonify()
 
         if pin == self._shutdownPin:
