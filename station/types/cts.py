@@ -79,6 +79,7 @@ class Station(IStation):
         self._submitting = False
         self.ConnectionManager = None
         
+        self._combo = None  # will hold a Combo object
         self._colorToggle = None
         self.setToggleColors("WHITE")
         self._pushButtonMonitor.setOnTickCallback(self.onTick)
@@ -448,21 +449,15 @@ class Combo:
                  value1,
                  value2,
                  value3):
-        """TODO strictly one-line summary
+        """ Initialize combination to 6 digits, 2 in value1, 2 in value2, and 2 in value3
 
         TODO Detailed multi-line description if
         necessary.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+            value1: int 00-99
+            value2: int 00-99
+            value3: int 00-99
         """
         logger.debug('Constructing combo')
 
@@ -470,7 +465,8 @@ class Combo:
         self._wrap = True  # wrap the cursor around
         self._position = 0
         self._digits = [0, 0, 0, 0, 0, 0]  # current state of entered combo
-
+        self._sep = " "  # field separator character
+        
         self._targetDigits = [0, 0, 0, 0, 0, 0]
         self._targetDigits[0] = value1 / 10 % 10
         self._targetDigits[1] = value1 /  1 % 10
@@ -614,21 +610,10 @@ class Combo:
 
     # --------------------------------------------------------------------------
     def toList(self):
-        """TODO strictly one-line summary
+        """ Convert the _digits list to a list of 3 ints
 
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
         Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+            List of 3 ints, each in the range 0-99
         """
         result = [self._digits[0] * 10 + self._digits[1],
                   self._digits[2] * 10 + self._digits[3],
@@ -639,9 +624,10 @@ class Combo:
     def toString(self):
         """ Convert list of digits to formatted combination string.
         Returns:
-            A string formated as "nn:nn:nn"
+            A string formatted as "nn:nn:nn" where ":" is the _sep character
         """
         s = "{}{}:{}{}:{}{}".format(*self._digits[0:6])
+        s = s.replace(":", self._sep)
         #logger.debug('combo value for ({}{}, {}{}, {}{})'.format(*self._digits[0:6]))
         #logger.debug('      as string: "{}"'.format(s))
 
