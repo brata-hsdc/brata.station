@@ -494,9 +494,11 @@ class ConnectionManager(IConnectionManager):
                 'message_version'            : 0,
                 'message_timestamp'          : self.timestamp(),
                 'station_id'                 : self._stationId,
+                # TODO: Issue 32
                 'candidate_answer'           : (31, 41, 59),
+                # TODO: Issue 33
                 'is_correct'                 : "True"
-            }) # TODO
+            })
 
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (url))
@@ -566,6 +568,7 @@ class ConnectionManager(IConnectionManager):
 
         """
 
+        logger.debug('Received reset message from MS with json %s' % (json.dumps(request.json)))
         resp = jsonify()
 
         if pin == self._resetPin:
@@ -580,8 +583,7 @@ class ConnectionManager(IConnectionManager):
 
 
     # --------------------------------------------------------------------------
-    def startChallenge(self,
-                       teamId):
+    def startChallenge(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -599,6 +601,7 @@ class ConnectionManager(IConnectionManager):
 
         """
 
+        logger.debug('Received startChallenge message from MS with json %s' % (json.dumps(request.json)))
         # TODO...
         #if not request.json or not 'title' in request.json:
         if not request.json:
@@ -613,7 +616,7 @@ class ConnectionManager(IConnectionManager):
             logger.debug('Received a start_challenge request for HMB station')
             hmb_vibration_pattern_ms = request.json['hmb_vibration_pattern_ms']
             self._callback.args = hmb_vibration_pattern_ms
-            logger.debug('Master server requesting station start_challenge (ver %s) for team ID %s at %s with theatric delay of %s ms, HMB vibration pattern %s' % (message_version, teamId, message_timestamp, theatric_delay_ms, hmb_vibration_pattern_ms))
+            logger.debug('Master server requesting station start_challenge (ver %s) at %s with theatric delay of %s ms, HMB vibration pattern %s' % (message_version, message_timestamp, theatric_delay_ms, hmb_vibration_pattern_ms))
         elif 'cpa_velocity' in request.json:
             logger.debug('Received a start_challenge request for CPA station')
             cpa_velocity = request.json['cpa_velocity']
@@ -623,12 +626,12 @@ class ConnectionManager(IConnectionManager):
             cpa_pulse_width_ms = request.json['cpa_pulse_width_ms']
             cpa_pulse_width_tolerance_ms = request.json['cpa_pulse_width_tolerance_ms']
             self._callback.args = [cpa_velocity, cpa_velocity_tolerance_ms, cpa_window_time_ms, cpa_window_time_tolerance_ms, cpa_pulse_width_ms, cpa_pulse_width_tolerance_ms]
-            logger.debug('Master server requesting station start_challenge (ver %s) for team ID %s at %s with theatric delay of %s ms, CPA velocity %s with tolerance %s, window time %s ms with tolerance %s ms, and pulse width %s ms with tolerance %s ms' % (message_version, teamId, message_timestamp, theatric_delay_ms, cpa_velocity, cpa_velocity_tolerance_ms, cpa_window_time_ms, cpa_window_time_tolerance_ms, cpa_pulse_width_ms, cpa_pulse_width_tolerance_ms))
+            logger.debug('Master server requesting station start_challenge (ver %s) at %s with theatric delay of %s ms, CPA velocity %s with tolerance %s, window time %s ms with tolerance %s ms, and pulse width %s ms with tolerance %s ms' % (message_version, message_timestamp, theatric_delay_ms, cpa_velocity, cpa_velocity_tolerance_ms, cpa_window_time_ms, cpa_window_time_tolerance_ms, cpa_pulse_width_ms, cpa_pulse_width_tolerance_ms))
         elif 'cts_combo' in request.json:
             logger.debug('Received a start_challenge request for CTS station')
             cts_combo = request.json['cts_combo']
             self._callback.args = cts_combo
-            logger.debug('Master server requesting station start_challenge (ver %s) for team ID %s at %s with theatric delay of %s ms, CTS combo %s' % (message_version, teamId, message_timestamp, theatric_delay_ms, cts_combo))
+            logger.debug('Master server requesting station start_challenge (ver %s) at %s with theatric delay of %s ms, CTS combo %s' % (message_version, message_timestamp, theatric_delay_ms, cts_combo))
         else:
             logger.critical('Received a start_challenge request for unrecognized station')
 
@@ -640,7 +643,7 @@ class ConnectionManager(IConnectionManager):
         # TODO can't pass-in self - how to get handle to self? is it needed?
 
         # TODO
-        resp = jsonify({'foo': 'bar'})
+        resp = jsonify({})
         resp.status_code = httplib.OK
         return resp
 
@@ -666,6 +669,8 @@ class ConnectionManager(IConnectionManager):
             TodoError2: if TODO.
 
         """
+
+        logger.debug('Received handleSubmission message from MS with json %s' % (json.dumps(request.json)))
 
         # TODO...
         #if not request.json or not 'title' in request.json:
@@ -715,6 +720,8 @@ class ConnectionManager(IConnectionManager):
             N/A.
 
         """
+
+        logger.debug('Received shutdown message from MS with json %s' % (json.dumps(request.json)))
         resp = jsonify()
 
         if pin == self._shutdownPin:
