@@ -340,13 +340,14 @@ class ConnectionManager(IConnectionManager):
         # TODO check if args present - might be null/empty
         args['message_timestamp'] = self.timestamp()
         logger.debug('Calling service with HTTP method %s, endpoint URL %s, and args %s' % (httpMethod, endpointUrl, args))
+        headers = { 'content-type': 'application/json' }
         data = json.dumps(args)
-        response = requests.post(endpointUrl, data)
+        response = requests.post(endpointUrl, data=data, headers=headers)
 
         # TODO Delete
         ##response = requests.post(endpointUrl, data, auth=('user', '*****'))
 
-        logger.debug('Service returned %s for HTTP method %s, endpoint URL %s, and args %s' % (response.status_code, httpMethod, endpointUrl, args))
+        logger.debug('Service returned %s with for HTTP method %s, endpoint URL %s, and args %s with headers %s' % (response.status_code, httpMethod, endpointUrl, args, response.headers))
         return (response.status_code, response.json)
 
 
@@ -373,19 +374,21 @@ class ConnectionManager(IConnectionManager):
 
         """
         logger.debug('Station requesting join with master server')
-        url = self._joinUrl
+        url = self._joinUrl + "/" + self._stationId
         (status, response) = self.callService(
             HttpMethod.POST, url,
             {
                 'message_version'  : 0,
                 'message_timestamp': self.timestamp(),
-                'station_id'       : self._stationId,
                 'station_type'     : self._stationType,
-                'station_url'      : 'http://todo:5000/rpi/blah/blah/blah'
+                # TODO 'station_url'      : 'http://todo:5000/rpi/blah/blah/blah'
+                'station_url'      : 'http://192.168.43.49:5000/rpi/blah/blah/blah'
             })
 
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (url))
+        elif status == httplib.BAD_REQUEST:
+            logger.critical('Service %s returned BAD_REQUEST' % (url))
         elif status == httplib.NOT_FOUND:
             logger.critical('Service %s returned NOT_FOUND' % (url))
         else:
@@ -557,7 +560,7 @@ class ConnectionManager(IConnectionManager):
         Args:
             pin (int): This must be 31415 in order to reset the station.
         Returns:
-            Empty JSON response with 200 status code on success.
+            Empty JSON response with OK status code on success.
         Raises:
             N/A.
 
@@ -568,10 +571,10 @@ class ConnectionManager(IConnectionManager):
         if pin == self._resetPin:
             logger.debug('Master server successfully requesting station reset with pin "%s"' % (pin))
             self._callback.State = State.READY
-            resp.status_code = 200
+            resp.status_code = httplib.OK
         else:
             logger.warning('Master server requesting station reset with invalid pin "%s"' % (pin))
-            resp.status_code = 400
+            resp.status_code = httplib.BAD_REQUEST
 
         return resp
 
@@ -599,8 +602,8 @@ class ConnectionManager(IConnectionManager):
         # TODO...
         #if not request.json or not 'title' in request.json:
         if not request.json:
-            #TODO abort(400)
-            logger.debug('return 400?')
+            #TODO abort(httplib.BAD_REQUEST
+            logger.debug('return BAD_REQUEST?')
 
         message_version = request.json['message_version']
         message_timestamp = request.json['message_timestamp']
@@ -638,7 +641,7 @@ class ConnectionManager(IConnectionManager):
 
         # TODO
         resp = jsonify({'foo': 'bar'})
-        resp.status_code = 200
+        resp.status_code = httplib.OK
         return resp
 
 
@@ -667,8 +670,8 @@ class ConnectionManager(IConnectionManager):
         # TODO...
         #if not request.json or not 'title' in request.json:
         if not request.json:
-            #TODO abort(400)
-            logger.debug('return 400?')
+            #TODO abort(httplib.BAD_REQUEST
+            logger.debug('return BAD_REQUEST?')
 
         message_version = request.json['message_version']
         message_timestamp = request.json['message_timestamp']
@@ -691,7 +694,7 @@ class ConnectionManager(IConnectionManager):
 
         # TODO
         resp = jsonify({'foo': 'bar'})
-        resp.status_code = 200
+        resp.status_code = httplib.OK
         return resp
 
 
@@ -707,7 +710,7 @@ class ConnectionManager(IConnectionManager):
         Args:
             pin (int): This must be 31415 in order to reset the station.
         Returns:
-            Empty JSON response with 200 status code on success.
+            Empty JSON response with OK status code on success.
         Raises:
             N/A.
 
@@ -730,10 +733,10 @@ class ConnectionManager(IConnectionManager):
             else:
                 logger.info('Shutdown successfully requested by MS but station not configured to really shutdown')
 
-            resp.status_code = 200
+            resp.status_code = httplib.OK
         else:
             logger.warning('Master server requesting station shutdown with invalid pin "%s"' % (pin))
-            resp.status_code = 400
+            resp.status_code = httplib.BAD_REQUEST
 
         return resp
 
