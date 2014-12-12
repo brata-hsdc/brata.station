@@ -104,7 +104,7 @@ class ConnectionManager(IConnectionManager):
         self._app.add_url_rule(config.ResetUrlRule,
                                'reset',
                                self.reset,
-                               methods=['POST'])
+                               methods=['GET'])
 
         self._app.add_url_rule(config.StartChallengeUrlRule,
                                'start_challenge',
@@ -119,7 +119,7 @@ class ConnectionManager(IConnectionManager):
         self._app.add_url_rule(config.ShutdownUrlRule,
                              'shutdown',
                              self.shutdown,
-                             methods=['POST'])
+                             methods=['GET'])
 
         self._thread = Thread(target = self.run)
         self._thread.daemon = True
@@ -347,7 +347,7 @@ class ConnectionManager(IConnectionManager):
         # TODO Delete
         ##response = requests.post(endpointUrl, data, auth=('user', '*****'))
 
-        logger.debug('Service returned %s with for HTTP method %s, endpoint URL %s, and args %s with headers %s' % (response.status_code, httpMethod, endpointUrl, args, response.headers))
+        logger.debug('Service returned %s with for HTTP method %s, endpoint URL %s, and args %s with headers %s and message %s' % (response.status_code, httpMethod, endpointUrl, args, response.headers, json.dumps(response.json)))
         return (response.status_code, response.json)
 
 
@@ -381,18 +381,18 @@ class ConnectionManager(IConnectionManager):
                 'message_version'  : 0,
                 'message_timestamp': self.timestamp(),
                 'station_type'     : self._stationType,
-                # TODO 'station_url'      : 'http://todo:5000/rpi/blah/blah/blah'
-                'station_url'      : 'http://192.168.43.49:5000/rpi/blah/blah/blah'
+                # TODO 'station_url'      : 'http://todo:5000/rpi'
+                'station_url'      : 'http://192.168.43.49:5000/rpi'
             })
 
-        if status == httplib.OK:
+        if status == httplib.ACCEPTED:
             logger.debug('Service %s returned OK' % (url))
         elif status == httplib.BAD_REQUEST:
             logger.critical('Service %s returned BAD_REQUEST' % (url))
         elif status == httplib.NOT_FOUND:
             logger.critical('Service %s returned NOT_FOUND' % (url))
         else:
-            logger.critical('Unexpected HTTP response %s received from service %s' % (status, url))
+            logger.critical('Unexpected HTTP status %s received from service %s' % (status, url))
 
 
     # --------------------------------------------------------------------------
