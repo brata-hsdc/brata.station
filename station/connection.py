@@ -414,11 +414,8 @@ class ConnectionManager(IConnectionManager):
 
         """
         logger.debug('Station requesting leave from master server')
-        url = self._leaveUrl
-        (status, response) = self.callService(
-            HttpMethod.POST,
-            "{}/{}".format(url, self._stationId),
-            {})
+        url = "{}/{}".format(self._leaveUrl, self._stationId)
+        (status, response) = self.callService(HttpMethod.POST, url, {})
 
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (url))
@@ -451,16 +448,11 @@ class ConnectionManager(IConnectionManager):
         theatric_delay_ms = 0
         candidate_answer = 0
 
-        url = self._timeExpiredUrl
-        (status, response) = self.callService(
-            HttpMethod.POST,
-            "{}/{}".format(url, self._stationId),
-            {})
+        url = "{}/{}".format(self._timeExpiredUrl, self._stationId)
+        (status, response) = self.callService(HttpMethod.POST, url, {})
 
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (url))
-        elif status == httplib.NOT_FOUND:
-            logger.critical('Service %s returned NOT_FOUND' % (url))
         else:
             logger.critical('Unexpected HTTP response %s received from service %s' % (status, url))
 
@@ -469,7 +461,9 @@ class ConnectionManager(IConnectionManager):
 
 
     # --------------------------------------------------------------------------
-    def submitCtsComboToMS(self):
+    def submitCtsComboToMS(self,
+                           combo,
+                           isCorrect):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -487,17 +481,23 @@ class ConnectionManager(IConnectionManager):
 
         """
         logger.debug('Station submitting answer to master server')
-        url = self._submitUrl
+
+        isCorrect = "False"
+        failMessage = "Incorrect combo provided."
+
+        if isCorrect:
+            isCorrect = "True"
+            failMessage = ""
+
+        url = self._submitUrl + "/" + self._stationId
         (status, response) = self.callService(
             HttpMethod.POST, url,
             {
-                'message_version'            : 0,
-                'message_timestamp'          : self.timestamp(),
-                'station_id'                 : self._stationId,
-                # TODO: Issue 32
-                'candidate_answer'           : (31, 41, 59),
-                # TODO: Issue 33
-                'is_correct'                 : "True"
+                'message_version'   : 0,
+                'message_timestamp' : self.timestamp(),
+                'candidate_answer'  : combo,
+                'is_correct'        : isCorrect,
+                'fail_message'      : failMessage
             })
 
         if status == httplib.OK:
@@ -510,7 +510,8 @@ class ConnectionManager(IConnectionManager):
 
     # --------------------------------------------------------------------------
     def submitCpaDetectionToMS(self,
-                               hitDetected):
+                               hitDetected,
+                               failMessage):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -536,7 +537,8 @@ class ConnectionManager(IConnectionManager):
                 'message_timestamp'          : self.timestamp(),
                 'station_id'                 : self._stationId,
                 'hit_detected_within_window' : hitDetected,
-                'is_correct'                 : "True" # TODO
+                'is_correct'                 : "True", # TODO
+                'fail_message'               : failMessage
             })
 
         if status == httplib.OK:

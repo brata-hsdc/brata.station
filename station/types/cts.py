@@ -428,10 +428,15 @@ class Station(IStation):
         twice in succession.  The current value of the combination in the
         display (self._combo.toList()) is transmitted to the Master Server.
         """
-        combo = self._combo.toList()  # get combination as a list of 3 integers
-        # TODO: send combo to the MS
+        combo = self._combo.toList()  # get combination as a list of three integers
         logger.info('Submitting combo: {}'.format(repr(combo)))
+
+        # TODO: Issue 33 - compare submitted combo against self._combo
+        isCorrect = True
+
+        self.ConnectionManager.submitCtsComboToMS(combo, isCorrect)
     
+
 # ------------------------------------------------------------------------------
 class Combo:
     """
