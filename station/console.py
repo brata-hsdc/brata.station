@@ -60,6 +60,8 @@ class Display(IDisplay):
 
         self._line1Text = ''
         self._line2Text = ''
+        self._lineWidth = config.lineWidth
+        logger.debug('Display line width: {} chars'.format(self._lineWidth))
 
     # --------------------------------------------------------------------------
     def __enter__(self):
@@ -102,6 +104,28 @@ class Display(IDisplay):
         """
         logger.debug('Exiting display')
         self.setText('')
+
+    # --------------------------------------------------------------------------
+    def lineWidth(self):
+        """ Returns: the number of columns in a line of the display.
+        """
+        return self._lineWidth
+
+
+    # --------------------------------------------------------------------------
+    def setBgColor(self,
+                   color):
+        ''' Set the display background color to the specified color.
+        
+        Sets the display backlight to the color specified by the color name parameter.
+        The valid color names are "BLACK", "RED", "GREEN", "BLUE", "CYAN", "YELLOW",
+        "MAGENTA", "WHITE".
+
+        Raises:
+            KeyError if color is not one of the valid color string values.
+        '''
+        logger.debug('Setting background color to %s' % (color))
+    
 
     # --------------------------------------------------------------------------
     def setLine1Text(self,
@@ -174,6 +198,23 @@ class Display(IDisplay):
                      (self._line1Text, self._line2Text))
 
 
+    # --------------------------------------------------------------------------
+    def showCursor(self, show=True):
+        """ Shows or hides the cursor.
+        
+        Make the cursor visible if show is True.  Otherwise, make the cursor
+        invisible.
+        """
+        logger.debug('Setting show cursor value to %s' % (show))
+
+        
+    # --------------------------------------------------------------------------
+    def setCursor(self, row=0, col=0):
+        """ Sets the position of the cursor and makes it visible.
+        """
+        logger.debug('Setting cursor position to (r=%s, c=%s)' % (row, col))
+
+        
 # ------------------------------------------------------------------------------
 class Led(ILed):
     """

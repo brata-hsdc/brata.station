@@ -108,6 +108,7 @@ class IDisplay:
         """ Returns: the number of columns in a line of the display.
         """
         pass
+
     
     # --------------------------------------------------------------------------
     @abstractmethod

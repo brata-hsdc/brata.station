@@ -118,7 +118,15 @@ class Display(IDisplay):
 
 
     # --------------------------------------------------------------------------
-    def setBgColor(self, color):
+    def lineWidth(self):
+        """ Returns: the number of columns in a line of the display.
+        """
+        return self._lineWidth
+
+
+    # --------------------------------------------------------------------------
+    def setBgColor(self,
+                   color):
         ''' Set the display background color to the specified color.
         
         Sets the display backlight to the color specified by the color name parameter.
@@ -130,13 +138,6 @@ class Display(IDisplay):
         '''
         self._lcd.set_color(*self.COLORS[color])
     
-
-    # --------------------------------------------------------------------------
-    def lineWidth(self):
-        """ Returns: the number of columns in a line of the display.
-        """
-        return self._lineWidth
-
 
     # --------------------------------------------------------------------------
     def setLine1Text(self,
@@ -195,6 +196,7 @@ class Display(IDisplay):
         Make the cursor visible if show is True.  Otherwise, make the cursor
         invisible.
         """
+        logger.debug('Setting show cursor value to %s' % (show))
         self._lcd.blink(show)
         self._lcd.show_cursor(show)
 
@@ -203,6 +205,7 @@ class Display(IDisplay):
     def setCursor(self, row=0, col=0):
         """ Sets the position of the cursor and makes it visible.
         """
+        logger.debug('Setting cursor position to (r=%s, c=%s)' % (row, col))
         self._lcd.set_cursor(col, row)
         self.showCursor()
 
