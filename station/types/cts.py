@@ -81,7 +81,13 @@ class Station(IStation):
         
         self._combo = None  # will hold a Combo object
         self._colorToggle = None
-        self.setToggleColors("WHITE")
+        self._resetBg = (["YELLOW", "MAGENTA", "WHITE", "MAGENTA"], 1.0)
+        self._idleBg = (["WHITE"], 1.0)
+        self._enterBg = (["CYAN"], 1.0)
+        self._submit1Bg = (["YELLOW"], 1.0)
+        self._submit2Bg = (["RED", "WHITE"], 0.15)
+        
+        self.setToggleColors(*self._idleBg)
         self._pushButtonMonitor.setOnTickCallback(self.onTick)
 
 
@@ -193,7 +199,7 @@ class Station(IStation):
 
         self._display.setLine1Text("Enter code:")
         self.refreshDisplayedCombo()
-        self.setToggleColors(["YELLOW", "MAGENTA", "WHITE", "MAGENTA"], interval=1.0)
+        self.setToggleColors(*self._enterBg)
 
         self._pushButtonMonitor.startListening()
 
@@ -243,25 +249,25 @@ class Station(IStation):
         #logger.info('Push button %s pressed.' % (pushButtonName))
 
         if pushButtonName == 'Up':
-            self.setToggleColors("CYAN")
+            self.setToggleColors(*self._enterBg)
             self._display.setLine1Text("Enter code:")
             self._combo.incCurrentDigit(1)
             self.refreshDisplayedCombo()
             self._submitting = False
         elif pushButtonName == 'Down':
-            self.setToggleColors("CYAN")
+            self.setToggleColors(*self._enterBg)
             self._display.setLine1Text("Enter code:")
             self._combo.decCurrentDigit(1)
             self.refreshDisplayedCombo()
             self._submitting = False
         elif pushButtonName == 'Left':
-            self.setToggleColors("CYAN")
+            self.setToggleColors(*self._enterBg)
             self._display.setLine1Text("Enter code:")
             self._combo.moveLeft(1)
             self.refreshDisplayedCombo()
             self._submitting = False
         elif pushButtonName == 'Right':
-            self.setToggleColors("CYAN")
+            self.setToggleColors(*self._enterBg)
             self._display.setLine1Text("Enter code:")
             self._combo.moveRight(1)
             self.refreshDisplayedCombo()
@@ -273,13 +279,13 @@ class Station(IStation):
                 self.submitCombination()
                 
                 self._submitting = False
-                self.setToggleColors("GREEN")
+                self.setToggleColors(*self._submit1Bg)
                 self._display.setLine1Text("=Code Submitted=")
                 self._pushButtonMonitor.stopListening()
             else:
                 logger.info('1st enter key press received. Waiting for 2nd.')
                 self._submitting = True
-                self.setToggleColors(["RED", "WHITE"], interval=0.15)
+                self.setToggleColors(*self._submit2Bg)
                 self._display.setLine1Text("2nd ENTER Sends")
         else:
             logger.debug("Invalid pushButtonName received: '{}'".format(pushButtonName))
