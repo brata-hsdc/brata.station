@@ -192,7 +192,7 @@ class ConnectionManager(IConnectionManager):
 
         """
         logger.debug('Exiting connection manager')
-        stopListening(self)
+        self.stopListening()
         self._timeToExit = True
         self._thread.join()
 
@@ -482,13 +482,6 @@ class ConnectionManager(IConnectionManager):
         """
         logger.debug('Station submitting answer to master server')
 
-        isCorrect = "False"
-        failMessage = "Incorrect combo provided."
-
-        if isCorrect:
-            isCorrect = "True"
-            failMessage = ""
-
         url = self._submitUrl + "/" + self._stationId
         (status, response) = self.callService(
             HttpMethod.POST, url,
@@ -496,8 +489,8 @@ class ConnectionManager(IConnectionManager):
                 'message_version'   : 0,
                 'message_timestamp' : self.timestamp(),
                 'candidate_answer'  : combo,
-                'is_correct'        : isCorrect,
-                'fail_message'      : failMessage
+                'is_correct'        : "True" if isCorrect else "False",
+                'fail_message'      : "" if isCorrect else "Incorrect combo provided."
             })
 
         if status == httplib.OK:

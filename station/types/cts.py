@@ -30,7 +30,15 @@ class Station(IStation):
     Provides the implementation for a CTS station to support displaying and
     obtaining a combination value from the user to supply to the MS.
     """
-
+    START_STATE      = 0
+    IDLE_STATE       = 1
+    PRE_INPUT_STATE  = 2
+    INPUT_STATE      = 3
+    SUBMITTING_STATE = 4
+    SUBMITTED_STATE  = 5
+    SHUTDOWN_STATE   = 6
+    ERROR_STATE      = 99
+    
     # --------------------------------------------------------------------------
     def __init__(self,
                  config,
@@ -44,15 +52,8 @@ class Station(IStation):
         the code by pressing the SELECT button twice.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+            config:    a Config object containing properties to configure station characteristics
+            hwModule:  python module object that defines hardware interfaces
         """
         logger.debug('Constructing CTS')
 
@@ -76,20 +77,38 @@ class Station(IStation):
                                                        i)
 
         self._centerOffset = 0  # amount of space to left of displayed combination
-        self._submitting = False
         self.ConnectionManager = None
         
         self._combo = None  # will hold a Combo object
-        self._colorToggle = None
-        self._resetBg = (["YELLOW", "MAGENTA", "WHITE", "MAGENTA"], 1.0)
-        self._idleBg = (["WHITE"], 1.0)
-        self._enterBg = (["CYAN"], 1.0)
-        self._submit1Bg = (["YELLOW"], 1.0)
-        self._submit2Bg = (["RED", "WHITE"], 0.15)
+        self._timedMsg = None  # generator
+        self._colorToggle = None  # generator
+        self._preInputDuration = 6.0  # seconds to display msg
         
-        self.setToggleColors(*self._idleBg)
-        self._pushButtonMonitor.setOnTickCallback(self.onTick)
+        
+        # Background cycle states: ([list of colors], rate_in_sec)
+        # TODO: These constants could be moved to runstation.conf
+        self._idleBg     = (["WHITE", "WHITE", "BLUE", "YELLOW", "GREEN", "RED", "BLACK", "CYAN", "MAGENTA"], 0.75)
+        self._preInputBg = (["YELLOW", "YELLOW", "YELLOW", "YELLOW", "RED"], 0.15)
+        self._inputBg    = (["CYAN"], 1.0)
+        self._submit1Bg  = (["RED", "WHITE"], 0.15)
+        self._submit2Bg  = (["GREEN"], 1.0)
+        self._shutdownBg = (["GREEN"], 1.0)
+        self._errorBg    = (["RED", "RED", "RED", "RED", "RED", "WHITE"], 0.15)
+        
+        # Display text for different states
+        # TODO: These constants could be moved to runstation.conf
+        self._idleText            = "==== CRACK =====\n== THE = SAFE =="
+        self._preInputText        = "      HEY!!\n  Scan QR Code"
+        self._enterLine1Text      = "Enter Code:"
+        self._submittingLine1Text = "2nd ENTER Sends"
+        self._submittedLine1Text  = "=Code Submitted="
+        self._shutdownText        = "Shutting down..."
+        self._errorText           = "Malfunction!"
 
+        # Station current operating state
+        self._state = self.START_STATE
+        self._pushButtonMonitor.setOnTickCallback(self.onTick)
+        self.enterState(self.IDLE_STATE)
 
     # --------------------------------------------------------------------------
     @property
@@ -147,9 +166,7 @@ class Station(IStation):
 
         """
         logger.info('Received signal "%s". Stopping CTS.', signal)
-        self._display.setText("Shutting down...")
-
-        self._pushButtonMonitor.stopListening()
+        self.enterState(self.SHUTDOWN_STATE)
 
     # --------------------------------------------------------------------------
     def onReady(self):
@@ -170,9 +187,7 @@ class Station(IStation):
 
         """
         logger.info('CTS transitioned to Ready state.')
-        self._display.setText("Ready.")
-
-        self._pushButtonMonitor.stopListening()
+        self.enterState(self.IDLE_STATE)
 
     # --------------------------------------------------------------------------
     def onProcessing(self,
@@ -196,12 +211,8 @@ class Station(IStation):
         logger.info('CTS transitioned to Processing state with args [%s].' % (args))
 
         self._combo = Combo(*args)
-
-        self._display.setLine1Text("Enter code:")
         self.refreshDisplayedCombo()
-        self.setToggleColors(*self._enterBg)
-
-        self._pushButtonMonitor.startListening()
+        self.enterState(self.INPUT_STATE)
 
     # --------------------------------------------------------------------------
     def refreshDisplayedCombo(self):
@@ -228,65 +239,92 @@ class Station(IStation):
         self._display.setCursor(1, self._combo.formattedPosition() + self._centerOffset)
 
     # --------------------------------------------------------------------------
+    def enterState(self, newState):
+        """ Transition to the specified operating state
+        
+        This will modify the display text, the display background, the state of
+        running timers, and the state of the _pushButtonMonitor.
+        """
+        if newState != self._state:
+            
+            if self._state == self.PRE_INPUT_STATE:  # leaving this state
+                self._timedMsg = None
+            
+            if newState == self.IDLE_STATE:
+                self._display.setText(self._idleText)
+                self.setToggleColors(*self._idleBg)
+                self._pushButtonMonitor.startListening()
+                
+            elif newState == self.PRE_INPUT_STATE:
+                self._timedMsg = self.displayTimedMsg(self._preInputText, self._preInputDuration, self._preInputBg)
+                self._pushButtonMonitor.stopListening()
+                
+            elif newState == self.INPUT_STATE:
+                self._display.setLine1Text(self._enterLine1Text)
+                self.setToggleColors(*self._inputBg)
+                self._pushButtonMonitor.startListening()
+                
+            elif newState == self.SUBMITTING_STATE:
+                self._display.setLine1Text(self._submittingLine1Text)
+                self.setToggleColors(*self._submit1Bg)
+                
+            elif newState == self.SUBMITTED_STATE:
+                self._display.setLine1Text(self._submittedLine1Text)
+                self.setToggleColors(*self._submit2Bg)
+                self._pushButtonMonitor.stopListening()
+                
+            elif newState == self.SHUTDOWN_STATE:
+                self._display.setText(self._shutdownText)
+                self._pushButtonMonitor.stopListening()
+
+            else:
+                self._display.setText(self._errorText)
+                self.setToggleColors(*self._errorBg)
+                self._pushButtonMonitor.stopListening()
+                
+            self._state = newState
+        
+    # --------------------------------------------------------------------------
     def buttonPressed(self,
                       pushButtonName):
         """ Handle combination input pushbutton events.
 
-        TODO Detailed multi-line description if
-        necessary.
+        Only recognizes the push event, not the release.  Buttons update the
+        displayed combo, and may change the operating state.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+            pushButtonName (string): Up, Down, Left, Right, or Enter
         """
         #logger.info('Push button %s pressed.' % (pushButtonName))
-
-        if pushButtonName == 'Up':
-            self.setToggleColors(*self._enterBg)
-            self._display.setLine1Text("Enter code:")
+        if self._state == self.IDLE_STATE:
+            self.enterState(self.PRE_INPUT_STATE)
+        elif pushButtonName == 'Up':
+            self.enterState(self.INPUT_STATE)
             self._combo.incCurrentDigit(1)
             self.refreshDisplayedCombo()
-            self._submitting = False
         elif pushButtonName == 'Down':
-            self.setToggleColors(*self._enterBg)
-            self._display.setLine1Text("Enter code:")
+            self.enterState(self.INPUT_STATE)
             self._combo.decCurrentDigit(1)
             self.refreshDisplayedCombo()
-            self._submitting = False
         elif pushButtonName == 'Left':
-            self.setToggleColors(*self._enterBg)
-            self._display.setLine1Text("Enter code:")
+            self.enterState(self.INPUT_STATE)
             self._combo.moveLeft(1)
             self.refreshDisplayedCombo()
-            self._submitting = False
         elif pushButtonName == 'Right':
-            self.setToggleColors(*self._enterBg)
-            self._display.setLine1Text("Enter code:")
+            self.enterState(self.INPUT_STATE)
             self._combo.moveRight(1)
             self.refreshDisplayedCombo()
-            self._submitting = False
         elif pushButtonName == 'Enter':
-            if self._submitting:
+            if self._state == self.INPUT_STATE:
+                self.enterState(self.SUBMITTING_STATE)
+                logger.info('1st enter key press received. Waiting for 2nd.')
+            elif self._state == self.SUBMITTING_STATE:
+                self.enterState(self.SUBMITTED_STATE)
                 logger.info('2nd enter key press received.')
                 # Submit combo to MS
                 self.submitCombination()
                 
-                self._submitting = False
-                self.setToggleColors(*self._submit1Bg)
-                self._display.setLine1Text("=Code Submitted=")
-                self._pushButtonMonitor.stopListening()
-            else:
-                logger.info('1st enter key press received. Waiting for 2nd.')
-                self._submitting = True
-                self.setToggleColors(*self._submit2Bg)
-                self._display.setLine1Text("2nd ENTER Sends")
+                self._state = self.SUBMITTED_STATE
         else:
             logger.debug("Invalid pushButtonName received: '{}'".format(pushButtonName))
 
@@ -357,9 +395,7 @@ class Station(IStation):
 
         """
         logger.critical('CTS transitioned to Unexpected state %s', value)
-        self._display.setText("Malfunction!")
-
-        self._pushButtonMonitor.stopListening()
+        self.enterState(self.ERROR_STATE)
 
     # --------------------------------------------------------------------------
     def setToggleColors(self, colors, interval=0.25):
@@ -391,11 +427,43 @@ class Station(IStation):
             self._display.setBgColor(colors[0])
         
     # --------------------------------------------------------------------------
+    def displayTimedMsg(self, msg, duration, bg):
+        """ Display msg for duration, then go back to IDLE_STATE
+        
+        This is a generator function.  When first called, it sets the display
+        text and background, and returns a generator object.
+        Each time the generator's next() method is called it evaluates the current
+        time.  Once a sufficient time interval has passed, it returns False.  Before
+        that time it returns True.
+        
+        Sample usage:
+            timedMsg = self.DisplayTimedMsg("I'm here for a second", 1.0, (["RED", "GREEN", "BLUE"], 0.2))
+            while timedMsg.next():
+                sleep(0.1)
+            timedMsg = None
+        
+        Args:
+            msg (string):  A message to be displayed
+            duration (float):  Seconds to display msg
+            bg (list, float):  Args to pass to self.toggleColors
+        
+        Returns:
+            a generator function that returns False when finished
+        """
+        tStart = time.time()
+        self._display.setText(msg)
+        self.setToggleColors(*bg)
+        
+        while time.time() - tStart < duration:
+            yield True  # keep displaying the msg
+        yield False     # finished
+
+    # --------------------------------------------------------------------------
     def toggleColors(self, colors, interval):
         """ Toggle background colors every interval seconds.
         
         This is a generator function.  When called, it returns a generator object.
-        Each time the generators next() method is called it evaluates the current
+        Each time the generator's next() method is called it evaluates the current
         time.  If a sufficient time interval has passed, it cycles to the
         next color in the colors list, and sets the LCD background color to the new
         color.  It returns the new color.
@@ -409,6 +477,8 @@ class Station(IStation):
         Args:
             colors    (list):  A list of valid color name strings
             interval (float):  Seconds between switching colors
+        Returns:
+            a generator function that cycles through a list of background colors
         """
         tStart = 0.0  # make it toggle immediately
         
@@ -423,9 +493,14 @@ class Station(IStation):
     # --------------------------------------------------------------------------
     def onTick(self):
         """ onTick callback to be attached to polling loop to animate bg color
+            and time message display
         """
         if self._colorToggle:
             self._colorToggle.next()
+        
+        if self._timedMsg:
+            if not self._timedMsg.next():
+                self.enterState(self.IDLE_STATE)
         
     # --------------------------------------------------------------------------
     def submitCombination(self):
@@ -436,11 +511,9 @@ class Station(IStation):
         display (self._combo.toList()) is transmitted to the Master Server.
         """
         combo = self._combo.toList()  # get combination as a list of three integers
-        logger.info('Submitting combo: {}'.format(repr(combo)))
-
-        # TODO: Issue 33 - compare submitted combo against self._combo
-        isCorrect = True
-
+        isCorrect = self._combo.isMatch()
+        
+        logger.info('Submitting combo: {} , match = {}'.format(repr(combo), isCorrect))
         self.ConnectionManager.submitCtsComboToMS(combo, isCorrect)
     
 
@@ -528,7 +601,7 @@ class Combo:
     def isMatch(self):
         """ Returns:  True if _digits == _targetDigits.
         """
-        return reduce(operator.and_, map(operator.eq, self._combination, self._target))
+        return reduce(operator.and_, map(operator.eq, self._digits, self._targetDigits))
 
     # --------------------------------------------------------------------------
     def position(self):
