@@ -244,7 +244,12 @@ class Station(IStation):
         
         This will modify the display text, the display background, the state of
         running timers, and the state of the _pushButtonMonitor.
+        
+        Returns:
+            The state prior to being called
         """
+        oldState = self._state
+        
         if newState != self._state:
             
             if self._state == self.PRE_INPUT_STATE:  # leaving this state
@@ -262,6 +267,7 @@ class Station(IStation):
             elif newState == self.INPUT_STATE:
                 self._display.setLine1Text(self._enterLine1Text)
                 self.setToggleColors(*self._inputBg)
+                self.refreshDisplayedCombo()
                 self._pushButtonMonitor.startListening()
                 
             elif newState == self.SUBMITTING_STATE:
@@ -281,8 +287,10 @@ class Station(IStation):
                 self._display.setText(self._errorText)
                 self.setToggleColors(*self._errorBg)
                 self._pushButtonMonitor.stopListening()
-                
+            
             self._state = newState
+        
+        return oldState
         
     # --------------------------------------------------------------------------
     def buttonPressed(self,
@@ -299,21 +307,21 @@ class Station(IStation):
         if self._state == self.IDLE_STATE:
             self.enterState(self.PRE_INPUT_STATE)
         elif pushButtonName == 'Up':
-            self.enterState(self.INPUT_STATE)
-            self._combo.incCurrentDigit(1)
-            self.refreshDisplayedCombo()
+            if self.enterState(self.INPUT_STATE) == self.INPUT_STATE:
+                self._combo.incCurrentDigit(1)
+                self.refreshDisplayedCombo()
         elif pushButtonName == 'Down':
-            self.enterState(self.INPUT_STATE)
-            self._combo.decCurrentDigit(1)
-            self.refreshDisplayedCombo()
+            if self.enterState(self.INPUT_STATE) == self.INPUT_STATE:
+                self._combo.decCurrentDigit(1)
+                self.refreshDisplayedCombo()
         elif pushButtonName == 'Left':
-            self.enterState(self.INPUT_STATE)
-            self._combo.moveLeft(1)
-            self.refreshDisplayedCombo()
+            if self.enterState(self.INPUT_STATE) == self.INPUT_STATE:
+                self._combo.moveLeft(1)
+                self.refreshDisplayedCombo()
         elif pushButtonName == 'Right':
-            self.enterState(self.INPUT_STATE)
-            self._combo.moveRight(1)
-            self.refreshDisplayedCombo()
+            if self.enterState(self.INPUT_STATE) == self.INPUT_STATE:
+                self._combo.moveRight(1)
+                self.refreshDisplayedCombo()
         elif pushButtonName == 'Enter':
             if self._state == self.INPUT_STATE:
                 self.enterState(self.SUBMITTING_STATE)

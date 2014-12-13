@@ -196,7 +196,7 @@ class Display(IDisplay):
         Make the cursor visible if show is True.  Otherwise, make the cursor
         invisible.
         """
-        logger.debug('Setting show cursor value to %s' % (show))
+        #logger.debug('Setting show cursor value to %s' % (show))
         self._lcd.blink(show)
         self._lcd.show_cursor(show)
 
@@ -205,7 +205,7 @@ class Display(IDisplay):
     def setCursor(self, row=0, col=0):
         """ Sets the position of the cursor and makes it visible.
         """
-        logger.debug('Setting cursor position to (r=%s, c=%s)' % (row, col))
+        #logger.debug('Setting cursor position to (r=%s, c=%s)' % (row, col))
         self._lcd.set_cursor(col, row)
         self.showCursor()
 
@@ -358,6 +358,7 @@ class PushButtonMonitor(IPushButtonMonitor):
         
         self._device = None  # button interface device
         self._buttonStates = [0] * self.NUM_STATES  # last sampled state of each button
+        self._debounceButtons = False  # perform software debounce
         
         self._pushButtons = {}
         self._listening = False
@@ -502,18 +503,21 @@ class PushButtonMonitor(IPushButtonMonitor):
                  3 (pressed)         |   2                 |  3
                  2 (maybe released)  |   0 (emit RELEASED) |  3
         """
-        # Sample the current state of all buttons
-        buttonInputs = map(self._device.is_pressed, self.BUTTONS)
-        
-        # Convert prevState, input to an index = 2*state + input
-        buttonStateTransitions = map(lambda s,i: 2*s+(1 if i else 0), self._buttonStates, buttonInputs)
+        if self._debounceButtons:
+            # Sample the current state of all buttons
+            buttonInputs = map(self._device.is_pressed, self.BUTTONS)
+             
+            # Convert prevState, input to an index = 2*state + input
+            buttonStateTransitions = map(lambda s,i: 2*s+(1 if i else 0), self._buttonStates, buttonInputs)
+                 
+            # Use the transition to lookup the next state
+            self._buttonStates = [self.NEXT_STATE[i] for i in buttonStateTransitions]
+             
+            # Use the transition to lookup the output value
+            outputs = [self.OUTPUT[i] for i in buttonStateTransitions]
+        else:
+            outputs = map(self._device.is_pressed, self.BUTTONS)
             
-        # Use the transition to lookup the next state
-        self._buttonStates = [self.NEXT_STATE[i] for i in buttonStateTransitions]
-        
-        # Use the transition to lookup the output value
-        outputs = [self.OUTPUT[i] for i in buttonStateTransitions]
-        
         # Make a list of buttons that changed to PRESSED and a list of buttons
         # that changed to RELEASED
         edges = ([i for i in range(self.NUM_BUTTONS) if outputs[i] == self.PRESSED],
