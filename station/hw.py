@@ -33,8 +33,10 @@ from interfaces import IPushButtonMonitor
 from interfaces import IVibrationMotor
 from interfaces import IBuzzer
 from interfaces import IInput
-from station.util import NonBLockingConsole
-from station.console import Pushbutton # TODO shouldn't have a console
+from station.util import Config
+# TODO NonBlockingConsole was meant to be used with station.console to get keyboard input; it should not be needed in hw.py
+from station.util import NonBlockingConsole
+from station.console import PushButton # TODO shouldn't have a console import in this file
 
 from mido import MidiFile
 import os
@@ -684,7 +686,7 @@ class Buzzer(IBuzzer):
         for i in config.Song:
            # TODO verify there is not just a copy constructor for config
            # TODO verify tone is an int and Duration is a number
-           tmp = station.util.Config()
+           tmp = Config()
 
            isFile = False
            hasTrack = False
@@ -1009,7 +1011,7 @@ class SilentBuzzer(IBuzzer):
         for i in config.Song:
            # TODO verify there is not just a copy constructor for config
            # TODO verify tone is an int and Duration is a number
-           tmp = station.util.Config()
+           tmp = Config()
 
            # Depending on how used these might not be there
            if hasattr(i, 'File') and i.File != None:
