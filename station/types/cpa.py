@@ -107,6 +107,7 @@ class Station(IStation):
         self._isTimeToShutdown = False
         self._correctFlashDetected = False
         self._DISPLAY_LED_BLINK_DURATION = 0.1
+        self._ledTimes = {}
 
         # These defaults will be overriden in the start of onProcessing
         self._maxTimeForCompleteFlash = 10.0
@@ -201,6 +202,7 @@ class Station(IStation):
                         if elapsed_flash_time > self._cpa_pulse_width_s - self._cpa_pulse_width_tolerance_s:
                             if elapsed_flash_time < self._cpa_pulse_width_s + self._cpa_pulse_width_tolerance_s:
                                 #Success!
+                                logger.debug('Elapsed time was %s', elapsed_flash_time)
                                 self.onPassed(self._correctFlashDetected)
                                 break
                             else:
@@ -224,11 +226,12 @@ class Station(IStation):
                         logger.info('Flash was not detected in allowed time.')
                         self.onFailed(self._correctFlashDetected)
                         break
-                if elapsed_time > self._goTimeBeforeFinalLight and elapsed_time < self._goTimeBeforeFinalLight + self._DISPLAY_LED_BLINK_DURATION:
-                    # TODO this needs to be replaced with the series of LEDs ending with last light
-                    self._leds['green'].turnOn()
-                    time.sleep(self._DISPLAY_LED_BLINK_DURATION)
-                    self._leds['green'].turnOff()
+                if elapsed_time < self._goTimeBeforeFinalLight + self._DISPLAY_LED_BLINK_DURATION and self._nextLed < 16:
+                    # The series of LEDs '0' to ending with last light '15'
+                    if self._ledTimes[self._nextLed] >= elapsed_time:
+                        # time to set it off
+                        self._leds[str(self._nextLed)].turnOn() # TODO change to fade once that works
+                        self._nextLed = self._nextLed + 1
 
                 time.sleep(0.001)
             except Exception, e:
@@ -382,8 +385,14 @@ class Station(IStation):
         # would be nice if these were named value pairs but for now 
         # follow the existing design
         if 6 == len(args):
-            # time to flash the green light
+            # time to flash the last light before the laser should come
             self._goTimeBeforeFinalLight = toFloat(args[0], 0.0) / 1000.0
+            # there are 16 blocks of time before the last light so find intervals for each light
+            for i in range(15):
+                 self._ledTimes[i]=((1.0+i)*self._goTimeBeforeFinalLight/16.0)
+
+            # set up for the first LED
+            self._nextLed = 0
 
             # earliest possible time a start of a flash would be acceptable
             self._minTimeForFlashStart = (toFloat(args[2], 0.0)-toFloat(args[3], 0.0)) / 1000.0

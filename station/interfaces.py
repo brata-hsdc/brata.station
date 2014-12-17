@@ -217,6 +217,15 @@ class ILed:
         """
         pass
 
+    def decay(self):
+        """Decay from full brightness to off
+
+        Each call updates the LED (if enabled) to go from full brightness to
+        off in smooth steps.  True is returned if the LED is still on (non-zero
+        brightness). False is returned if the LED has decayed to off (zero)
+        brightness.
+        """
+        pass
 
 # ------------------------------------------------------------------------------
 class IPushButtonMonitor:

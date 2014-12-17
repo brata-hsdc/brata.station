@@ -25,16 +25,20 @@ from threading import Thread
 from time import sleep
 import traceback
 
-#from Adafruit_CharLCDPlate import Adafruit_CharLCDPlate
+from Adafruit_CharLCDPlate import Adafruit_CharLCDPlate
+from Adafruit_PWM_Servo_Driver import PWM
 from interfaces import IDisplay
 from interfaces import ILed
 from interfaces import IPushButtonMonitor
 from interfaces import IVibrationMotor
 from interfaces import IBuzzer
 from interfaces import IInput
-import station.util
+from station.util import NonBLockingConsole
+from station.console import Pushbutton # TODO shouldn't have a console
+
 from mido import MidiFile
 import os
+from enum import Enum
 
 # ------------------------------------------------------------------------------
 class Display(IDisplay):
@@ -203,6 +207,43 @@ class Display(IDisplay):
         """
         self.setText(self._line1Text + '\n' + self._line2Text)
 
+# ------------------------------------------------------------------------------
+class LedType(Enum):
+    pibrella = 1
+    adafruit = 2
+
+class PibrellaLedFacade():
+    def __init__(self, chan, val, step, enabled):
+        self._val = val
+        self._step = step
+        self._chan = chan
+        self.enabled = enabled
+        self._gamma = []
+        for i in range(4096):
+            self._gamma.append(int(pow(i/4095.0, 2.8)*4095))
+        initialValue = self._gamma[0]
+        if self.enabled:
+            initialValue = self._gamma[self._val]
+        self._pwm = PWM(0x40, debug=True)
+        self._pwm.setPWMFreq(400)
+        self._pwm.setPWM(self._chan, 0, initialValue)
+
+    def __exit__(self, type, value, traceback):
+        pass
+
+    def on(self):
+        self._pwm.setPWM(self._chan, 0, self._gamma[self._val])
+
+    def off(self):
+        self._pwm.setPWM(self._chan, 0, self._gamma[0])
+
+    def fade(self, startPercentageOn, endPercentageOn, durationInSeconds):
+        # TODO ideally this should be implemented to match pibrella and remove decay
+        pass
+
+    def pulse(self, fadeInTime, fadeOutTime, onTime, offTime):
+        # TODO
+        pass
 
 # ------------------------------------------------------------------------------
 class Led(ILed):
@@ -231,7 +272,19 @@ class Led(ILed):
         self.Name = name
         self.FlashingOnDuration_s = 0.5
         self.FlashingOffDuration_s = 0.5
-        self.outputPin = getattr(pibrella.light, config.OutputPin)
+        
+        # Store results of what type of LED we are controlling
+        # default to pibrella
+        self._LedType = LedType.pibrella
+        if  hasattr(config, 'LedType'):
+            if config.LedType.lower().startswith("adafruit"):
+               self._LedType = LedType.adafruit
+
+        if self._LedType == LedType.pibrella:
+            self.outputPin = getattr(pibrella.light, config.OutputPin)
+        else:
+            # TODO verify channel is valid
+            self.outputPin = PibrellaLedFacade(15, 4095, 64, False)
 
     # --------------------------------------------------------------------------
     def turnOn(self):
@@ -299,8 +352,12 @@ class Led(ILed):
                      self.FlashingOffDuration_s)
         
         # Pulse function, FadeInTime_s, FadeOutTime_s, OnTime_s, OffTime_s
-        self.outputPin.pulse(0, 0, self.FlashingOnDuration_s, self.FlashingOffDuration_s);
+        self.outputPin.pulse(0, 0, self.FlashingOnDuration_s, self.FlashingOffDuration_s)
 
+    def decay(self):
+         """ See interface definition
+         """
+         pass
 
 # ------------------------------------------------------------------------------
 class PushButtonMonitor(IPushButtonMonitor):
@@ -675,9 +732,9 @@ class Buzzer(IBuzzer):
               self.TotalDuration += i.Duration
         self._buzzer = getattr(pibrella, 'buzzer')
         self._stopPlaying = False
-        self._thread = Thread(target=self.run)
         self._isWaitingForPlay = True
         self._isCutShort = False
+        self._thread = Thread(target=self.run)
         self._thread.start()
 
     # --------------------------------------------------------------------------
@@ -729,7 +786,7 @@ class Buzzer(IBuzzer):
         logger.debug('Buzzer starting to play configured song')
         if (not self._stopPlaying) and (not self._isWaitingForPlay):
            # The song is already playing so need to restart it
-           self.off(self)
+           self.off()
         self._isWaitingForPlay = False
 
     # --------------------------------------------------------------------------
@@ -753,7 +810,7 @@ class Buzzer(IBuzzer):
         logger.debug('Buzzer starting to play configured song')
         if (not self._stopPlaying) and (not self._isWaitingForPlay):
            # The song is already playing so need to restart it
-           self.off(self)
+           self.off()
         self._isWaitingForPlay = True
         self._playOnce()
 
@@ -767,6 +824,7 @@ class Buzzer(IBuzzer):
         allowed and 0-11 would be with higher or lower values just in different
         octaves:
         note_key = ['A','A#','B','C','C#','D','D#','E','F','F#','G','G#']
+        As -49 would be below midi A0 this value is used to denote a rest.
 
         Args:
             arg1 (type1): TODO describe arg, valid values, etc.
@@ -782,9 +840,10 @@ class Buzzer(IBuzzer):
         logger.debug('Buzzer playing note %s' % tone)
         # TODO verify tone is an int
         if (not self._stopPlaying) and (not self._isWaitingForPlay):
-           # The song is already playing so need to stop it
-           self.off(self)
-        self._buzzer.note(tone)
+            # The song is already playing so need to stop it
+            self.off()
+        if not (tone == '-'):
+            self._buzzer.note(tone)
 
     # --------------------------------------------------------------------------
     def off(self):
@@ -868,7 +927,10 @@ class Buzzer(IBuzzer):
                     self._buzzer.off()
                     isCutShort = False #reset for next run
                     break
-                 self._buzzer.note(i.Tone)
+                 if i.Tone == -49: 
+                     self._buzzer.off()
+                 else:
+                     self._buzzer.note(i.Tone)
                  sleep(i.Duration)
                  self._buzzer.off()
               except Exception, e:
@@ -1042,7 +1104,7 @@ class SilentBuzzer(IBuzzer):
         logger.debug('SilentBuzzer starting to play configured song')
         if not self._stopPlaying:
            # The song is already playing so need to restart it
-           self.off(self)
+           self.off()
         self._stopPlaying = False
         self._thread.start()
 
@@ -1067,7 +1129,7 @@ class SilentBuzzer(IBuzzer):
         logger.debug('SilentBuzzer starting to play configured song')
         if not self._stopPlaying:
            # The song is already playing so need to restart it
-           self.off(self)
+           self.off()
         self._stopPlaying = False
         self.run()
 
