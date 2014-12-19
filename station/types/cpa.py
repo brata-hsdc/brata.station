@@ -228,10 +228,12 @@ class Station(IStation):
                         break
                 if elapsed_time < self._goTimeBeforeFinalLight + self._DISPLAY_LED_BLINK_DURATION and self._nextLed < 16:
                     # The series of LEDs '0' to ending with last light '15'
-                    if self._ledTimes[self._nextLed] >= elapsed_time:
+                    logger.debug('nextLED = %s', self._nextLed )
+                    if self._nextLed < 16 and self._ledTimes[str(self._nextLed)] >= elapsed_time:
                         # time to set it off
                         self._leds[str(self._nextLed)].turnOn() # TODO change to fade once that works
                         self._nextLed = self._nextLed + 1
+                        logger.debug('nextLED = %s', self._nextLed)
 
                 time.sleep(0.001)
             except Exception, e:
@@ -388,8 +390,9 @@ class Station(IStation):
             # time to flash the last light before the laser should come
             self._goTimeBeforeFinalLight = toFloat(args[0], 0.0) / 1000.0
             # there are 16 blocks of time before the last light so find intervals for each light
-            for i in range(15):
-                 self._ledTimes[i]=((1.0+i)*self._goTimeBeforeFinalLight/16.0)
+            for i in range(16):
+                 self._ledTimes[str(i)]=((1.0+i)*self._goTimeBeforeFinalLight/16.0)
+                 logger.debug('time %s = %s', i, self._ledTimes[str(i)])
 
             # set up for the first LED
             self._nextLed = 0
@@ -421,6 +424,7 @@ class Station(IStation):
             self._isRunning = True
             self._buzzers['green'].playSynchronously()
             self._leds['green'].turnOff()
+
         else:
             logger.critical('Mismatched argument length. Cannot start.')
 

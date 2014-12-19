@@ -25,8 +25,13 @@ from threading import Thread
 from time import sleep
 import traceback
 
-from Adafruit_CharLCDPlate import Adafruit_CharLCDPlate
+#tried various installs finally got working but seems too complex
+import sys
+#sys.path.append('/opt/designchallenge2015/Adafruit_Python_CharLCD/Adafruit_CharLCD')
+#from Adafruit_CharLCDPlate import Adafruit_CharLCDPlate
+sys.path.append('/opt/designchallenge2015/Adafruit-Raspberry-Pi-Python-Code/Adafruit_PWM_Servo_Driver')
 from Adafruit_PWM_Servo_Driver import PWM
+
 from interfaces import IDisplay
 from interfaces import ILed
 from interfaces import IPushButtonMonitor
@@ -71,7 +76,7 @@ class Display(IDisplay):
 
         self._line1Text = ''
         self._line2Text = ''
-        self._lcd = Adafruit_CharLCDPlate()
+        #self._lcd = Adafruit_CharLCDPlate()
 
     # --------------------------------------------------------------------------
     def __enter__(self):
@@ -92,9 +97,9 @@ class Display(IDisplay):
 
         """
         logger.debug('Entering display')
-        self._lcd.begin(16, 2)
-        self._lcd.clear()
-        self._lcd.noCursor()
+        #self._lcd.begin(16, 2)
+        #self._lcd.clear()
+        #self._lcd.noCursor()
         return self
 
     # --------------------------------------------------------------------------
@@ -117,7 +122,7 @@ class Display(IDisplay):
         """
         logger.debug('Exiting display')
         self.setText('')
-        self._lcd.stop()
+        #self._lcd.stop()
 
     # --------------------------------------------------------------------------
     def setLine1Text(self,
@@ -286,7 +291,7 @@ class Led(ILed):
             self.outputPin = getattr(pibrella.light, config.OutputPin)
         else:
             # TODO verify channel is valid
-            self.outputPin = PibrellaLedFacade(15, 4095, 64, False)
+            self.outputPin = PibrellaLedFacade(int(name), 4095, 64, False)
 
     # --------------------------------------------------------------------------
     def turnOn(self):
