@@ -39,6 +39,7 @@ from tornado.ioloop import IOLoop
 from station.interfaces import IConnectionManager
 from station.state import HttpMethod
 from station.state import State
+from station.util import get_ip_address
 
 
 # ------------------------------------------------------------------------------
@@ -85,6 +86,11 @@ class ConnectionManager(IConnectionManager):
         logger.debug('Flask testing? %s' % (self._app.config['TESTING']))
         logger.debug('Flask logger? %s' % (self._app.config['LOGGER_NAME']))
         logger.debug('Flask server? %s' % (self._app.config['SERVER_NAME']))
+        # TODO make configurable
+        self._ifName = "wlan0"
+        self._ipAddr = get_ip_address(self._ifName)
+        self._listenPort = 5000
+
         self._joinUrl = config.JoinUrl
         self._leaveUrl = config.LeaveUrl
         self._timeExpiredUrl = config.TimeExpiredUrl
@@ -226,9 +232,8 @@ class ConnectionManager(IConnectionManager):
                         self._connected = True
 
                         # TODO named constant
-                        port = 5000
                         server = HTTPServer(WSGIContainer(self._app))
-                        server.listen(port)
+                        server.listen(self._listenPort)
                         IOLoop.instance().start()
                     # TODO
                     #pass
@@ -374,15 +379,19 @@ class ConnectionManager(IConnectionManager):
 
         """
         logger.debug('Station requesting join with master server')
+
         url = self._joinUrl + "/" + self._stationId
+        stationUrl = 'http://%s:%s/rpi' % (self._ipAddr, self._listenPort)
+
         (status, response) = self.callService(
             HttpMethod.POST, url,
             {
                 'message_version'  : 0,
                 'message_timestamp': self.timestamp(),
                 'station_type'     : self._stationType,
+                # TODO Get IP address from "ifconfig wlan0" and get port number from "port = 5000" above.
                 # TODO 'station_url'      : 'http://todo:5000/rpi'
-                'station_url'      : 'http://192.168.43.49:5000/rpi'
+                'station_url'      : stationUrl
             })
 
         if status == httplib.ACCEPTED:
