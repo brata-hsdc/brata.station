@@ -204,23 +204,23 @@ class ConnectionManager(IConnectionManager):
 
     # --------------------------------------------------------------------------
     def run(self):
-        """TODO strictly one-line summary
+        """Loops join requests to the Master Server.
 
-        TODO Detailed multi-line description if
-        necessary.
+        While the Connection Manager is listening, this will loop join requests
+        to establish a connection with the Master Server.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            self ConnectionManager: Self reference to this class.
         Returns:
-            TODO describe the return type and details
+            N/A
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            ConnectionError: if connection request to Master Server fails.
+            Exception: if unexpected exception occurs.
 
         """
         logger.info('Starting TODO thread for connection manager')
+
+        sleep_time = 1 #TODO load this from runstation.conf file
 
         while not self._timeToExit:
             try:
@@ -238,16 +238,18 @@ class ConnectionManager(IConnectionManager):
                     # TODO
                     #pass
 
-                sleep(1)
+                sleep(sleep_time)
             except requests.ConnectionError, e:
                 logger.critical(str(e))
+                self._connected = False
                 # TODO nothing to do - cannot connect because remote end is not up;
                 # just wait and try again later
                 # TODO configurable sleep time...
-                sleep(3)
+                sleep(sleep_time)
             except Exception, e:
                 exType, ex, tb = sys.exc_info()
                 logger.critical("Exception occurred of type %s: %s" % (exType.__name__, str(e)))
+                self._connected = False
                 traceback.print_tb(tb)
 
         self.leave()
