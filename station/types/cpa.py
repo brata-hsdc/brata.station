@@ -169,10 +169,10 @@ class Station(IStation):
             TodoError2: if TODO.
 
         """
-
         while not self._isTimeToShutdown:
           self._flashStartTime = time.time() # fake reset value just to ensure initialized
           self._correctFlashDetected = False
+          msg = ''
           while self._isRunning:
             try:
                 elapsed_time = time.time() - self._startTime
@@ -181,17 +181,20 @@ class Station(IStation):
                 if self._inputs['lightDetector'].read() == 1:
                     if elapsed_time < self._minTimeForFlashStart:
                         # flash was too soon
-                        logger.info('Flash detected too soon.')
-                        self.onFailed(self._correctFlashDetected)
+                        msg = 'Flash detected too soon. Elapsed time was %s' %(elapsed_time)
+                        logger.info(msg)
+                        self.onFailed(self._correctFlashDetected, msg)
                         break
                     elif self._correctFlashDetected and elapsed_flash_time > self._cpa_pulse_width_s + self._cpa_pulse_width_tolerance_s:
-                        logger.info('Flash remained on too long.')
-                        self.onFailed(self._correctFlashDetected)
+                        msg = 'Flash remained on too long. Duration was %s' %(elapsed_flash_time)
+                        logger.info(msg)
+                        self.onFailed(self._correctFlashDetected, msg)
                         break
                     elif (not self._correctFlashDetected) and elapsed_time > self._maxTimeForCompleteFlash:
                         # this is a rising edge past the deadline to start a flash
-                        logger.info('Flash detected too late.')
-                        self.onFailed(self._correctFlashDetected)
+                        msg = 'Flash detected too late. Elapsed time was %s' %(elapsed_time) 
+                        logger.info(msg)
+                        self.onFailed(self._correctFlashDetected, msg)
                         break
                     elif not self._correctFlashDetected:
                         # Great they at least hit it at the right time
@@ -204,29 +207,32 @@ class Station(IStation):
                         if elapsed_flash_time > self._cpa_pulse_width_s - self._cpa_pulse_width_tolerance_s:
                             if elapsed_flash_time < self._cpa_pulse_width_s + self._cpa_pulse_width_tolerance_s:
                                 #Success!
-                                logger.debug('Elapsed time was %s', elapsed_flash_time)
-                                self.onPassed(self._correctFlashDetected)
+                                msg = 'Elapsed time was %s.' %(elapsed_flash_time)
+                                logger.debug(msg)
+                                self.onPassed(msg)
                                 break
                             else:
                                 # The flash was too long so fail it, however, indicate
                                 # that a hit was detected
-                                logger.info('Flash was too long.')
-                                logger.debug('Elapsed time was %s', elapsed_flash_time)
-                                logger.debug('Max flash width was %s', self._cpa_pulse_width_s + self._cpa_pulse_width_tolerance_s)
-                                self.onFailed(self._correctFlashDetected)
+                                msg = 'Flash was too long. '
+                                msg = msg + 'Elapsed time was %s ' %(elapsed_flash_time)
+                                msg = msg + 'Max flash width was %s.' %(self._cpa_pulse_width_s + self._cpa_pulse_width_tolerance_s)
+                                logger.debug(msg)
+                                self.onFailed(self._correctFlashDetected, msg)
                                 break
                         else:
                             # The flash was not long enough so fail it, however, indicate
                             # that a hit was detected
-                            logger.info('Flash was not long enough.')
-                            logger.debug('Elapsed time was %s', elapsed_flash_time)
-                            logger.debug('Min flash width was %s', self._cpa_pulse_width_s - self._cpa_pulse_width_tolerance_s)
-                            self.onFailed(self._correctFlashDetected)
+                            msg = 'Flash was not long enough. '
+                            msg = msg + 'Elapsed time was %s ' %(elapsed_flash_time)
+                            msg = msg + 'Min flash width was %s.' %(self._cpa_pulse_width_s - self._cpa_pulse_width_tolerance_s)
+                            self.onFailed(self._correctFlashDetected, msg)
                             break
                     elif elapsed_time > self._maxTimeForFlashStart:
                         # Too long without a flash
-                        logger.info('Flash was not detected in allowed time.')
-                        self.onFailed(self._correctFlashDetected)
+                        msg = 'Flash was not detected in allowed time. '
+                        msg = msg + 'Elapsed time was %s' %(elapsed_time)
+                        self.onFailed(self._correctFlashDetected, msg)
                         break
                 if elapsed_time < self._goTimeBeforeFinalLight + self._DISPLAY_LED_BLINK_DURATION and self._nextLed < 16:
                     # The series of LEDs '0' to ending with last light '15'
@@ -235,7 +241,6 @@ class Station(IStation):
                         # time to set it off
                         self._leds[str(self._nextLed)].turnOn() # TODO change to fade once that works
                         self._nextLed = self._nextLed + 1
-                        logger.debug('nextLED = %s', self._nextLed)
 
                 time.sleep(0.001)
 
@@ -457,7 +462,8 @@ class Station(IStation):
 
     # --------------------------------------------------------------------------
     def onFailed(self,
-                 args):
+                 hitDetected,
+                 failMessage):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -474,7 +480,7 @@ class Station(IStation):
             TodoError2: if TODO.
 
         """
-        logger.info('CPA transitioned to Failed state with args [%s].' % (args))
+        logger.info('CPA transitioned to Failed state with args hitDetected=%s failMessage=%s.' %(hitDetected, failMessage))
 
         # Reset inputs and outputs
         for name in self._leds.keys():
@@ -487,23 +493,14 @@ class Station(IStation):
 
         # Inform the Master Server this event failed
         if self.ConnectionManager != None:
-            failArgs = []
-            arg1 = Config()
-            arg1.Name = 'hit_detected_within_window'
-            arg1.Value = args
-            failArgs.append(arg1)
-            arg2 = Config()
-            arg2.Name = 'is_correct'
-            arg2.Value = 'False'
-            failArgs.append(arg2)
-            self.ConnectionManager.submitToMS(failArgs)
+            self.ConnectionManager.submitCpaDetectionToMS(hitDetected,'False', failMessage)
 
         self._buzzers['FailBuzzer'].playSynchronously()
         self._leds['red'].turnOff()
 
     # --------------------------------------------------------------------------
     def onPassed(self,
-                 args):
+                 msg):
         """TODO title and figure out why args is needed
 
         TODO Detailed multi-line description if
@@ -520,7 +517,7 @@ class Station(IStation):
             TodoError2: if TODO.
 
         """
-        logger.info('CPA transitioned to Passed state with args [%s].' % (args))
+        logger.info('CPA transitioned to Passed state with msg [%s].' % (msg))
 
         # Reset inputs and outputs
         for name in self._leds.keys():
@@ -533,16 +530,7 @@ class Station(IStation):
 
         # Inform the Master Server this event passed
         if self.ConnectionManager != None:
-            passArgs = []
-            arg1 = Config()
-            arg1.Name = 'hit_detected_within_window'
-            arg1.Value = 'True'
-            passArgs.append(arg1)
-            arg2 = Config()
-            arg2.Name = 'is_correct'
-            arg2.Value = 'True'
-            passArgs.append(arg2)
-            self.ConnectionManager.submitToMS(passArgs)
+            self.ConnectionManager.submitCpaDetectionToMS('True','True',msg)
 
         self._buzzers['SuccessBuzzer'].playSynchronously()
         self._leds['green'].turnOff()

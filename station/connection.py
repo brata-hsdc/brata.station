@@ -347,9 +347,20 @@ class ConnectionManager(IConnectionManager):
         # TODO Delete
         ##response = requests.post(endpointUrl, data, auth=('user', '*****'))
 
-        logger.debug('Service returned %s with for HTTP method %s, endpoint URL %s, and args %s with headers %s and message %s' % (response.status_code, httpMethod, endpointUrl, args, response.headers, json.dumps(response.json)))
-        return (response.status_code, response.json)
-
+        #logger.debug('Service returned %s with for HTTP method %s, endpoint URL %s, and args %s with headers %s and message %s' % (response.status_code, httpMethod, endpointUrl, args, response.headers, json.dumps(response.json)))
+        #logger.debug('Force json %s' % (json.dumps(response.data)))
+        
+        try:
+            retData = response.json()
+            logger.debug('json() worked')
+            return (response.status_code, retData)
+        except:
+            logger.debug('json() failed')
+        try:
+            return (response.status_code, response.json)
+        except:
+            logger.debug('json failed')
+        return (response.status_code, 'None')
 
     # ===
     # Messages from Station to MS
@@ -382,7 +393,7 @@ class ConnectionManager(IConnectionManager):
                 'message_timestamp': self.timestamp(),
                 'station_type'     : self._stationType,
                 # TODO 'station_url'      : 'http://todo:5000/rpi'
-                'station_url'      : 'http://192.168.43.49:5000/rpi'
+                'station_url'      : 'http://192.168.43.240:5000/rpi'
             })
 
         if status == httplib.ACCEPTED:
@@ -504,6 +515,7 @@ class ConnectionManager(IConnectionManager):
     # --------------------------------------------------------------------------
     def submitCpaDetectionToMS(self,
                                hitDetected,
+                               isCorrect,
                                failMessage):
         """TODO strictly one-line summary
 
@@ -522,25 +534,31 @@ class ConnectionManager(IConnectionManager):
 
         """
         logger.debug('Station submitting answer to master server')
-        url = self._submitUrl
+        challengeComplete = 'Unknown'
+        url = self._submitUrl + '/' + self._stationId
         (status, response) = self.callService(
             HttpMethod.POST, url,
             {
                 'message_version'            : 0,
                 'message_timestamp'          : self.timestamp(),
-                'station_id'                 : self._stationId,
-                'hit_detected_within_window' : hitDetected,
-                'is_correct'                 : "True", # TODO
+                'candidate_answer'           : hitDetected,
+                'is_correct'                 : isCorrect,
                 'fail_message'               : failMessage
             })
 
         if status == httplib.OK:
-            logger.debug('Service %s returned OK' % (url))
+            try:
+                logger.debug('Service %s returned OK with response %s' % (url, response))
+                if 'challenge_complete' in response:
+                    challengeComplete = response['challenge_complete'] 
+            except:
+                logger.debug('Could not print response.  Check server provided json response')
         elif status == httplib.NOT_FOUND:
             logger.critical('Service %s returned NOT_FOUND' % (url))
         else:
             logger.critical('Unexpected HTTP response %s received from service %s' % (status, url))
 
+        return challengeComplete
 
     # ===
     # Messages from MS to Station
@@ -742,20 +760,6 @@ class ConnectionManager(IConnectionManager):
 
         return resp
 
-
-        hitParamValue = None
-        for param in messageValues:
-            if param.Name == 'hit_detected_within_window':
-               hitParamValue = param.Value
-            elif param.Name == 'is_correct':
-                (status, response) = self.callService(
-                    HttpMethod.POST, self._connectUrl,
-                    {'message_version':  0,
-                     'station_id':      self._stationId,
-                     'hit_detected_within_window':      param.Value,
-                     'is_correct':      hitParamValue})
-            else:
-                # TODO CTS param handling
 # ------------------------------------------------------------------------------
 # Module Initialization
 # ------------------------------------------------------------------------------
