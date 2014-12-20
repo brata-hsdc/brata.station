@@ -318,6 +318,9 @@ class Station(IStation):
 
         self._leds['green'].turnOn()
 
+	print "the args are here"
+	print args
+
     # --------------------------------------------------------------------------
     def onUnexpectedState(self, value):
         """TODO strictly one-line summary

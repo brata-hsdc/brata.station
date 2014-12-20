@@ -351,10 +351,7 @@ class ConnectionManager(IConnectionManager):
         data = json.dumps(args)
         response = requests.post(endpointUrl, data=data, headers=headers)
 
-        # TODO Delete
-        ##response = requests.post(endpointUrl, data, auth=('user', '*****'))
-
-        logger.debug('Service returned %s with for HTTP method %s, endpoint URL %s, and args %s with headers %s and message %s' % (response.status_code, httpMethod, endpointUrl, args, response.headers, json.dumps(response.json)))
+        logger.debug('Service returned %s with for HTTP method %s, endpoint URL %s, and args %s with headers %s, response %s, JSON response %s, and message %s' % (response.status_code, httpMethod, endpointUrl, args, response.headers, response, response.json, json.dumps(response.json)))
         return (response.status_code, response.json)
 
 
@@ -391,8 +388,6 @@ class ConnectionManager(IConnectionManager):
                 'message_version'  : 0,
                 'message_timestamp': self.timestamp(),
                 'station_type'     : self._stationType,
-                # TODO Get IP address from "ifconfig wlan0" and get port number from "port = 5000" above.
-                # TODO 'station_url'      : 'http://todo:5000/rpi'
                 'station_url'      : stationUrl
             })
 
@@ -506,6 +501,9 @@ class ConnectionManager(IConnectionManager):
 
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (url))
+            self.handleSubmissionResp(response['theatric_delay_ms'],
+                                      isCorrect,
+                                      response['challenge_complete'])
         elif status == httplib.NOT_FOUND:
             logger.critical('Service %s returned NOT_FOUND' % (url))
         else:
@@ -533,6 +531,9 @@ class ConnectionManager(IConnectionManager):
 
         """
         logger.debug('Station submitting answer to master server')
+
+        isCorrect = "True" # TODO
+
         url = self._submitUrl
         (status, response) = self.callService(
             HttpMethod.POST, url,
@@ -541,12 +542,15 @@ class ConnectionManager(IConnectionManager):
                 'message_timestamp'          : self.timestamp(),
                 'station_id'                 : self._stationId,
                 'hit_detected_within_window' : hitDetected,
-                'is_correct'                 : "True", # TODO
+                'is_correct'                 : isCorrect,
                 'fail_message'               : failMessage
             })
 
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (url))
+            self.handleSubmissionResp(response.theatric_delay_ms,
+                                      isCorrect,
+                                      response.challenge_complete)
         elif status == httplib.NOT_FOUND:
             logger.critical('Service %s returned NOT_FOUND' % (url))
         else:
@@ -656,9 +660,7 @@ class ConnectionManager(IConnectionManager):
 
 
     # --------------------------------------------------------------------------
-    def handleSubmission(self,
-                         stationId,
-                         teamId):
+    def handleSubmission(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -687,26 +689,52 @@ class ConnectionManager(IConnectionManager):
         message_version = request.json['message_version']
         message_timestamp = request.json['message_timestamp']
         theatric_delay_ms = request.json['theatric_delay_ms']
-        candidate_answer = request.json['candidate_answer']
         is_correct = request.json['is_correct']
-        challenge_incomplete = request.json['challenge_incomplete']
+        challenge_complete = request.json['challenge_complete']
 
-        logger.debug('Master server relaying (ver %s) user answer to station ID %s for team ID %s at %s. Answer "%s" with theatric delay %s ms is correct? %s. Challenge incomplete? %s' % (message_version, stationId, teamId, message_timestamp, candidate_answer, theatric_delay_ms, is_correct, challenge_incomplete))
+        logger.debug('Master server relaying (ver %s) user answer to at %s. Theatric delay %s ms is correct? %s. Challenge complete? %s' % (message_version, message_timestamp, theatric_delay_ms, is_correct, challenge_complete))
+        self.handleSubmissionResp(theatric_delay_ms,
+                                  is_correct,
+                                  challenge_complete)
 
-        self._callback.args = [theatric_delay_ms, candidate_answer]
+        resp = jsonify({})
+        resp.status_code = httplib.OK
+        return resp
+
+
+    # --------------------------------------------------------------------------
+    def handleSubmissionResp(self,
+                             theatric_delay_ms,
+                             is_correct,
+                             challenge_complete):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        logger.debug('Handling submission response: Theatric delay %s ms is correct? %s. Challenge complete? %s' % (theatric_delay_ms, is_correct, challenge_complete))
+
+        self._callback.args = [theatric_delay_ms]
 
         if is_correct:
             self._callback.State = State.PASSED
-        elif challenge_incomplete:
+        elif not challenge_complete:
             self._callback.State = State.FAILED
         else:
             pass # TODO
             #TODO self._callback.State = neither State.PASSED nor State.FAILED
-
-        # TODO
-        resp = jsonify({'foo': 'bar'})
-        resp.status_code = httplib.OK
-        return resp
 
 
     # --------------------------------------------------------------------------
