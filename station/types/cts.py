@@ -16,8 +16,10 @@
 Provides the definitions needed for the CTS station type.
 """
 
+import operator
 import logging
 import logging.handlers
+import time
 
 from station.interfaces import IStation
 
@@ -28,26 +30,30 @@ class Station(IStation):
     Provides the implementation for a CTS station to support displaying and
     obtaining a combination value from the user to supply to the MS.
     """
-
+    START_STATE      = 0
+    IDLE_STATE       = 1
+    PRE_INPUT_STATE  = 2
+    INPUT_STATE      = 3
+    SUBMITTING_STATE = 4
+    SUBMITTED_STATE  = 5
+    SHUTDOWN_STATE   = 6
+    ERROR_STATE      = 99
+    
     # --------------------------------------------------------------------------
     def __init__(self,
                  config,
                  hwModule):
-        """TODO strictly one-line summary
+        """ Initialize the LCD display and the pushbutton monitor
 
-        TODO Detailed multi-line description if
-        necessary.
+        The LCD 2-line display will display a status message on the first line
+        and a 6-digit combination code on the second line.  The pushbuttons will
+        allow the user to move the digit entry cursor LEFT or RIGHT, increase (UP)
+        or decrease (DOWN) the value of the digit under the cursor, and submit
+        the code by pressing the SELECT button twice.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+            config:    a Config object containing properties to configure station characteristics
+            hwModule:  python module object that defines hardware interfaces
         """
         logger.debug('Constructing CTS')
 
@@ -60,15 +66,49 @@ class Station(IStation):
         self._display = displayClass(config.Display)
         self._display.setText("Initializing...")
 
+        logger.info('Initializing pushButtonMonitor')
         self._pushButtonMonitor = pushButtonMonitorClass()
+        self._pushButtonMonitor.setDevice(self._display._lcd)
 
         for i in config.PushButtons:
+            logger.info('  Setting button {}'.format(i))
             self._pushButtonMonitor.registerPushButton(i.Name,
                                                        self.buttonPressed,
                                                        i)
 
-        self._submitting = False
+        self._centerOffset = 0  # amount of space to left of displayed combination
         self.ConnectionManager = None
+        
+        self._combo = None  # will hold a Combo object
+        self._timedMsg = None  # generator
+        self._colorToggle = None  # generator
+        self._preInputDuration = 6.0  # seconds to display msg
+        
+        
+        # Background cycle states: ([list of colors], rate_in_sec)
+        # TODO: These constants could be moved to runstation.conf
+        self._idleBg     = (["WHITE", "WHITE", "BLUE", "YELLOW", "GREEN", "RED", "BLACK", "CYAN", "MAGENTA"], 0.75)
+        self._preInputBg = (["YELLOW", "YELLOW", "YELLOW", "YELLOW", "RED"], 0.15)
+        self._inputBg    = (["CYAN"], 1.0)
+        self._submit1Bg  = (["RED", "WHITE"], 0.15)
+        self._submit2Bg  = (["GREEN"], 1.0)
+        self._shutdownBg = (["GREEN"], 1.0)
+        self._errorBg    = (["RED", "RED", "RED", "RED", "RED", "WHITE"], 0.15)
+        
+        # Display text for different states
+        # TODO: These constants could be moved to runstation.conf
+        self._idleText            = "==== CRACK =====\n== THE = SAFE =="
+        self._preInputText        = "      HEY!!\n  Scan QR Code"
+        self._enterLine1Text      = "Enter Code:"
+        self._submittingLine1Text = "2nd ENTER Sends"
+        self._submittedLine1Text  = "=Code Submitted="
+        self._shutdownText        = "Shutting down..."
+        self._errorText           = "Malfunction!"
+
+        # Station current operating state
+        self._state = self.START_STATE
+        self._pushButtonMonitor.setOnTickCallback(self.onTick)
+        self.enterState(self.IDLE_STATE)
 
     # --------------------------------------------------------------------------
     @property
@@ -126,9 +166,7 @@ class Station(IStation):
 
         """
         logger.info('Received signal "%s". Stopping CTS.', signal)
-        self._display.setText("Shutting down...")
-
-        self._pushButtonMonitor.stopListening()
+        self.enterState(self.SHUTDOWN_STATE)
 
     # --------------------------------------------------------------------------
     def onReady(self):
@@ -149,9 +187,7 @@ class Station(IStation):
 
         """
         logger.info('CTS transitioned to Ready state.')
-        self._display.setText("Ready.")
-
-        self._pushButtonMonitor.stopListening()
+        self.enterState(self.IDLE_STATE)
 
     # --------------------------------------------------------------------------
     def onProcessing(self,
@@ -174,12 +210,9 @@ class Station(IStation):
         """
         logger.info('CTS transitioned to Processing state with args [%s].' % (args))
 
-        self._combo = Combo(0, 0, 0)
-
-        self._display.setLine1Text("TODO: [Specify starting message here.]")
+        self._combo = Combo(*args)
         self.refreshDisplayedCombo()
-
-        self._pushButtonMonitor.startListening()
+        self.enterState(self.INPUT_STATE)
 
     # --------------------------------------------------------------------------
     def refreshDisplayedCombo(self):
@@ -200,57 +233,108 @@ class Station(IStation):
 
         """
         s = self._combo.toString()
-        logger.debug('Setting display Line 2 to: %s.' % (s))
+        self._centerOffset = (self._display.lineWidth() - len(s)) // 2  # amount of space before s
+        s = "{0:>{width}}".format(s, width=len(s) + self._centerOffset)
         self._display.setLine2Text(s)
+        self._display.setCursor(1, self._combo.formattedPosition() + self._centerOffset)
 
+    # --------------------------------------------------------------------------
+    def enterState(self, newState):
+        """ Transition to the specified operating state
+        
+        This will modify the display text, the display background, the state of
+        running timers, and the state of the _pushButtonMonitor.
+        
+        Returns:
+            The state prior to being called
+        """
+        oldState = self._state
+        
+        if newState != self._state:
+            
+            if self._state == self.PRE_INPUT_STATE:  # leaving this state
+                self._timedMsg = None
+            
+            if newState == self.IDLE_STATE:
+                self._display.setText(self._idleText)
+                self.setToggleColors(*self._idleBg)
+                self._pushButtonMonitor.startListening()
+                
+            elif newState == self.PRE_INPUT_STATE:
+                self._timedMsg = self.displayTimedMsg(self._preInputText, self._preInputDuration, self._preInputBg)
+                self._pushButtonMonitor.stopListening()
+                
+            elif newState == self.INPUT_STATE:
+                self._display.setLine1Text(self._enterLine1Text)
+                self.setToggleColors(*self._inputBg)
+                self.refreshDisplayedCombo()
+                self._pushButtonMonitor.startListening()
+                
+            elif newState == self.SUBMITTING_STATE:
+                self._display.setLine1Text(self._submittingLine1Text)
+                self.setToggleColors(*self._submit1Bg)
+                
+            elif newState == self.SUBMITTED_STATE:
+                self._display.setLine1Text(self._submittedLine1Text)
+                self.setToggleColors(*self._submit2Bg)
+                self._pushButtonMonitor.stopListening()
+                
+            elif newState == self.SHUTDOWN_STATE:
+                self._display.setText(self._shutdownText)
+                self._pushButtonMonitor.stopListening()
+
+            else:
+                self._display.setText(self._errorText)
+                self.setToggleColors(*self._errorBg)
+                self._pushButtonMonitor.stopListening()
+            
+            self._state = newState
+        
+        return oldState
+        
     # --------------------------------------------------------------------------
     def buttonPressed(self,
                       pushButtonName):
-        """TODO strictly one-line summary
+        """ Handle combination input pushbutton events.
 
-        TODO Detailed multi-line description if
-        necessary.
+        Only recognizes the push event, not the release.  Buttons update the
+        displayed combo, and may change the operating state.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+            pushButtonName (string): Up, Down, Left, Right, or Enter
         """
-        logger.info('Push button %s pressed.' % (pushButtonName))
-
-        if pushButtonName == 'Up':
-            self._combo.incCurrentDigit(1)
-            self.refreshDisplayedCombo()
-            self._submitting = False
+        #logger.info('Push button %s pressed.' % (pushButtonName))
+        if self._state == self.IDLE_STATE:
+            self.enterState(self.PRE_INPUT_STATE)
+        elif pushButtonName == 'Up':
+            if self.enterState(self.INPUT_STATE) == self.INPUT_STATE:
+                self._combo.incCurrentDigit(1)
+                self.refreshDisplayedCombo()
         elif pushButtonName == 'Down':
-            self._combo.decCurrentDigit(1)
-            self.refreshDisplayedCombo()
-            self._submitting = False
+            if self.enterState(self.INPUT_STATE) == self.INPUT_STATE:
+                self._combo.decCurrentDigit(1)
+                self.refreshDisplayedCombo()
         elif pushButtonName == 'Left':
-            self._combo.moveLeft(1)
-            self.refreshDisplayedCombo()
-            self._submitting = False
+            if self.enterState(self.INPUT_STATE) == self.INPUT_STATE:
+                self._combo.moveLeft(1)
+                self.refreshDisplayedCombo()
         elif pushButtonName == 'Right':
-            self._combo.moveRight(1)
-            self.refreshDisplayedCombo()
-            self._submitting = False
+            if self.enterState(self.INPUT_STATE) == self.INPUT_STATE:
+                self._combo.moveRight(1)
+                self.refreshDisplayedCombo()
         elif pushButtonName == 'Enter':
-            if self._submitting:
-                logger.info('2nd enter key press received. Submitting combo: %s' %
-                            (self._combo.toList()))
-                # TODO submit combo to MS
-                self._submitting = False
-            else:
+            if self._state == self.INPUT_STATE:
+                self.enterState(self.SUBMITTING_STATE)
                 logger.info('1st enter key press received. Waiting for 2nd.')
-                self._submitting = True
+            elif self._state == self.SUBMITTING_STATE:
+                self.enterState(self.SUBMITTED_STATE)
+                logger.info('2nd enter key press received.')
+                # Submit combo to MS
+                self.submitCombination()
+                
+                self._state = self.SUBMITTED_STATE
         else:
-            pass #TODO log unexpected button press received
+            logger.debug("Invalid pushButtonName received: '{}'".format(pushButtonName))
 
     # --------------------------------------------------------------------------
     def onFailed(self,
@@ -319,10 +403,127 @@ class Station(IStation):
 
         """
         logger.critical('CTS transitioned to Unexpected state %s', value)
-        self._display.setText("Malfunction!")
+        self.enterState(self.ERROR_STATE)
 
-        self._pushButtonMonitor.stopListening()
+    # --------------------------------------------------------------------------
+    def setToggleColors(self, colors, interval=0.25):
+        """ Set a sequence of background colors to flip through at the specified interval
+        
+        If a single color is passed in, the background is set, and the _colorToggle
+        generator is deactivated.  If a list of colors is passed in, they are
+        cycled at the specified interval until the generator's close() method is
+        called.  If the colors list is empty, it defaults to ["WHITE"].
+        
+        Args:
+            colors    (list):  A sequence of color names or a single color name
+            interval (float):  The time interval in seconds between color switches
+        """
+        if self._colorToggle:
+            self._colorToggle.close()  # stop the current generator
+            
+        # Make sure we have a list
+        if isinstance(colors, (str, unicode)):
+            colors = [colors]
+            
+        if len(colors) < 1:
+            colors = ["WHITE"]
+        if len(colors) > 1:
+            self._colorToggle = self.toggleColors(colors, interval)
+        else:
+            # turn off toggle and display the single color
+            self._colorToggle = None
+            self._display.setBgColor(colors[0])
+        
+    # --------------------------------------------------------------------------
+    def displayTimedMsg(self, msg, duration, bg):
+        """ Display msg for duration, then go back to IDLE_STATE
+        
+        This is a generator function.  When first called, it sets the display
+        text and background, and returns a generator object.
+        Each time the generator's next() method is called it evaluates the current
+        time.  Once a sufficient time interval has passed, it returns False.  Before
+        that time it returns True.
+        
+        Sample usage:
+            timedMsg = self.DisplayTimedMsg("I'm here for a second", 1.0, (["RED", "GREEN", "BLUE"], 0.2))
+            while timedMsg.next():
+                sleep(0.1)
+            timedMsg = None
+        
+        Args:
+            msg (string):  A message to be displayed
+            duration (float):  Seconds to display msg
+            bg (list, float):  Args to pass to self.toggleColors
+        
+        Returns:
+            a generator function that returns False when finished
+        """
+        tStart = time.time()
+        self._display.setText(msg)
+        self.setToggleColors(*bg)
+        
+        while time.time() - tStart < duration:
+            yield True  # keep displaying the msg
+        yield False     # finished
 
+    # --------------------------------------------------------------------------
+    def toggleColors(self, colors, interval):
+        """ Toggle background colors every interval seconds.
+        
+        This is a generator function.  When called, it returns a generator object.
+        Each time the generator's next() method is called it evaluates the current
+        time.  If a sufficient time interval has passed, it cycles to the
+        next color in the colors list, and sets the LCD background color to the new
+        color.  It returns the new color.
+        
+        Sample usage:
+            colorCycle = self.toggleColors(["RED", "GREEN", "BLUE"], interval=1.0)
+            while cycleColors:
+                colorCycle.next()  # switch colors at approx. 1 Hz
+                sleep(0.1)
+        
+        Args:
+            colors    (list):  A list of valid color name strings
+            interval (float):  Seconds between switching colors
+        Returns:
+            a generator function that cycles through a list of background colors
+        """
+        tStart = 0.0  # make it toggle immediately
+        
+        while True:
+            tNow = time.time()
+            if tNow - tStart >= interval: # time to switch colors
+                tStart = tNow                                  # save the new start time
+                colors[:-1],colors[-1] = colors[1:],colors[0]  # rotate the list
+                self._display.setBgColor(colors[-1])           # set the display
+            yield colors[-1]
+
+    # --------------------------------------------------------------------------
+    def onTick(self):
+        """ onTick callback to be attached to polling loop to animate bg color
+            and time message display
+        """
+        if self._colorToggle:
+            self._colorToggle.next()
+        
+        if self._timedMsg:
+            if not self._timedMsg.next():
+                self.enterState(self.IDLE_STATE)
+        
+    # --------------------------------------------------------------------------
+    def submitCombination(self):
+        """ Send the combination to the Master Server.
+        
+        This method is called when the user presses the SELECT (Enter) button
+        twice in succession.  The current value of the combination in the
+        display (self._combo.toList()) is transmitted to the Master Server.
+        """
+        combo = self._combo.toList()  # get combination as a list of three integers
+        isCorrect = self._combo.isMatch()
+        
+        logger.info('Submitting combo: {} , match = {}'.format(repr(combo), isCorrect))
+        self.ConnectionManager.submitCtsComboToMS(combo, isCorrect)
+    
 
 # ------------------------------------------------------------------------------
 class Combo:
@@ -335,34 +536,31 @@ class Combo:
                  value1,
                  value2,
                  value3):
-        """TODO strictly one-line summary
+        """ Initialize combination to 6 digits, 2 in value1, 2 in value2, and 2 in value3
 
         TODO Detailed multi-line description if
         necessary.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+            value1: int 00-99
+            value2: int 00-99
+            value3: int 00-99
         """
         logger.debug('Constructing combo')
 
         # TODO
+        self._wrap = True  # wrap the cursor around
         self._position = 0
-        self._digits = [0, 0, 0, 0, 0, 0]
-
-        self._digits[0] = value1 / 10 % 10
-        self._digits[1] = value1 /  1 % 10
-        self._digits[2] = value2 / 10 % 10
-        self._digits[3] = value2 /  1 % 10
-        self._digits[4] = value3 / 10 % 10
-        self._digits[5] = value3 /  1 % 10
+        self._digits = [0, 0, 0, 0, 0, 0]  # current state of entered combo
+        self._sep = " "  # field separator character
+        
+        self._targetDigits = [0, 0, 0, 0, 0, 0]
+        self._targetDigits[0] = value1 / 10 % 10
+        self._targetDigits[1] = value1 /  1 % 10
+        self._targetDigits[2] = value2 / 10 % 10
+        self._targetDigits[3] = value2 /  1 % 10
+        self._targetDigits[4] = value3 / 10 % 10
+        self._targetDigits[5] = value3 /  1 % 10
 
     # --------------------------------------------------------------------------
     def __enter__(self):
@@ -408,124 +606,101 @@ class Combo:
         # TODO
 
     # --------------------------------------------------------------------------
-    def moveLeft(self,
-                 numPlaces):
-        """TODO strictly one-line summary
+    def isMatch(self):
+        """ Returns:  True if _digits == _targetDigits.
+        """
+        return reduce(operator.and_, map(operator.eq, self._digits, self._targetDigits))
 
-        TODO Detailed multi-line description if
-        necessary.
+    # --------------------------------------------------------------------------
+    def position(self):
+        """ Returns:  The current cursor digit position.
+        """
+        return self._position
+
+    # --------------------------------------------------------------------------
+    def formattedPosition(self):
+        """ Returns:  The cursor position in the formatted combination string.
+        """
+        return self._position + self._position//2  # one extra char for every 2 digits
+
+    # --------------------------------------------------------------------------
+    def moveLeft(self,
+                 numPlaces=1):
+        """ Move the digit cursor numplaces to the left.
+
+        Move the digit cursor position numplaces to the left.  If _wrap is True,
+        moving the cursor to the left of the first cursor position (0) will
+        place the cursor at the last cursor position.  If _wrap is False,
+        attempting to move the cursor to the left of the first cursor position
+        will have no effect.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+            numPlaces (int): number of digit positions to move (default 1)
         """
-        self._position -= 1
-        if self._position < 0:
-            self._position = len(self._digits) - 1
-        logger.debug('moved current combo pos to %s' % (self._position))
+        self._position -= numPlaces
+        if self._wrap:
+            self._position %= len(self._digits)
+        else: # clamp
+            self._position = max(self._position, 0)
+        #logger.debug('moved current combo pos to %s' % (self._position))
 
     # --------------------------------------------------------------------------
     def moveRight(self,
-                  numPlaces):
-        """TODO strictly one-line summary
+                  numPlaces=1):
+        """ Move the digit cursor numplaces to the right.
 
-        TODO Detailed multi-line description if
-        necessary.
+        Move the digit cursor position numplaces to the right.  If _wrap is True,
+        moving the cursor to the right of the last cursor position (0) will
+        place the cursor at the first cursor position.  If _wrap is False,
+        attempting to move the cursor to the right of the last cursor position
+        will have no effect.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+            numPlaces (int): number of digit positions to move (default 1)
         """
-        self._position += 1
-        if self._position >= len(self._digits):
-            self._position = 0
-        logger.debug('moved current combo pos to %s' % (self._position))
+        self._position += numPlaces
+        if self._wrap:
+            self._position %= len(self._digits)
+        else:
+            self._position = min(self._position, len(self._digits)-1)
+        #logger.debug('moved current combo pos to %s' % (self._position))
 
     # --------------------------------------------------------------------------
     def incCurrentDigit(self,
-                        incrementValue):
-        """TODO strictly one-line summary
+                        incrementValue=1):
+        """ Increase the current digit by incrementValue.
 
-        TODO Detailed multi-line description if
-        necessary.
+        Increases the current digit value by incrementValue.  If the current
+        value + incrementValue is greater than 10, higher digits are discarded.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
+            incrementValue (int): the increase amount (default 1)
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+            IndexError: if self._position is out of range
         """
-        value = self._digits[self._position]
-        value += 1
-
-        if value > 9:
-            value = 0
-
-        self._digits[self._position] = value
+        self._digits[self._position] = (self._digits[self._position] + incrementValue) % 10
 
     # --------------------------------------------------------------------------
     def decCurrentDigit(self,
-                        decrementValue):
-        """TODO strictly one-line summary
+                        decrementValue=1):
+        """ Decrease the current digit by decrementValue.
 
-        TODO Detailed multi-line description if
-        necessary.
+        Decreases the current digit value by decrementValue.  If the current
+        value - decrementValue is less than 0, the digit wraps around.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
+            decrementValue (int): the decrease amount (default 1)
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+            IndexError: if self._position is out of range
         """
-        value = self._digits[self._position]
-        value -= 1
-
-        if value < 0:
-            value = 9
-
-        self._digits[self._position] = value
+        self.incCurrentDigit(-decrementValue)
 
     # --------------------------------------------------------------------------
     def toList(self):
-        """TODO strictly one-line summary
+        """ Convert the _digits list to a list of 3 ints
 
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
         Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+            List of 3 ints, each in the range 0-99
         """
         result = [self._digits[0] * 10 + self._digits[1],
                   self._digits[2] * 10 + self._digits[3],
@@ -534,42 +709,14 @@ class Combo:
 
     # --------------------------------------------------------------------------
     def toString(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+        """ Convert list of digits to formatted combination string.
         Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+            A string formatted as "nn:nn:nn" where ":" is the _sep character
         """
-        s = ''.join(str(x) for x in self._digits)
-        s = s[0:2] + ' ' + s[2:4] + ' ' + s[4:6]
-        logger.debug('s = "%s"' % (s))
-
-        idx = self._position
-        if idx > 3:
-            idx += 2
-        elif idx > 1:
-            idx += 1
-
-        logger.debug('idx = %s"' % (idx))
-
-        s = s[:idx] + '[' + s[idx] + ']' + s[idx+1:]
-        logger.debug('s = "%s"' % (s))
-
-        logger.debug('combo value for (%s, %s, %s) as string: "%s"' %
-                     (''.join(str(x) for x in self._digits[0:2]),
-                      ''.join(str(x) for x in self._digits[2:4]),
-                      ''.join(str(x) for x in self._digits[4:6]),
-                      s))
+        s = "{}{}:{}{}:{}{}".format(*self._digits[0:6])
+        s = s.replace(":", self._sep)
+        #logger.debug('combo value for ({}{}, {}{}, {}{})'.format(*self._digits[0:6]))
+        #logger.debug('      as string: "{}"'.format(s))
 
         return s
 

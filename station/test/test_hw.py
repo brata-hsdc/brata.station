@@ -16,13 +16,16 @@
 TODO module description
 """
 
-from mock import Mock
+# TODO There should be no problem with Mock on a non-Pi.
+from mock import Mock  # @UnresolvedImport when not on R-Pi
 import sys
 import unittest
 
 sys.modules['pibrella'] = Mock()
+sys.modules['Adafruit_CharLCD'] = Mock()
+sys.modules['smbus'] = Mock()
 from station.hw import Led
-from station.hw import PushButton
+from station.hw import PushButtonMonitor
 from station.hw import VibrationMotor
 
 # ------------------------------------------------------------------------------
@@ -50,7 +53,9 @@ class LedTestCase(unittest.TestCase):
 
         """
 
-        self.Target = Led('three')
+        config = Mock()
+        config.OutputPin = 'e'
+        self.Target = Led('three', config)
 
 
     # --------------------------------------------------------------------------
@@ -73,7 +78,9 @@ class LedTestCase(unittest.TestCase):
         """
 
         name = 'four'
-        target = Led(name)
+        config = Mock()
+        config.OutputPin = 'e'
+        target = Led(name, config)
         self.assertEqual(name, target.Name)
         self.assertEqual(0.5, target.FlashingOnDuration_s)
         self.assertEqual(0.5, target.FlashingOffDuration_s)
@@ -156,7 +163,7 @@ class LedTestCase(unittest.TestCase):
 
 
 # ------------------------------------------------------------------------------
-class PushButtonTestCase(unittest.TestCase):
+class PushButtonMonitorTestCase(unittest.TestCase):
     """
     TODO class comment
     """
@@ -180,7 +187,7 @@ class PushButtonTestCase(unittest.TestCase):
 
         """
 
-        self.Target = VibrationMotor('two')
+        self.Target = PushButtonMonitor()
 
 
     # --------------------------------------------------------------------------
@@ -203,7 +210,7 @@ class PushButtonTestCase(unittest.TestCase):
         """
 
         name = 'one'
-        target = VibrationMotor(name)
+        target = VibrationMotor(name, 'e')
         self.assertEqual(name, target.Name)
 
     # --------------------------------------------------------------------------
@@ -295,7 +302,7 @@ class PushButtonTestCase(unittest.TestCase):
         """
 
         # TODO
-        self.Target.start()
+        self.Target.startListening()
         # TODO
 
     # --------------------------------------------------------------------------
@@ -318,7 +325,7 @@ class PushButtonTestCase(unittest.TestCase):
         """
 
         # TODO
-        self.Target.stop()
+        self.Target.stopListening()
         # TODO
 
 # ------------------------------------------------------------------------------

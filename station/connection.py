@@ -85,8 +85,8 @@ class ConnectionManager(IConnectionManager):
         logger.debug('Flask testing? %s' % (self._app.config['TESTING']))
         logger.debug('Flask logger? %s' % (self._app.config['LOGGER_NAME']))
         logger.debug('Flask server? %s' % (self._app.config['SERVER_NAME']))
-        self._connectUrl = config.ConnectUrl
-        self._disconnectUrl = config.DisconnectUrl
+        self._joinUrl = config.JoinUrl
+        self._leaveUrl = config.LeaveUrl
         self._timeExpiredUrl = config.TimeExpiredUrl
         self._submitUrl = config.SubmitUrl
         self._stationType = stationTypeId
@@ -104,22 +104,22 @@ class ConnectionManager(IConnectionManager):
         self._app.add_url_rule(config.ResetUrlRule,
                                'reset',
                                self.reset,
-                               methods=['POST'])
+                               methods=['GET'])
 
         self._app.add_url_rule(config.StartChallengeUrlRule,
                                'start_challenge',
-                               self.start_challenge,
+                               self.startChallenge,
                                methods=['POST'])
 
-        self._app.add_url_rule(config.SubmitUrlRule,
-                               'submit',
-                               self.submit,
+        self._app.add_url_rule(config.HandleSubmissionUrlRule,
+                               'handle_submission',
+                               self.handleSubmission,
                                methods=['POST'])
 
         self._app.add_url_rule(config.ShutdownUrlRule,
                              'shutdown',
                              self.shutdown,
-                             methods=['POST'])
+                             methods=['GET'])
 
         self._thread = Thread(target = self.run)
         self._thread.daemon = True
@@ -192,7 +192,7 @@ class ConnectionManager(IConnectionManager):
 
         """
         logger.debug('Exiting connection manager')
-        self.stopListening(self)
+        self.stopListening()
         self._timeToExit = True
         self._thread.join()
 
@@ -222,7 +222,7 @@ class ConnectionManager(IConnectionManager):
                 if self._listening:
 
                     if (not self._connected):
-                        self.connect()
+                        self.join()
                         self._connected = True
 
                         # TODO named constant
@@ -245,7 +245,7 @@ class ConnectionManager(IConnectionManager):
                 logger.critical("Exception occurred of type %s: %s" % (exType.__name__, str(e)))
                 traceback.print_tb(tb)
 
-        self.disconnect()
+        self.leave()
         logger.info('Stopping TODO thread for connection manager')
 
     # --------------------------------------------------------------------------
@@ -340,58 +340,23 @@ class ConnectionManager(IConnectionManager):
         # TODO check if args present - might be null/empty
         args['message_timestamp'] = self.timestamp()
         logger.debug('Calling service with HTTP method %s, endpoint URL %s, and args %s' % (httpMethod, endpointUrl, args))
+        headers = { 'content-type': 'application/json' }
         data = json.dumps(args)
-        response = requests.post(endpointUrl, data)
+        response = requests.post(endpointUrl, data=data, headers=headers)
 
         # TODO Delete
         ##response = requests.post(endpointUrl, data, auth=('user', '*****'))
 
-        # TODO Delete
-        ##logger.debug('Service response: %s' % (response))
-        ##logger.debug('Service response: %s' % (vars(response)))
-        ##pprint.pprint(vars(response))
-        ##logger.debug('Service response.text: %s' % (response.text))
-        #logger.debug('Service response status_code: %s' % (response.status_code))
-        #logger.debug('Service response.name1: %s' % (response.json['name1']))
-        #logger.debug('Service response.name2: %s' % (response.json['name2']))
-
-        logger.debug('Service returned %s for HTTP method %s, endpoint URL %s, and args %s' % (response.status_code, httpMethod, endpointUrl, args))
+        logger.debug('Service returned %s with for HTTP method %s, endpoint URL %s, and args %s with headers %s and message %s' % (response.status_code, httpMethod, endpointUrl, args, response.headers, json.dumps(response.json)))
         return (response.status_code, response.json)
 
 
-    # --------------------------------------------------------------------------
-    def reset(self,
-              pin):
-        """Transitions the station to the Ready state.
-
-        Transiitions the station to the Ready state if the correct PIN is
-        provided; otherwise, the reset request is ignored.
-
-        Args:
-            pin (int): This must be 31415 in order to reset the station.
-        Returns:
-            Empty JSON response with 200 status code on success.
-        Raises:
-            N/A.
-
-        """
-
-        resp = jsonify()
-
-        if pin == self._resetPin:
-            logger.debug('Master server successfully requesting station reset with pin "%s"' % (pin))
-            self._callback.State = State.READY
-            resp.status_code = 200
-        else:
-            logger.debug('Master server requesting station reset with invalid pin "%s"' % (pin))
-            resp.status_code = 400
-
-        return resp
-
+    # ===
+    # Messages from Station to MS
+    # ===
 
     # --------------------------------------------------------------------------
-    def start_challenge(self,
-                        teamId):
+    def join(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -408,187 +373,30 @@ class ConnectionManager(IConnectionManager):
             TodoError2: if TODO.
 
         """
-
-        # TODO...
-        #if not request.json or not 'title' in request.json:
-        if not request.json:
-            #TODO abort(400)
-            logger.debug('return 400?')
-
-        message_version = request.json['message_version']
-        message_timestamp = request.json['message_timestamp']
-        theatric_delay_ms = request.json['theatric_delay_ms']
-
-        if 'hmb_vibration_pattern_ms' in request.json:
-            logger.debug('Received a start_challenge request for HMB station')
-            hmb_vibration_pattern_ms = request.json['hmb_vibration_pattern_ms']
-            self._callback.args = hmb_vibration_pattern_ms
-            logger.debug('Master server requesting station start_challenge (ver %s) for team ID %s at %s with theatric delay of %s ms, HMB vibration pattern %s' % (message_version, teamId, message_timestamp, theatric_delay_ms, hmb_vibration_pattern_ms))
-        elif 'cpa_velocity' in request.json:
-            logger.debug('Received a start_challenge request for CPA station')
-            cpa_velocity = request.json['cpa_velocity']
-            cpa_velocity_tolerance_ms = request.json['cpa_velocity_tolerance_ms']
-            cpa_window_time_ms = request.json['cpa_window_time_ms']
-            cpa_window_time_tolerance_ms = request.json['cpa_window_time_tolerance_ms']
-            cpa_pulse_width_ms = request.json['cpa_pulse_width_ms']
-            cpa_pulse_width_tolerance_ms = request.json['cpa_pulse_width_tolerance_ms']
-            self._callback.args = [cpa_velocity, cpa_velocity_tolerance_ms, cpa_window_time_ms, cpa_window_time_tolerance_ms, cpa_pulse_width_ms, cpa_pulse_width_tolerance_ms]
-            logger.debug('Master server requesting station start_challenge (ver %s) for team ID %s at %s with theatric delay of %s ms, CPA velocity %s with tolerance %s, window time %s ms with tolerance %s ms, and pulse width %s ms with tolerance %s ms' % (message_version, teamId, message_timestamp, theatric_delay_ms, cpa_velocity, cpa_velocity_tolerance_ms, cpa_window_time_ms, cpa_window_time_tolerance_ms, cpa_pulse_width_ms, cpa_pulse_width_tolerance_ms))
-        elif 'cts_combo' in request.json:
-            logger.debug('Received a start_challenge request for CTS station')
-            cts_combo = request.json['cts_combo']
-            self._callback.args = cts_combo
-            logger.debug('Master server requesting station start_challenge (ver %s) for team ID %s at %s with theatric delay of %s ms, CTS combo %s' % (message_version, teamId, message_timestamp, theatric_delay_ms, cts_combo))
-        else:
-            logger.critical('Received a start_challenge request for unrecognized station')
-
-        # TODO...
-
-        # TODO implement method body
-        self._callback.State = State.PROCESSING
-
-        # TODO can't pass-in self - how to get handle to self? is it needed?
-
-        # TODO
-        resp = jsonify({'foo': 'bar'})
-        resp.status_code = 200
-        return resp
-
-
-
-    # --------------------------------------------------------------------------
-    def submit(self,
-               stationId,
-               teamId):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
-        """
-
-        # TODO...
-        #if not request.json or not 'title' in request.json:
-        if not request.json:
-            #TODO abort(400)
-            logger.debug('return 400?')
-
-        message_version = request.json['message_version']
-        message_timestamp = request.json['message_timestamp']
-        theatric_delay_ms = request.json['theatric_delay_ms']
-        submitted_answer = request.json['submitted_answer']
-        is_correct = request.json['is_correct']
-        challenge_incomplete = request.json['challenge_incomplete']
-
-        logger.debug('Master server submitting (ver %s) user answer to station ID %s for team ID %s at %s. Answer "%s" with theatric delay %s ms is correct? %s. Challenge incomplete? %s' % (message_version, stationId, teamId, message_timestamp, submitted_answer, theatric_delay_ms, is_correct, challenge_incomplete))
-
-        self._callback.args = [theatric_delay_ms, submitted_answer]
-
-        if is_correct:
-            self._callback.State = State.PASSED
-        elif challenge_incomplete:
-            self._callback.State = State.FAILED
-        else:
-            pass # TODO
-            #TODO self._callback.State = neither State.PASSED nor State.FAILED
-
-        # TODO
-        resp = jsonify({'foo': 'bar'})
-        resp.status_code = 200
-        return resp
-
-
-    # --------------------------------------------------------------------------
-    def shutdown(self,
-              pin):
-        """Prepares the station to power off.
-
-        Sends the shutdown command to the station so it can clean up in
-        preparation for power to be removed if the correct PIN is provided;
-        otherwise, the reset request is ignored.
-
-        Args:
-            pin (int): This must be 31415 in order to reset the station.
-        Returns:
-            Empty JSON response with 200 status code on success.
-        Raises:
-            N/A.
-
-        """
-        resp = jsonify()
-
-        if pin == self._shutdownPin:
-            logger.debug('Master server successfully requesting station shutdown with pin "%s"' % (pin))
-            sys_bus = dbus.SystemBus()
-            ck_srv = sys_bus.get_object('org.freedesktop.ConsoleKit',
-                                        '/org/freedesktop/ConsoleKit/Manager')
-            ck_iface = dbus.Interface(ck_srv,
-                                      'org.freedesktop.ConsoleKit.Manager')
-            stop_method = ck_iface.get_dbus_method("Stop")
-
-            if self._reallyShutdown:
-                logger.info('Shutting down based on MS request')
-                stop_method()
-            else:
-                logger.info('Shutdown successfully requested by MS but station not configured to really shutdown')
-
-            resp.status_code = 200
-        else:
-            logger.debug('Master server requesting station shutdown with invalid pin "%s"' % (pin))
-            resp.status_code = 400
-
-        return resp
-
-
-    # --------------------------------------------------------------------------
-    def connect(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
-        """
-        logger.debug('Station requesting connect with master server')
+        logger.debug('Station requesting join with master server')
+        url = self._joinUrl + "/" + self._stationId
         (status, response) = self.callService(
-            HttpMethod.POST, self._connectUrl,
+            HttpMethod.POST, url,
             {
                 'message_version'  : 0,
                 'message_timestamp': self.timestamp(),
                 'station_type'     : self._stationType,
-                'station_url'      : 'http://todo:5000/rpi/blah/blah/blah',
-                'station_id'       : self._stationId
+                # TODO 'station_url'      : 'http://todo:5000/rpi'
+                'station_url'      : 'http://192.168.43.49:5000/rpi'
             })
 
-        if status == httplib.OK:
-            logger.debug('Service %s returned OK' % (self._connectUrl))
+        if status == httplib.ACCEPTED:
+            logger.debug('Service %s returned OK' % (url))
+        elif status == httplib.BAD_REQUEST:
+            logger.critical('Service %s returned BAD_REQUEST' % (url))
         elif status == httplib.NOT_FOUND:
-            logger.debug('Service %s returned NOT_FOUND' % (self._connectUrl))
+            logger.critical('Service %s returned NOT_FOUND' % (url))
         else:
-            logger.critical('Unexpected HTTP response %s received from service %s' % (status, self._connectUrl))
+            logger.critical('Unexpected HTTP status %s received from service %s' % (status, url))
 
 
     # --------------------------------------------------------------------------
-    def disconnect(self):
+    def leave(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -605,13 +413,16 @@ class ConnectionManager(IConnectionManager):
             TodoError2: if TODO.
 
         """
-        logger.debug('Station requesting disconnect from master server')
-        (status, response) = self.callService(
-            HttpMethod.POST, self._disconnectUrl,
-            {
-                'message_version': 0,
-                'station_id'    : self._stationId
-            })
+        logger.debug('Station requesting leave from master server')
+        url = "{}/{}".format(self._leaveUrl, self._stationId)
+        (status, response) = self.callService(HttpMethod.POST, url, {})
+
+        if status == httplib.OK:
+            logger.debug('Service %s returned OK' % (url))
+        elif status == httplib.NOT_FOUND:
+            logger.critical('Service %s returned NOT_FOUND' % (url))
+        else:
+            logger.critical('Unexpected HTTP response %s received from service %s' % (status, url))
 
 
     # --------------------------------------------------------------------------
@@ -635,21 +446,24 @@ class ConnectionManager(IConnectionManager):
         logger.debug('Station informing master server that time for challenge has expired')
 
         theatric_delay_ms = 0
-        submitted_answer = 0
+        candidate_answer = 0
 
-        self._callback.args = [theatric_delay_ms, submitted_answer]
+        url = "{}/{}".format(self._timeExpiredUrl, self._stationId)
+        (status, response) = self.callService(HttpMethod.POST, url, {})
+
+        if status == httplib.OK:
+            logger.debug('Service %s returned OK' % (url))
+        else:
+            logger.critical('Unexpected HTTP response %s received from service %s' % (status, url))
+
+        self._callback.args = [theatric_delay_ms, candidate_answer]
         self._callback.State = State.FAILED
-
-        (status, response) = self.callService(
-            HttpMethod.POST, self._timeExpiredUrl,
-            {
-                'message_version': 0,
-                'station_id'    : self._stationId
-            })
 
 
     # --------------------------------------------------------------------------
-    def submitToMS(self, messageValues):
+    def submitCtsComboToMS(self,
+                           combo,
+                           isCorrect):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -667,6 +481,268 @@ class ConnectionManager(IConnectionManager):
 
         """
         logger.debug('Station submitting answer to master server')
+
+        url = self._submitUrl + "/" + self._stationId
+        (status, response) = self.callService(
+            HttpMethod.POST, url,
+            {
+                'message_version'   : 0,
+                'message_timestamp' : self.timestamp(),
+                'candidate_answer'  : combo,
+                'is_correct'        : "True" if isCorrect else "False",
+                'fail_message'      : "" if isCorrect else "Incorrect combo provided."
+            })
+
+        if status == httplib.OK:
+            logger.debug('Service %s returned OK' % (url))
+        elif status == httplib.NOT_FOUND:
+            logger.critical('Service %s returned NOT_FOUND' % (url))
+        else:
+            logger.critical('Unexpected HTTP response %s received from service %s' % (status, url))
+
+
+    # --------------------------------------------------------------------------
+    def submitCpaDetectionToMS(self,
+                               hitDetected,
+                               failMessage):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Station submitting answer to master server')
+        url = self._submitUrl
+        (status, response) = self.callService(
+            HttpMethod.POST, url,
+            {
+                'message_version'            : 0,
+                'message_timestamp'          : self.timestamp(),
+                'station_id'                 : self._stationId,
+                'hit_detected_within_window' : hitDetected,
+                'is_correct'                 : "True", # TODO
+                'fail_message'               : failMessage
+            })
+
+        if status == httplib.OK:
+            logger.debug('Service %s returned OK' % (url))
+        elif status == httplib.NOT_FOUND:
+            logger.critical('Service %s returned NOT_FOUND' % (url))
+        else:
+            logger.critical('Unexpected HTTP response %s received from service %s' % (status, url))
+
+
+    # ===
+    # Messages from MS to Station
+    # ===
+
+    # --------------------------------------------------------------------------
+    def reset(self,
+              pin):
+        """Transitions the station to the Ready state.
+
+        Transiitions the station to the Ready state if the correct PIN is
+        provided; otherwise, the reset request is ignored.
+
+        Args:
+            pin (int): This must be 31415 in order to reset the station.
+        Returns:
+            Empty JSON response with OK status code on success.
+        Raises:
+            N/A.
+
+        """
+
+        logger.debug('Received reset message from MS with json %s' % (json.dumps(request.json)))
+        resp = jsonify()
+
+        if pin == self._resetPin:
+            logger.debug('Master server successfully requesting station reset with pin "%s"' % (pin))
+            self._callback.State = State.READY
+            resp.status_code = httplib.OK
+        else:
+            logger.warning('Master server requesting station reset with invalid pin "%s"' % (pin))
+            resp.status_code = httplib.BAD_REQUEST
+
+        return resp
+
+
+    # --------------------------------------------------------------------------
+    def startChallenge(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        logger.debug('Received startChallenge message from MS with json %s' % (json.dumps(request.json)))
+        # TODO...
+        #if not request.json or not 'title' in request.json:
+        if not request.json:
+            #TODO abort(httplib.BAD_REQUEST
+            logger.debug('return BAD_REQUEST?')
+
+        message_version = request.json['message_version']
+        message_timestamp = request.json['message_timestamp']
+        theatric_delay_ms = request.json['theatric_delay_ms']
+
+        if 'hmb_vibration_pattern_ms' in request.json:
+            logger.debug('Received a start_challenge request for HMB station')
+            hmb_vibration_pattern_ms = request.json['hmb_vibration_pattern_ms']
+            self._callback.args = hmb_vibration_pattern_ms
+            logger.debug('Master server requesting station start_challenge (ver %s) at %s with theatric delay of %s ms, HMB vibration pattern %s' % (message_version, message_timestamp, theatric_delay_ms, hmb_vibration_pattern_ms))
+        elif 'cpa_velocity' in request.json:
+            logger.debug('Received a start_challenge request for CPA station')
+            cpa_velocity = request.json['cpa_velocity']
+            cpa_velocity_tolerance_ms = request.json['cpa_velocity_tolerance_ms']
+            cpa_window_time_ms = request.json['cpa_window_time_ms']
+            cpa_window_time_tolerance_ms = request.json['cpa_window_time_tolerance_ms']
+            cpa_pulse_width_ms = request.json['cpa_pulse_width_ms']
+            cpa_pulse_width_tolerance_ms = request.json['cpa_pulse_width_tolerance_ms']
+            self._callback.args = [cpa_velocity, cpa_velocity_tolerance_ms, cpa_window_time_ms, cpa_window_time_tolerance_ms, cpa_pulse_width_ms, cpa_pulse_width_tolerance_ms]
+            logger.debug('Master server requesting station start_challenge (ver %s) at %s with theatric delay of %s ms, CPA velocity %s with tolerance %s, window time %s ms with tolerance %s ms, and pulse width %s ms with tolerance %s ms' % (message_version, message_timestamp, theatric_delay_ms, cpa_velocity, cpa_velocity_tolerance_ms, cpa_window_time_ms, cpa_window_time_tolerance_ms, cpa_pulse_width_ms, cpa_pulse_width_tolerance_ms))
+        elif 'cts_combo' in request.json:
+            logger.debug('Received a start_challenge request for CTS station')
+            cts_combo = request.json['cts_combo']
+            self._callback.args = cts_combo
+            logger.debug('Master server requesting station start_challenge (ver %s) at %s with theatric delay of %s ms, CTS combo %s' % (message_version, message_timestamp, theatric_delay_ms, cts_combo))
+        else:
+            logger.critical('Received a start_challenge request for unrecognized station')
+
+        # TODO...
+
+        # TODO implement method body
+        self._callback.State = State.PROCESSING
+
+        # TODO can't pass-in self - how to get handle to self? is it needed?
+
+        # TODO
+        resp = jsonify({})
+        resp.status_code = httplib.OK
+        return resp
+
+
+
+    # --------------------------------------------------------------------------
+    def handleSubmission(self,
+                         stationId,
+                         teamId):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        logger.debug('Received handleSubmission message from MS with json %s' % (json.dumps(request.json)))
+
+        # TODO...
+        #if not request.json or not 'title' in request.json:
+        if not request.json:
+            #TODO abort(httplib.BAD_REQUEST
+            logger.debug('return BAD_REQUEST?')
+
+        message_version = request.json['message_version']
+        message_timestamp = request.json['message_timestamp']
+        theatric_delay_ms = request.json['theatric_delay_ms']
+        candidate_answer = request.json['candidate_answer']
+        is_correct = request.json['is_correct']
+        challenge_incomplete = request.json['challenge_incomplete']
+
+        logger.debug('Master server relaying (ver %s) user answer to station ID %s for team ID %s at %s. Answer "%s" with theatric delay %s ms is correct? %s. Challenge incomplete? %s' % (message_version, stationId, teamId, message_timestamp, candidate_answer, theatric_delay_ms, is_correct, challenge_incomplete))
+
+        self._callback.args = [theatric_delay_ms, candidate_answer]
+
+        if is_correct:
+            self._callback.State = State.PASSED
+        elif challenge_incomplete:
+            self._callback.State = State.FAILED
+        else:
+            pass # TODO
+            #TODO self._callback.State = neither State.PASSED nor State.FAILED
+
+        # TODO
+        resp = jsonify({'foo': 'bar'})
+        resp.status_code = httplib.OK
+        return resp
+
+
+    # --------------------------------------------------------------------------
+    def shutdown(self,
+              pin):
+        """Prepares the station to power off.
+
+        Sends the shutdown command to the station so it can clean up in
+        preparation for power to be removed if the correct PIN is provided;
+        otherwise, the reset request is ignored.
+
+        Args:
+            pin (int): This must be 31415 in order to reset the station.
+        Returns:
+            Empty JSON response with OK status code on success.
+        Raises:
+            N/A.
+
+        """
+
+        logger.debug('Received shutdown message from MS with json %s' % (json.dumps(request.json)))
+        resp = jsonify()
+
+        if pin == self._shutdownPin:
+            logger.debug('Master server successfully requesting station shutdown with pin "%s"' % (pin))
+            # TODO move elsewhere - maybe hw.py?
+            sys_bus = dbus.SystemBus()
+            ck_srv = sys_bus.get_object('org.freedesktop.ConsoleKit',
+                                        '/org/freedesktop/ConsoleKit/Manager')
+            ck_iface = dbus.Interface(ck_srv,
+                                      'org.freedesktop.ConsoleKit.Manager')
+            stop_method = ck_iface.get_dbus_method("Stop")
+
+            if self._reallyShutdown:
+                logger.info('Shutting down based on MS request')
+                stop_method()
+            else:
+                logger.info('Shutdown successfully requested by MS but station not configured to really shutdown')
+
+            resp.status_code = httplib.OK
+        else:
+            logger.warning('Master server requesting station shutdown with invalid pin "%s"' % (pin))
+            resp.status_code = httplib.BAD_REQUEST
+
+        return resp
+
+
         hitParamValue = None
         for param in messageValues:
             if param.Name == 'hit_detected_within_window':
@@ -680,20 +756,6 @@ class ConnectionManager(IConnectionManager):
                      'is_correct':      hitParamValue})
             else:
                 # TODO CTS param handling
-                (status, response) = self.callService(
-                    HttpMethod.POST, self._connectUrl,
-                    {'message_version':  0,
-                     'station_id':      self._stationId,
-                     'submitted_answer': (31, 41, 59)}) # TODO
-
-        if status == httplib.OK:
-            logger.debug('Service %s returned OK' % (self._connectUrl))
-        elif status == httplib.NOT_FOUND:
-            logger.debug('Service %s returned NOT_FOUND' % (self._connectUrl))
-        else:
-            logger.critical('Unexpected HTTP response %s received from service %s' % (status, self._connectUrl))
-
-
 # ------------------------------------------------------------------------------
 # Module Initialization
 # ------------------------------------------------------------------------------

@@ -16,9 +16,15 @@
 TODO module description
 """
 
+from mock import MagicMock
+from mock import Mock
+from mock import patch
+import sys
 import unittest
 
+sys.modules['flask'] = MagicMock()
 from station.connection import ConnectionManager
+from station.state import State
 
 # ------------------------------------------------------------------------------
 class ConnectionManagerTestCase(unittest.TestCase):
@@ -45,8 +51,15 @@ class ConnectionManagerTestCase(unittest.TestCase):
 
         """
 
-        #TODO
-        #self.Target = Led('three')
+        station = Mock()
+        stationTypeId = 'hoiven-glaven'
+        config = Mock()
+        config.ResetUrlRule = '/path/to/reset/<int:pin>'
+        config.StartChallengeUrlRule = '/path/to/sc'
+        config.HandleSubmissionUrlRule = '/path/to/hs'
+        config.ShutdownUrlRule = '/path/to/hd'
+
+        self.Target = ConnectionManager(station, stationTypeId, config)
 
 
     # --------------------------------------------------------------------------
@@ -195,7 +208,7 @@ class ConnectionManagerTestCase(unittest.TestCase):
         # TODO
 
     # --------------------------------------------------------------------------
-    def test_getTimestamp(self):
+    def test_timestamp(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -241,7 +254,7 @@ class ConnectionManagerTestCase(unittest.TestCase):
         # TODO
 
     # --------------------------------------------------------------------------
-    def test_reset(self):
+    def test_join(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -264,76 +277,7 @@ class ConnectionManagerTestCase(unittest.TestCase):
         # TODO
 
     # --------------------------------------------------------------------------
-    def test_activate(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
-        """
-
-        # TODO
-        #self.Target.setFlashing()
-        # TODO
-
-    # --------------------------------------------------------------------------
-    def test_submit(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
-        """
-
-        # TODO
-        #self.Target.setFlashing()
-        # TODO
-
-    # --------------------------------------------------------------------------
-    def test_connect(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
-        """
-
-        # TODO
-        #self.Target.setFlashing()
-        # TODO
-
-    # --------------------------------------------------------------------------
-    def test_disconnect(self):
+    def test_leave(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -357,6 +301,181 @@ class ConnectionManagerTestCase(unittest.TestCase):
 
     # --------------------------------------------------------------------------
     def test_timeExpired(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        # TODO
+        #self.Target.setFlashing()
+        # TODO
+
+    # --------------------------------------------------------------------------
+    def test_submitCtsComboToMS(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        # TODO
+        #self.Target.setFlashing()
+        # TODO
+
+    # --------------------------------------------------------------------------
+    def test_submitCpaDetectionToMS(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        # TODO
+        #self.Target.setFlashing()
+        # TODO
+
+    # --------------------------------------------------------------------------
+    @patch('station.connection.logger')
+    def test_resetExpectedPin(self,
+                              mock_logger):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        self._callback = Mock()
+        self._callback.State = State.PROCESSING
+        self.Target._resetPin = 'expectedPin'
+        pin = self.Target._resetPin
+        resp = self.Target.reset(pin)
+        self.assertFalse(mock_logger.warning.called)
+        self.assertEqual(State.READY, self.Target._callback.State, 'incorrect state: {}'.format(self._callback.State))
+        self.assertEqual(200, resp.status_code)
+
+    # --------------------------------------------------------------------------
+    @patch('station.connection.logger')
+    def test_resetUnexpectedPin(self,
+                                mock_logger):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        self._callback = Mock()
+        self._callback.State = State.PROCESSING
+        self.Target._resetPin = 'expectedPin'
+        pin = 'unexpectedPin'
+        resp = self.Target.reset(pin)
+        self.assertTrue(mock_logger.warning.called)
+        self.assertEqual(State.PROCESSING, self._callback.State)
+        self.assertEqual(400, resp.status_code)
+
+    # --------------------------------------------------------------------------
+    def test_startChallenge(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        # TODO
+        #self.Target.setFlashing()
+        # TODO
+
+    # --------------------------------------------------------------------------
+    def test_handleSubmission(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        # TODO
+        #self.Target.setFlashing()
+        # TODO
+
+    # --------------------------------------------------------------------------
+    def test_shutdown(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
