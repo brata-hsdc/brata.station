@@ -103,11 +103,12 @@ class Station(IStation):
         # All times stored internal to this class are measured in seconds
         self._startTime = 0.0
         self._flashStartTime = 0.0
+        self._DISPLAY_LED_BLINK_DURATION = 0.1
+
         self._isRunning = False
         self._isTimeToShutdown = False
         self._correctFlashDetected = False
-        self._DISPLAY_LED_BLINK_DURATION = 0.1
-        self._ledTimes = {}
+        self._wasButtonPressed = False
 
         # These defaults will be overriden in the start of onProcessing
         self._maxTimeForCompleteFlash = 10.0
@@ -116,6 +117,7 @@ class Station(IStation):
         self._goTimeBeforeFinalLight = 6.0
         self._cpa_pulse_width_s = 0.1
         self._cpa_pulse_width_tolerance_s = 0.01
+        self._ledTimes = {}
 
         self._thread = Thread(target=self.run)
         self._thread.daemon = True # TODO why daemon
@@ -236,6 +238,7 @@ class Station(IStation):
                         logger.debug('nextLED = %s', self._nextLed)
 
                 time.sleep(0.001)
+
             except Exception, e:
                 exType, ex, tb = sys.exc_info()
                 logger.critical("Exception occurred of type %s in CPA run" % (exType.__name__))
@@ -244,6 +247,30 @@ class Station(IStation):
 
           self._isRunning = False
           time.sleep(0.001) # wait to start again or exit
+
+          if self._wasButtonPressed:
+               # clear that the button was pressed so next one can trigger leaving calibration
+               self._wasButtonPressed = False
+
+               # Play a sound to indicate entered calibration mode
+               # TODO
+               while self._wasButtonPressed == False:
+                   if self._inputs['lightDetector'].read() == 1:
+                       self._leds['red'].turnOn()
+                       self._leds['yellow'].turnOn()
+                       self._leds['green'].turnOn()
+                   else:
+                       self._leds['red'].turnOff()
+                       self._leds['yellow'].turnOff()
+                       self._leds['green'].turnOff()
+               # clear the mode toggle once the button is pressed again
+               self._wasButtonPressed = False
+               # regardless of state need to make sure the lights are back off
+               self._leds['red'].turnOff()
+               self._leds['yellow'].turnOff()
+               self._leds['green'].turnOff()
+               # Play a sound to indicate exiting calibration mode
+               # TODO
 
     # --------------------------------------------------------------------------
     @property
