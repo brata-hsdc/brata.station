@@ -36,7 +36,9 @@ class Station(IStation):
     INPUT_STATE      = 3
     SUBMITTING_STATE = 4
     SUBMITTED_STATE  = 5
-    SHUTDOWN_STATE   = 6
+    PASSED_STATE     = 6
+    FAILED_STATE     = 7
+    SHUTDOWN_STATE   = 8
     ERROR_STATE      = 99
     
     # --------------------------------------------------------------------------
@@ -82,17 +84,21 @@ class Station(IStation):
         self._combo = None  # will hold a Combo object
         self._timedMsg = None  # generator
         self._colorToggle = None  # generator
-        self._preInputDuration = 6.0  # seconds to display msg
+        self._preInputDuration = 6.0   # seconds to display msg
+        self._passedDuration   = 15.0  # seconds to display msg
+        self._failedDuration   = 15.0  # seconds to display msg
         
         
         # Background cycle states: ([list of colors], rate_in_sec)
         # TODO: These constants could be moved to runstation.conf
-        self._idleBg     = (["WHITE", "WHITE", "BLUE", "YELLOW", "GREEN", "RED", "BLACK", "CYAN", "MAGENTA"], 0.75)
+        self._idleBg     = (["WHITE", "BLUE", "YELLOW", "GREEN", "RED", "CYAN", "MAGENTA"], 0.75)
         self._preInputBg = (["YELLOW", "YELLOW", "YELLOW", "YELLOW", "RED"], 0.15)
         self._inputBg    = (["CYAN"], 1.0)
         self._submit1Bg  = (["RED", "WHITE"], 0.15)
-        self._submit2Bg  = (["GREEN"], 1.0)
-        self._shutdownBg = (["GREEN"], 1.0)
+        self._submit2Bg  = (["WHITE"], 1.0)
+        self._passedBg   = (["GREEN"], 1.0)
+        self._failedBg   = (["RED"], 1.0)
+        self._shutdownBg = (["BLUE"], 1.0)
         self._errorBg    = (["RED", "RED", "RED", "RED", "RED", "WHITE"], 0.15)
         
         # Display text for different states
@@ -102,6 +108,8 @@ class Station(IStation):
         self._enterLine1Text      = "Enter Code:"
         self._submittingLine1Text = "2nd ENTER Sends"
         self._submittedLine1Text  = "=Code Submitted="
+        self._passedText          = "  The Safe Is\n    UNLOCKED"
+        self._failedText          = "  The Safe Is\n  STILL LOCKED"
         self._shutdownText        = "Shutting down..."
         self._errorText           = "Malfunction!"
 
@@ -279,8 +287,17 @@ class Station(IStation):
                 self.setToggleColors(*self._submit2Bg)
                 self._pushButtonMonitor.stopListening()
                 
+            elif newState == self.PASSED_STATE:
+                self._timedMsg = self.displayTimedMsg(self._passedText, self._passedDuration, self._passedBg)
+                self._pushButtonMonitor.stopListening()
+                
+            elif newState == self.FAILED_STATE:
+                self._timedMsg = self.displayTimedMsg(self._failedText, self._failedDuration, self._failedBg)
+                self._pushButtonMonitor.stopListening()
+                
             elif newState == self.SHUTDOWN_STATE:
                 self._display.setText(self._shutdownText)
+                self.setToggleColors(*self._shutdownBg)
                 self._pushButtonMonitor.stopListening()
 
             else:
@@ -356,7 +373,7 @@ class Station(IStation):
 
         """
         logger.info('CTS transitioned to Failed state with args [%s].' % (args))
-        self._display.setText("Failed.")
+        self.enterState(self.FAILED_STATE)
 
         self._pushButtonMonitor.stopListening()
 
@@ -380,7 +397,7 @@ class Station(IStation):
 
         """
         logger.info('CTS transitioned to Passed state with args [%s].' % (args))
-        self._display.setText("Success!")
+        self.enterState(self.PASSED_STATE)
 
         self._pushButtonMonitor.stopListening()
 
