@@ -42,17 +42,15 @@ class Station(IStation):
     def __init__(self,
                  config,
                  hwModule):
-        """TODO strictly one-line summary
+        """HMB station constructor.
 
-        TODO Detailed multi-line description if
-        necessary.
+        Loads vibration motor and LED classes and configurations.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            config (type1): TODO describe arg, valid values, etc.
+            hwModule (type2): TODO describe arg, valid values, etc.
         Returns:
-            TODO describe the return type and details
+            N/A.
         Raises:
             TodoError1: if TODO.
             TodoError2: if TODO.
@@ -89,7 +87,7 @@ class Station(IStation):
         Args:
             N/A.
         Returns:
-            N/A.
+            Station name as a string.
         Raises:
             N/A.
 
@@ -173,6 +171,23 @@ class Station(IStation):
 
     # --------------------------------------------------------------------------
     def getCurrentTime_ms(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
         now = datetime.now()
         now_ms = (now.day * 24 * 3600 + now.second) * 1000 \
                + now.microsecond / 1000.0
@@ -380,7 +395,7 @@ class VibrationManager:
         logger.debug('Constructing vibration manager %s', self.Name)
         self._timeToExit = False
         self._vibrationMotor = vibrationMotorClass(self.Name, config.OutputPin)
-        
+
         self._currentlyStarted = False
         self._transitionToStarted = False
 
