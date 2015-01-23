@@ -19,6 +19,7 @@ abstractions.
 
 from abc import ABCMeta
 from abc import abstractmethod
+from abc import abstractproperty
 import logging
 import logging.handlers
 
@@ -103,6 +104,14 @@ class IDisplay:
 
     # --------------------------------------------------------------------------
     @abstractmethod
+    def lineWidth(self):
+        """ Returns: the number of columns in a line of the display.
+        """
+        pass
+
+    
+    # --------------------------------------------------------------------------
+    @abstractmethod
     def setLine1Text(self,
                      text):
         """Sets the text for line 1 of the display.
@@ -159,8 +168,24 @@ class IDisplay:
 
         """
         pass
-
-
+    
+    # --------------------------------------------------------------------------
+    @abstractmethod
+    def showCursor(self, show=True):
+        """ Shows or hides the cursor.
+        
+        Make the cursor visible if show is True.  Otherwise, make the cursor
+        invisible.
+        """
+        pass
+    
+    # --------------------------------------------------------------------------
+    @abstractmethod
+    def setCursor(self, row=0, col=0):
+        """ Sets the position of the cursor.
+        """
+        pass
+    
 # ------------------------------------------------------------------------------
 class ILed:
     """
@@ -299,6 +324,23 @@ class IStation:
     __metaclass__ = ABCMeta
 
     # --------------------------------------------------------------------------
+    @abstractproperty
+    def stationTypeId(self):
+        """The station type identifier passed to the MS.
+
+        The station type identifier that is provided to the MS upon join.
+
+        Args:
+            N/A.
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        pass
+
+    # --------------------------------------------------------------------------
     @abstractmethod
     def start(self):
         """Performs any processing necessary when the application starts.
@@ -349,7 +391,8 @@ class IStation:
 
     # --------------------------------------------------------------------------
     @abstractmethod
-    def onProcessing(self):
+    def onProcessing(self,
+                     args):
         """Begins running the challenge.
 
         This is called when the MS informs the station that it is time to begin
@@ -357,7 +400,7 @@ class IStation:
         station.
 
         Args:
-            N/A.
+            arg1 (type1): TODO describe arg, valid values, etc.
         Returns:
             N/A.
         Raises:
@@ -368,7 +411,8 @@ class IStation:
 
     # --------------------------------------------------------------------------
     @abstractmethod
-    def onFailed(self):
+    def onFailed(self,
+                 args):
         """Completes the challenge with a failed indication.
 
         This is called when the MS informs the station that the user has failed
@@ -376,7 +420,7 @@ class IStation:
         perhaps aurally indicate that the challenge was unsuccessful.
 
         Args:
-            N/A.
+            arg1 (type1): TODO describe arg, valid values, etc.
         Returns:
             N/A.
         Raises:
@@ -387,7 +431,8 @@ class IStation:
 
     # --------------------------------------------------------------------------
     @abstractmethod
-    def onPassed(self):
+    def onPassed(self,
+                 args):
         """Completes the challenge with a success indication.
 
         This is called when the MS informs the station that the user has passed
@@ -395,7 +440,7 @@ class IStation:
         perhaps aurally indicate that the challenge was successful.
 
         Args:
-            N/A.
+            arg1 (type1): TODO describe arg, valid values, etc.
         Returns:
             N/A.
         Raises:

@@ -42,17 +42,15 @@ class Station(IStation):
     def __init__(self,
                  config,
                  hwModule):
-        """TODO strictly one-line summary
+        """HMB station constructor.
 
-        TODO Detailed multi-line description if
-        necessary.
+        Loads vibration motor and LED classes and configurations.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            config (type1): TODO describe arg, valid values, etc.
+            hwModule (type2): TODO describe arg, valid values, etc.
         Returns:
-            TODO describe the return type and details
+            N/A.
         Raises:
             TodoError1: if TODO.
             TodoError2: if TODO.
@@ -85,6 +83,21 @@ class Station(IStation):
          # TODO is the expired timer common to all stations? Should both of these be moved up?
         self.expiredTimer = None
         self.ConnectionManager = None
+
+    # --------------------------------------------------------------------------
+    @property
+    def stationTypeId(self):
+        """Identifies this station's type as HMB.
+
+        Args:
+            N/A.
+        Returns:
+            Station name as a string.
+        Raises:
+            N/A.
+
+        """
+        return "HMB"
 
     # --------------------------------------------------------------------------
     def start(self):
@@ -167,6 +180,23 @@ class Station(IStation):
 
     # --------------------------------------------------------------------------
     def getCurrentTime_ms(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
         now = datetime.now()
         now_ms = (now.day * 24 * 3600 + now.second) * 1000 \
                + now.microsecond / 1000.0
@@ -250,7 +280,8 @@ class Station(IStation):
 
 
     # --------------------------------------------------------------------------
-    def onFailed(self):
+    def onFailed(self,
+                 args):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -267,7 +298,7 @@ class Station(IStation):
             TodoError2: if TODO.
 
         """
-        logger.info('HMB transitioned to Failed state.')
+        logger.info('HMB transitioned to Failed state with args [%s].' % (args))
 
         if self.expiredTimer != None:
             self.expiredTimer.cancel()
@@ -282,7 +313,8 @@ class Station(IStation):
         self._leds['red'].turnOn()
 
     # --------------------------------------------------------------------------
-    def onPassed(self):
+    def onPassed(self,
+                 args):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -299,7 +331,7 @@ class Station(IStation):
             TodoError2: if TODO.
 
         """
-        logger.info('HMB transitioned to Passed state.')
+        logger.info('HMB transitioned to Passed state with args [%s].' % (args))
 
         if self.expiredTimer != None:
             self.expiredTimer.cancel()
@@ -312,6 +344,9 @@ class Station(IStation):
             self._leds[name].turnOff()
 
         self._leds['green'].turnOn()
+
+	print "the args are here"
+	print args
 
     # --------------------------------------------------------------------------
     def onUnexpectedState(self, value):
@@ -372,7 +407,7 @@ class VibrationManager:
         logger.debug('Constructing vibration manager %s', self.Name)
         self._timeToExit = False
         self._vibrationMotor = vibrationMotorClass(self.Name, config.OutputPin)
-        
+
         self._currentlyStarted = False
         self._transitionToStarted = False
 

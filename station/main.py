@@ -52,25 +52,26 @@ class StationLoader(object):
         logger.debug('Constructing StationLoader')
 
         connectionModuleName = config.ConnectionModuleName
-        connectionManagerClassName = config.ConnectionManagerClassName
-
-        connectionModule = import_module(connectionModuleName)
-        connectionManagerClass = getattr(connectionModule,
-                                         connectionManagerClassName)
-
-        self._connectionManager = connectionManagerClass(
-                                     self, config.ConnectionManager)
-
         hwModuleName = config.HardwareModuleName
-        hwModule = import_module(hwModuleName)
-
+        connectionManagerClassName = config.ConnectionManagerClassName
         stationModuleName = config.StationType
         stationClassName = config.StationClassName
 
+        connectionModule = import_module(connectionModuleName)
+        hwModule = import_module(hwModuleName)
         stationModule = import_module(stationModuleName)
+
+        connectionManagerClass = getattr(connectionModule,
+                                         connectionManagerClassName)
         stationClass = getattr(stationModule, stationClassName)
 
         self._station = stationClass(config.StationTypeConfig, hwModule)
+        logger.debug('Constructed station of type %s' % (self._station.stationTypeId))
+        self._connectionManager = connectionManagerClass(
+                                     self,
+                                     self._station.stationTypeId,
+                                     config.ConnectionManager)
+
         self._station.ConnectionManager = self._connectionManager
         self._state = None
         self.args = None
@@ -148,9 +149,9 @@ class StationLoader(object):
         elif value == State.PROCESSING:
             self._station.onProcessing(self.args)
         elif value == State.FAILED:
-            self._station.onFailed()
+            self._station.onFailed(self.args)
         elif value == State.PASSED:
-            self._station.onPassed()
+            self._station.onPassed(self.args)
         else:
             self._station.onUnexpectedState(value)
 

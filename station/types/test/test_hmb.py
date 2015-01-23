@@ -13,7 +13,7 @@
 #  limitations under the License.
 # ------------------------------------------------------------------------------
 """
-TODO module description
+Unit test module for the HMB type pi station.
 """
 
 import unittest
