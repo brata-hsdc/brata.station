@@ -34,9 +34,12 @@ from interfaces import IDisplay
 from interfaces import ILed
 from interfaces import IPushButtonMonitor
 from interfaces import IVibrationMotor
+from interfaces import IUrgencyLed
+
 # TODO NonBlockingConsole was meant to be used with station.console to get keyboard input; it should not be needed in hw.py
 from station.util import NonBlockingConsole
 from station.console import PushButton # TODO shouldn't have a console import in this file
+
 
 
 # ------------------------------------------------------------------------------
@@ -705,6 +708,135 @@ class VibrationMotor(IVibrationMotor):
         logger.debug('Stopped vibration motor \"%s\".', self.Name)
         self.outputPin.off()
 
+# ------------------------------------------------------------------------------
+class UrgencyLed(IUrgencyLed):
+	    # --------------------------------------------------------------------------
+    def __init__(self,
+                 name,
+                 outputPin):
+		"""TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            name (string): Name of this motor, example "Huey"
+            outputPin (string): Letter Designation of Pin , "E", "F", "G", or"H"
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+		self.Name = name
+        #TODO - Need to get these from config file [SS]
+        #self.OnDuration_s = 0.5
+        #self.OffDuration_s = 0.5
+		self.outputPin = getattr(pibrella.output, outputPin)
+    
+    # --------------------------------------------------------------------------
+    def __enter__(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Entering vibration motor %s', self.Name)
+        return self
+		
+	# --------------------------------------------------------------------------
+    def __exit__(self, type, value, traceback):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Exiting vibration motor %s', self.Name)
+        self.stop()		
+		
+		# --------------------------------------------------------------------------
+    def start(self, total_epoch_ms):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Started urgency led \"%s\".', self.Name)
+        
+        # Working Test Code
+        self.outputPin.on()
+        
+        #Experimental Code
+        
+        # boomTime  = datetime.now() + total_epoch_ms
+        
+        # tenth_slice_ms = total_epoch_ms / 10
+        
+        # fill array with 10 values of pulse flash time
+        # 
+        
+        #while(datetime.now < boomTime):
+            # pibrella.pulse with array[i]
+            # sleep for tenthslice
+            # i--
+        
+        
+
+    # --------------------------------------------------------------------------
+    def stop(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.debug('Stopped urgency led \"%s\".', self.Name)
+        self.outputPin.off()
 
 # ------------------------------------------------------------------------------
 # Module Initialization

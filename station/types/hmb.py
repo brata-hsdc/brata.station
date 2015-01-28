@@ -60,9 +60,11 @@ class Station(IStation):
 
         ledClassName = config.LedClassName
         vibrationMotorClassName = config.VibrationMotorClassName
+        urgencyLedClassName = config.UrgencyLedClassName
 
         ledClass = getattr(hwModule, ledClassName)
         vibrationMotorClass = getattr(hwModule, vibrationMotorClassName)
+        urgencyLedClass = getattr(hwModule, urgencyLedClassName)
 
         self._vibrationMotors = []
 
@@ -74,6 +76,9 @@ class Station(IStation):
 
         for i in config.Leds:
             self._leds[i.Name] = ledClass(i.Name, i) # TODO: SS - Should I be placing the color from the config file here?
+
+        # TODO - Fix
+        self._urgencyLed = urgencyLedClass(config.UrgencyLed.Name, config.UrgencyLed.OutputPin)
 
          # TODO is the expired timer common to all stations? Should both of these be moved up?
         self.expiredTimer = None
@@ -138,6 +143,8 @@ class Station(IStation):
 
         for motor in self._vibrationMotors:
             motor.stop()
+        
+        self._urgencyLed.stop()
 
     # --------------------------------------------------------------------------
     def onReady(self):
@@ -164,6 +171,8 @@ class Station(IStation):
 
         for name in self._leds.keys():
             self._leds[name].turnOff()
+
+        self._urgencyLed.stop()
 
         if self.expiredTimer != None:
             self.expiredTimer.cancel()
@@ -236,6 +245,9 @@ class Station(IStation):
             delta_s = delta_ms / 1000.0
             expirationTime_ms = now_ms + delta_ms
             logger.info("Challenge started at time=%s seconds and will complete %s seconds later at time=%s seconds" % ((now_ms / 1000.0), delta_s, (expirationTime_ms / 1000.0)))
+
+            #TODO - Will need to run this function on a seperate thread as it executes a while loop for the entire period of delta_
+            self._urgencyLed.start(delta_ms)
 
             self.expiredTimer = Timer(delta_s, self.onTimeExpired)
             self.expiredTimer.start()
