@@ -502,7 +502,7 @@ class ConnectionManager(IConnectionManager):
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (url))
             self.handleSubmissionResp(response['theatric_delay_ms'],
-                                      isCorrect,
+                                      "True" if isCorrect else "False",
                                       response['challenge_complete'])
         elif status == httplib.NOT_FOUND:
             logger.critical('Service %s returned NOT_FOUND' % (url))
@@ -726,16 +726,15 @@ class ConnectionManager(IConnectionManager):
 
         logger.debug('Handling submission response: Theatric delay %s ms is correct? %s. Challenge complete? %s' % (theatric_delay_ms, is_correct, challenge_complete))
 
-        self._callback.args = [theatric_delay_ms]
+        self._callback.args = [theatric_delay_ms, is_correct, challenge_complete]
 
-        if is_correct:
+        if is_correct.lower() == "true":
             self._callback.State = State.PASSED
-        elif not challenge_complete:
+        elif not challenge_complete.lower() == "true":
             self._callback.State = State.FAILED
         else:
             pass # TODO
             #TODO self._callback.State = neither State.PASSED nor State.FAILED
-
 
     # --------------------------------------------------------------------------
     def shutdown(self,
