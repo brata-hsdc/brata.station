@@ -495,15 +495,17 @@ class ConnectionManager(IConnectionManager):
                 'message_version'   : 0,
                 'message_timestamp' : self.timestamp(),
                 'candidate_answer'  : combo,
-                'is_correct'        : "True" if isCorrect else "False",
+                'is_correct'        : str(isCorrect), #"True" if isCorrect else "False",
                 'fail_message'      : "" if isCorrect else "Incorrect combo provided."
             })
 
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (url))
             self.handleSubmissionResp(response['theatric_delay_ms'],
-                                      "True" if isCorrect else "False",
-                                      response['challenge_complete'])
+#                                       "True" if isCorrect else "False",
+#                                       response['challenge_complete'])
+                                      str(isCorrect),
+                                      str(response['challenge_complete']))
         elif status == httplib.NOT_FOUND:
             logger.critical('Service %s returned NOT_FOUND' % (url))
         else:
@@ -549,8 +551,8 @@ class ConnectionManager(IConnectionManager):
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (url))
             self.handleSubmissionResp(response.theatric_delay_ms,
-                                      isCorrect,
-                                      response.challenge_complete)
+                                      str(isCorrect),
+                                      str(response.challenge_complete))
         elif status == httplib.NOT_FOUND:
             logger.critical('Service %s returned NOT_FOUND' % (url))
         else:
@@ -689,13 +691,13 @@ class ConnectionManager(IConnectionManager):
         message_version = request.json['message_version']
         message_timestamp = request.json['message_timestamp']
         theatric_delay_ms = request.json['theatric_delay_ms']
-        is_correct = request.json['is_correct']
-        challenge_complete = request.json['challenge_complete']
+        is_correct = str(request.json['is_correct'])
+        challenge_complete = str(request.json['challenge_complete'])
 
         logger.debug('Master server relaying (ver %s) user answer to at %s. Theatric delay %s ms is correct? %s. Challenge complete? %s' % (message_version, message_timestamp, theatric_delay_ms, is_correct, challenge_complete))
         self.handleSubmissionResp(theatric_delay_ms,
-                                  is_correct,
-                                  challenge_complete)
+                                  str(is_correct),
+                                  str(challenge_complete))
 
         resp = jsonify({})
         resp.status_code = httplib.OK
@@ -728,13 +730,14 @@ class ConnectionManager(IConnectionManager):
 
         self._callback.args = [theatric_delay_ms, is_correct, challenge_complete]
 
-        if is_correct.lower() == "true":
-            self._callback.State = State.PASSED
-        elif not challenge_complete.lower() == "true":
-            self._callback.State = State.FAILED
-        else:
-            pass # TODO
-            #TODO self._callback.State = neither State.PASSED nor State.FAILED
+#         if is_correct.lower() == "true":
+#             self._callback.State = State.PASSED
+#         elif not challenge_complete.lower() == "true":
+#             self._callback.State = State.FAILED
+#         else:
+#             pass # TODO
+#             #TODO self._callback.State = neither State.PASSED nor State.FAILED
+        self._callback.State = State.PASSED if is_correct.lower() == "true" else State.FAILED
 
     # --------------------------------------------------------------------------
     def shutdown(self,

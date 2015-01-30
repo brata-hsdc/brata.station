@@ -14,18 +14,33 @@
 #  limitations under the License.
 # ------------------------------------------------------------------------------
 """
-NAME
+usage: runstation [-h] [-c CONFIGFILE] [-m MASTERSERVER] [-t {hmb,cpa,cts}]
+                  [-n STATIONNAME] [--console]
 
-   %(scriptName)s - TODO
+Run the Brata Station application. The app behavior is configured by a
+configuration parameter file and command line arguments. The default config
+file path is: <path-to-brata.station>/runstation.conf
 
-SYNOPSIS
+optional arguments:
+  -h, --help            show this help message and exit
+  -m MASTERSERVER, --masterServer MASTERSERVER
+                        Master Server address (hostname or IP address)
+                        optionally followed by ":" and port number (default:
+                        localhost:8080)
+  -t {hmb,cpa,cts}, --stationType {hmb,cpa,cts}
+                        one of "cts", "cpa", "hmb". If not specified, the
+                        stationName will be used to determine stationType.
+  -n STATIONNAME, --stationName STATIONNAME
+                        usually a stationType followed by 2 digits.
+  -c CONFIGFILE, --configFile CONFIGFILE
+                        specify an alternate config file (default: /opt/design
+                        challenge2015/brata.station/bin/runstation.conf)
+  --console             emulate the station hardware interface using terminal
+                        I/O
 
-   %(scriptName)s
-
-DESCRIPTION
-
-   TODO
-
+Examples:
+    python runstation -t cts
+    python runstation --masterServer localhost:80 -stationName hmb03
 """
 
 import logging
@@ -34,16 +49,18 @@ import os
 import signal
 import sys
 import traceback
+import argparse
 
 sys.path.append(os.path.join(os.path.dirname(sys.argv[0]), os.pardir))
 from station.main import StationLoader
 
 
 app = None
-
+STATION_TYPES = ('hmb', 'cpa', 'cts')
+MS_DEFAULT_ADDR = "localhost:8080"
 
 # ------------------------------------------------------------------------------
-def main(argv):
+def main():
     """TODO strictly one-line summary
 
     TODO Detailed multi-line description if
@@ -62,25 +79,71 @@ def main(argv):
     """
     global app
 
-    scriptName = sys.argv[0].split("/")[-1]
-    configFile = os.path.join(os.path.dirname(sys.argv[0]),
-                              scriptName + ".conf")
+    args = parseCmdLine()
+    logger.info("runstation command line args: {}".format(repr(args)))
 
-    if len(argv) == 1:
-        # TODO - log debug parsing successfully
+    # Evaluate the runstation.conf file, or another config file if a
+    # name was specified on the command line
+    config = {}
+    execfile(args.configFile, locals(), config)
 
-        config = {}
-        discard = {}
-        execfile(configFile, discard, config) 
-        # TODO - log info config file parsed successfully
-
-        app = StationLoader(config['s'])
-        app.start()
-    else:
-        print __doc__ % {'scriptName' : scriptName}
+    app = StationLoader(config['s'])
+    app.start()
 
     return
 
+def parseCmdLine():
+    """ Parse the command line arguments and query some env variables.
+        The command line arguments are returned as attributes of a Namespace object.
+        The program terminates immediately if the command line is not parsed successfully.
+        
+        Example:
+            args = parseCmdLine()
+            ...
+            print args.configFile, args.masterServer
+    """
+    configFile = os.path.join(os.path.dirname(sys.argv[0]),
+                              os.path.basename(sys.argv[0]) + ".conf")
+    desc = '''
+    Run the Brata Station application.  The app behavior is configured by
+    a configuration parameter file and command line arguments.  The default
+    config file path is: {}
+    '''.format(configFile)
+    
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('-m', '--masterServer', default=MS_DEFAULT_ADDR,
+                        help='Master Server address (hostname or IP address) optionally followed by ":" and port number (default: {})'.format(MS_DEFAULT_ADDR))
+    parser.add_argument('-t', '--stationType', choices=STATION_TYPES,
+                        help='one of "cts", "cpa", "hmb".  If not specified, the stationName will be used to determine stationType.')
+    parser.add_argument('-n', '--stationName',
+                        help='usually a stationType followed by 2 digits.')
+    parser.add_argument('-c', '--configFile', default=configFile,
+                        help='specify an alternate config file (default: {})'.format(configFile))
+    parser.add_argument('--console', action="store_true",
+                        help='emulate the station hardware interface using terminal I/O')
+    
+    args = parser.parse_args()
+    # Program exits here if command line parse fails, after outputting a usage message.
+    
+    if args.stationName is not None:
+        if args.stationType is None:
+            # stationName is set and stationType is not set, so try to set the type from the name
+            if len(args.stationName) >= 3:
+                sType = args.stationName[0:3].lower()
+                if sType in STATION_TYPES:
+                    args.stationType = sType
+    
+    # If stationType is still not set, set it to one of the types
+    if args.stationType is None:
+        args.stationType = STATION_TYPES[0]  # set a default value
+        
+    # If stationName is not set, set it from the type
+    if args.stationName is None:
+        args.stationName = args.stationType + "01"
+
+    return args
+
+    
 
 # ------------------------------------------------------------------------------
 def clean_termination(signal, frame):
@@ -125,7 +188,7 @@ if __name__ == "__main__":
 
         #TODO Delete Disabled due to seg fault on Raspbian
         #TODO Delete monkey.patch_all()
-        main(sys.argv)
+        main()
     except Exception, e:
         exType, ex, tb = sys.exc_info()
         logger.critical("Exception occurred of type " + exType.__name__)
