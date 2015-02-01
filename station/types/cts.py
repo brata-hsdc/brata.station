@@ -45,6 +45,7 @@ class Station(IStation):
     PRE_FAILED_RETRY_STATE = 12
     FAILED_RETRY_STATE     = 13
     SEND_RESULT_STATE      = 14
+    SEND_FINISH_STATE      = 15
     ERROR_STATE            = 99
     
     # --------------------------------------------------------------------------
@@ -92,30 +93,32 @@ class Station(IStation):
         self._timedMsgNextState = self.IDLE_STATE
         self._colorToggle = None  # generator
         
-        self._preInputDuration  = 6.0   # seconds to display msg
-        self._passedDuration    = 15.0  # seconds to display msg
-        self._failedDuration    = 15.0  # seconds to display msg
-        self._preIdleDuration   = 5.0   # seconds to display msg
-        self._prePassedDuration = 5.0   # seconds to display msg
-        self._preFailedDuration = 5.0   # seconds to display msg
-        self._submittedDuration = 2.0   # seconds to display msg
+        self._preInputDuration   =  6.0  # seconds to display msg
+        self._passedDuration     =  7.5  # seconds to display msg
+        self._failedDuration     =  5.0  # seconds to display msg
+        self._preIdleDuration    =  5.0  # seconds to display msg
+        self._prePassedDuration  =  5.0  # seconds to display msg
+        self._preFailedDuration  =  5.0  # seconds to display msg
+        self._submittedDuration  =  2.0  # seconds to display msg
+        self._sendFinishDuration = 15.0  # seconds to display msg
         
         
         # Background cycle states: ([list of colors], rate_in_sec)
         # TODO: These constants could be moved to runstation.conf
-        self._preIdleBg   = (["CYAN"], 1.0)
-        self._prePassedBg = (["YELLOW", "WHITE"], 0.1)
-        self._preFailedBg = (["YELLOW", "WHITE"], 0.1)
-        self._idleBg      = (["WHITE", "BLUE", "YELLOW", "GREEN", "RED", "CYAN", "MAGENTA"], 0.75)
-        self._preInputBg  = (["YELLOW", "YELLOW", "YELLOW", "YELLOW", "RED"], 0.15)
-        self._inputBg     = (["CYAN"], 1.0)
-        self._submit1Bg   = (["RED", "WHITE"], 0.15)
-        self._submit2Bg   = (["WHITE"], 1.0)
-        self._passedBg    = (["GREEN", "CYAN"], 1.0)
+        self._preIdleBg    = (["CYAN"], 1.0)
+        self._prePassedBg  = (["YELLOW", "WHITE"], 0.1)
+        self._preFailedBg  = (["YELLOW", "WHITE"], 0.1)
+        self._idleBg       = (["WHITE", "BLUE", "YELLOW", "GREEN", "RED", "CYAN", "MAGENTA"], 0.75)
+        self._preInputBg   = (["YELLOW", "YELLOW", "YELLOW", "YELLOW", "RED"], 0.15)
+        self._inputBg      = (["CYAN"], 1.0)
+        self._submit1Bg    = (["RED", "WHITE"], 0.15)
+        self._submit2Bg    = (["WHITE"], 1.0)
+        self._passedBg     = (["GREEN", "CYAN"], 1.0)
         #self._failedBg    = (["RED"], 1.0)
-        self._failedBg    = (["RED", "RED", "RED", "RED", "RED", "RED", "RED", "RED", "RED", "WHITE"], 0.1)
-        self._shutdownBg  = (["BLUE"], 1.0)
-        self._errorBg     = (["RED", "RED", "RED", "RED", "RED", "WHITE"], 0.15)
+        self._failedBg     = (["RED", "RED", "RED", "RED", "RED", "RED", "RED", "RED", "RED", "WHITE"], 0.1)
+        self._sendFinishBg = (["YELLOW", "YELLOW", "YELLOW", "YELLOW", "RED"], 0.15)
+        self._shutdownBg   = (["BLUE"], 1.0)
+        self._errorBg      = (["RED", "RED", "RED", "RED", "RED", "WHITE"], 0.15)
         
         # Display text for different states
         # TODO: These constants could be moved to runstation.conf
@@ -129,6 +132,7 @@ class Station(IStation):
         self._submittedLine1Text  = "=Code Submitted="
         self._passedText          = "  The Safe Is\n    UNLOCKED"
         self._failedText          = "  The Safe Is\n  STILL LOCKED"
+        self._sendFinishText      = "     Submit\n   Your  Data"
         self._shutdownText        = "Shutting down..."
         self._errorText           = "  Malfunction!\n"
 
@@ -289,6 +293,7 @@ class Station(IStation):
                                   self.PASSED_STATE,
                                   self.FAILED_STATE,
                                   self.SUBMITTED_STATE,
+                                  self.SEND_FINISH_STATE,
                                   ):  # leaving this state
                 self._timedMsg = None
             
@@ -329,7 +334,7 @@ class Station(IStation):
                 self._timedMsg = self.displayTimedMsg(self._prePassedText, self._prePassedDuration, self._prePassedBg, self.PASSED_STATE)
 
             elif newState == self.PASSED_STATE:
-                self._timedMsg = self.displayTimedMsg(self._passedText, self._passedDuration, self._passedBg, self.PRE_IDLE_STATE)
+                self._timedMsg = self.displayTimedMsg(self._passedText, self._passedDuration, self._passedBg, self.SEND_FINISH_STATE)
                 
             elif newState == self.PRE_FAILED_RETRY_STATE:
                 self._timedMsg = self.displayTimedMsg(self._preFailedText, self._preFailedDuration, self._preFailedBg, self.FAILED_RETRY_STATE)
@@ -341,7 +346,10 @@ class Station(IStation):
                 self._timedMsg = self.displayTimedMsg(self._preFailedText, self._preFailedDuration, self._preFailedBg, self.FAILED_STATE)
                 
             elif newState == self.FAILED_STATE:
-                self._timedMsg = self.displayTimedMsg(self._failedText, self._failedDuration, self._failedBg, self.PRE_IDLE_STATE)
+                self._timedMsg = self.displayTimedMsg(self._failedText, self._failedDuration, self._failedBg, self.SEND_FINISH_STATE)
+                
+            elif newState == self.SEND_FINISH_STATE:
+                self._timedMsg = self.displayTimedMsg(self._sendFinishText, self._sendFinishDuration, self._sendFinishBg, self.PRE_IDLE_STATE)
                 
             elif newState == self.SHUTDOWN_STATE:
                 self._display.setText(self._shutdownText)
