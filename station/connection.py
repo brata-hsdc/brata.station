@@ -39,6 +39,7 @@ from tornado.ioloop import IOLoop
 from station.interfaces import IConnectionManager
 from station.state import HttpMethod
 from station.state import State
+from station.util import get_ip_address
 
 
 # ------------------------------------------------------------------------------
@@ -85,6 +86,11 @@ class ConnectionManager(IConnectionManager):
         logger.debug('Flask testing? %s' % (self._app.config['TESTING']))
         logger.debug('Flask logger? %s' % (self._app.config['LOGGER_NAME']))
         logger.debug('Flask server? %s' % (self._app.config['SERVER_NAME']))
+        # TODO make configurable
+        self._ifName = "wlan0"
+        self._ipAddr = get_ip_address(self._ifName)
+        self._listenPort = 5000
+
         self._joinUrl = config.JoinUrl
         self._leaveUrl = config.LeaveUrl
         self._timeExpiredUrl = config.TimeExpiredUrl
@@ -198,23 +204,23 @@ class ConnectionManager(IConnectionManager):
 
     # --------------------------------------------------------------------------
     def run(self):
-        """TODO strictly one-line summary
+        """Loops join requests to the Master Server.
 
-        TODO Detailed multi-line description if
-        necessary.
+        While the Connection Manager is listening, this will loop join requests
+        to establish a connection with the Master Server.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            self ConnectionManager: Self reference to this class.
         Returns:
-            TODO describe the return type and details
+            N/A
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            ConnectionError: if connection request to Master Server fails.
+            Exception: if unexpected exception occurs.
 
         """
         logger.info('Starting TODO thread for connection manager')
+
+        sleep_time = 1 #TODO load this from runstation.conf file
 
         while not self._timeToExit:
             try:
@@ -226,23 +232,24 @@ class ConnectionManager(IConnectionManager):
                         self._connected = True
 
                         # TODO named constant
-                        port = 5000
                         server = HTTPServer(WSGIContainer(self._app))
-                        server.listen(port)
+                        server.listen(self._listenPort)
                         IOLoop.instance().start()
                     # TODO
                     #pass
 
-                sleep(1)
+                sleep(sleep_time)
             except requests.ConnectionError, e:
                 logger.critical(str(e))
+                self._connected = False
                 # TODO nothing to do - cannot connect because remote end is not up;
                 # just wait and try again later
                 # TODO configurable sleep time...
-                sleep(3)
+                sleep(sleep_time)
             except Exception, e:
                 exType, ex, tb = sys.exc_info()
                 logger.critical("Exception occurred of type %s: %s" % (exType.__name__, str(e)))
+                self._connected = False
                 traceback.print_tb(tb)
 
         self.leave()
@@ -344,10 +351,7 @@ class ConnectionManager(IConnectionManager):
         data = json.dumps(args)
         response = requests.post(endpointUrl, data=data, headers=headers)
 
-        # TODO Delete
-        ##response = requests.post(endpointUrl, data, auth=('user', '*****'))
-
-        #logger.debug('Service returned %s with for HTTP method %s, endpoint URL %s, and args %s with headers %s and message %s' % (response.status_code, httpMethod, endpointUrl, args, response.headers, json.dumps(response.json)))
+        logger.debug('Service returned %s with for HTTP method %s, endpoint URL %s, and args %s with headers %s, response %s, JSON response %s, and message %s' % (response.status_code, httpMethod, endpointUrl, args, response.headers, response, response.json, json.dumps(response.json)))
         #logger.debug('Force json %s' % (json.dumps(response.data)))
         
         try:
@@ -385,18 +389,17 @@ class ConnectionManager(IConnectionManager):
 
         """
         logger.debug('Station requesting join with master server')
+
         url = self._joinUrl + "/" + self._stationId
+        stationUrl = 'http://%s:%s/rpi' % (self._ipAddr, self._listenPort)
+
         (status, response) = self.callService(
             HttpMethod.POST, url,
             {
                 'message_version'  : 0,
                 'message_timestamp': self.timestamp(),
                 'station_type'     : self._stationType,
-                # TODO 
-                #'station_url'      : 'http://172.27.164.9:5000/rpi'
-                'station_url'      : 'http://192.168.1.104:5000/rpi'
-                #'station_url'      : 'http://192.168.0.48:5000/rpi'
-                #'station_url'      : 'http://192.168.43.240:5000/rpi'
+                'station_url'      : stationUrl
             })
 
         if status == httplib.ACCEPTED:
@@ -503,12 +506,17 @@ class ConnectionManager(IConnectionManager):
                 'message_version'   : 0,
                 'message_timestamp' : self.timestamp(),
                 'candidate_answer'  : combo,
-                'is_correct'        : "True" if isCorrect else "False",
+                'is_correct'        : str(isCorrect), #"True" if isCorrect else "False",
                 'fail_message'      : "" if isCorrect else "Incorrect combo provided."
             })
 
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (url))
+            self.handleSubmissionResp(response['theatric_delay_ms'],
+#                                       "True" if isCorrect else "False",
+#                                       response['challenge_complete'])
+                                      str(isCorrect),
+                                      str(response['challenge_complete']))
         elif status == httplib.NOT_FOUND:
             logger.critical('Service %s returned NOT_FOUND' % (url))
         else:
@@ -539,6 +547,7 @@ class ConnectionManager(IConnectionManager):
         logger.debug('Station submitting answer to master server')
         challengeComplete = 'Unknown'
         url = self._submitUrl + '/' + self._stationId
+
         (status, response) = self.callService(
             HttpMethod.POST, url,
             {
@@ -551,9 +560,9 @@ class ConnectionManager(IConnectionManager):
 
         if status == httplib.OK:
             try:
-                logger.debug('Service %s returned OK with response %s' % (url, response))
-                if 'challenge_complete' in response:
-                    challengeComplete = response['challenge_complete'] 
+              self.handleSubmissionResp(response.theatric_delay_ms,
+                                      str(isCorrect),
+                                      str(response.challenge_complete))
             except:
                 logger.debug('Could not print response.  Check server provided json response')
         elif status == httplib.NOT_FOUND:
@@ -666,9 +675,7 @@ class ConnectionManager(IConnectionManager):
 
 
     # --------------------------------------------------------------------------
-    def handleSubmission(self,
-                         stationId,
-                         teamId):
+    def handleSubmission(self):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -697,27 +704,53 @@ class ConnectionManager(IConnectionManager):
         message_version = request.json['message_version']
         message_timestamp = request.json['message_timestamp']
         theatric_delay_ms = request.json['theatric_delay_ms']
-        candidate_answer = request.json['candidate_answer']
-        is_correct = request.json['is_correct']
-        challenge_incomplete = request.json['challenge_incomplete']
+        is_correct = str(request.json['is_correct'])
+        challenge_complete = str(request.json['challenge_complete'])
 
-        logger.debug('Master server relaying (ver %s) user answer to station ID %s for team ID %s at %s. Answer "%s" with theatric delay %s ms is correct? %s. Challenge incomplete? %s' % (message_version, stationId, teamId, message_timestamp, candidate_answer, theatric_delay_ms, is_correct, challenge_incomplete))
+        logger.debug('Master server relaying (ver %s) user answer to at %s. Theatric delay %s ms is correct? %s. Challenge complete? %s' % (message_version, message_timestamp, theatric_delay_ms, is_correct, challenge_complete))
+        self.handleSubmissionResp(theatric_delay_ms,
+                                  str(is_correct),
+                                  str(challenge_complete))
 
-        self._callback.args = [theatric_delay_ms, candidate_answer]
-
-        if is_correct:
-            self._callback.State = State.PASSED
-        elif challenge_incomplete:
-            self._callback.State = State.FAILED
-        else:
-            pass # TODO
-            #TODO self._callback.State = neither State.PASSED nor State.FAILED
-
-        # TODO
-        resp = jsonify({'foo': 'bar'})
+        resp = jsonify({})
         resp.status_code = httplib.OK
         return resp
 
+
+    # --------------------------------------------------------------------------
+    def handleSubmissionResp(self,
+                             theatric_delay_ms,
+                             is_correct,
+                             challenge_complete):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        logger.debug('Handling submission response: Theatric delay %s ms is correct? %s. Challenge complete? %s' % (theatric_delay_ms, is_correct, challenge_complete))
+
+        self._callback.args = [theatric_delay_ms, is_correct, challenge_complete]
+
+#         if is_correct.lower() == "true":
+#             self._callback.State = State.PASSED
+#         elif not challenge_complete.lower() == "true":
+#             self._callback.State = State.FAILED
+#         else:
+#             pass # TODO
+#             #TODO self._callback.State = neither State.PASSED nor State.FAILED
+        self._callback.State = State.PASSED if is_correct.lower() == "true" else State.FAILED
 
     # --------------------------------------------------------------------------
     def shutdown(self,

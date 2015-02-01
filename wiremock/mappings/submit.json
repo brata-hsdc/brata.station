@@ -8,7 +8,6 @@
       "headers": {
          "Content-Type": "application/json"
       },
-      "body": "{}"
-      }
+      "body": "{\"message_version\": 0, \"message_timestamp\": \"2014-09-15 14:08:59\", \"theatric_delay_ms\": 3000, \"challenge_complete\": \"False\"}"
    }
 }

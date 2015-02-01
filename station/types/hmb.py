@@ -42,17 +42,15 @@ class Station(IStation):
     def __init__(self,
                  config,
                  hwModule):
-        """TODO strictly one-line summary
+        """HMB station constructor.
 
-        TODO Detailed multi-line description if
-        necessary.
+        Loads vibration motor and LED classes and configurations.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            config (type1): TODO describe arg, valid values, etc.
+            hwModule (type2): TODO describe arg, valid values, etc.
         Returns:
-            TODO describe the return type and details
+            N/A.
         Raises:
             TodoError1: if TODO.
             TodoError2: if TODO.
@@ -62,9 +60,11 @@ class Station(IStation):
 
         ledClassName = config.LedClassName
         vibrationMotorClassName = config.VibrationMotorClassName
+        urgencyLedClassName = config.UrgencyLedClassName
 
         ledClass = getattr(hwModule, ledClassName)
         vibrationMotorClass = getattr(hwModule, vibrationMotorClassName)
+        urgencyLedClass = getattr(hwModule, urgencyLedClassName)
 
         self._vibrationMotors = []
 
@@ -76,6 +76,9 @@ class Station(IStation):
 
         for i in config.Leds:
             self._leds[i.Name] = ledClass(i.Name, i) # TODO: SS - Should I be placing the color from the config file here?
+
+        # TODO - Fix
+        self._urgencyLed = urgencyLedClass(config.UrgencyLed.Name, config.UrgencyLed.OutputPin)
 
          # TODO is the expired timer common to all stations? Should both of these be moved up?
         self.expiredTimer = None
@@ -89,7 +92,7 @@ class Station(IStation):
         Args:
             N/A.
         Returns:
-            N/A.
+            Station name as a string.
         Raises:
             N/A.
 
@@ -140,6 +143,8 @@ class Station(IStation):
 
         for motor in self._vibrationMotors:
             motor.stop()
+        
+        self._urgencyLed.stop()
 
     # --------------------------------------------------------------------------
     def onReady(self):
@@ -167,12 +172,31 @@ class Station(IStation):
         for name in self._leds.keys():
             self._leds[name].turnOff()
 
+        self._urgencyLed.stop()
+
         if self.expiredTimer != None:
             self.expiredTimer.cancel()
             self.expiredTimer = None
 
     # --------------------------------------------------------------------------
     def getCurrentTime_ms(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
         now = datetime.now()
         now_ms = (now.day * 24 * 3600 + now.second) * 1000 \
                + now.microsecond / 1000.0
@@ -221,6 +245,9 @@ class Station(IStation):
             delta_s = delta_ms / 1000.0
             expirationTime_ms = now_ms + delta_ms
             logger.info("Challenge started at time=%s seconds and will complete %s seconds later at time=%s seconds" % ((now_ms / 1000.0), delta_s, (expirationTime_ms / 1000.0)))
+
+            #TODO - Will need to run this function on a seperate thread as it executes a while loop for the entire period of delta_
+            self._urgencyLed.start(delta_ms)
 
             self.expiredTimer = Timer(delta_s, self.onTimeExpired)
             self.expiredTimer.start()
@@ -318,6 +345,9 @@ class Station(IStation):
 
         self._leds['green'].turnOn()
 
+	print "the args are here"
+	print args
+
     # --------------------------------------------------------------------------
     def onUnexpectedState(self, value):
         """TODO strictly one-line summary
@@ -377,7 +407,7 @@ class VibrationManager:
         logger.debug('Constructing vibration manager %s', self.Name)
         self._timeToExit = False
         self._vibrationMotor = vibrationMotorClass(self.Name, config.OutputPin)
-        
+
         self._currentlyStarted = False
         self._transitionToStarted = False
 

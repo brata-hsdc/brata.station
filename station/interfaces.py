@@ -519,6 +519,43 @@ class IVibrationMotor:
         pass
 
 # ------------------------------------------------------------------------------
+class IUrgencyLed:
+    """
+    Represents a single vibration motor.
+    """
+    __metaclass__ = ABCMeta
+
+    # --------------------------------------------------------------------------
+    @abstractmethod
+    def start(self):
+        """Steadily vibrates the motor.
+
+        Args:
+            N/A.
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        pass
+
+    # --------------------------------------------------------------------------
+    @abstractmethod
+    def stop(self):
+        """Ceases vibrating the motor.
+
+        Args:
+            N/A.
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        pass 
+    
+
 class IBuzzer:
     """
     Represents a single buzzer with a preconfigured song.

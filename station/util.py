@@ -16,9 +16,12 @@
 Provides general utilities.
 """
 
+import fcntl
 import logging
 import logging.handlers
 import select
+import socket
+import struct
 import sys
 # TODO There should be no problem with termios on a non-Pi
 import termios  # @UnresolvedImport when not on R-Pi
@@ -104,6 +107,36 @@ def lcm(a, b):
 def lcmm(*args):
     """Return lcm of args."""   
     return reduce(lcm, args)
+
+# ------------------------------------------------------------------------------
+def get_ip_address(ifname):
+    """TODO strictly one-line summary
+
+    TODO Detailed multi-line description if
+    necessary.
+
+    Reference: http://raspberrypi.stackexchange.com/questions/6714/how-to-get-the-raspberry-pis-ip-address-for-ssh
+
+    Args:
+        arg1 (type1): TODO describe arg, valid values, etc.
+        arg2 (type2): TODO describe arg, valid values, etc.
+        arg3 (type3): TODO describe arg, valid values, etc.
+    Returns:
+        TODO describe the return type and details
+    Raises:
+        TodoError1: if TODO.
+        TodoError2: if TODO.
+
+    """
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    result = socket.inet_ntoa(fcntl.ioctl(
+        s.fileno(),
+        0x8915,  # SIOCGIFADDR
+        struct.pack('256s', ifname[:15])
+    )[20:24])
+
+    logger.info('IP address of interface %s is %s.' % (ifname, result))
+    return result
 
 # ------------------------------------------------------------------------------
 class NonBlockingConsole(object):

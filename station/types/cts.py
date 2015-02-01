@@ -30,14 +30,22 @@ class Station(IStation):
     Provides the implementation for a CTS station to support displaying and
     obtaining a combination value from the user to supply to the MS.
     """
-    START_STATE      = 0
-    IDLE_STATE       = 1
-    PRE_INPUT_STATE  = 2
-    INPUT_STATE      = 3
-    SUBMITTING_STATE = 4
-    SUBMITTED_STATE  = 5
-    SHUTDOWN_STATE   = 6
-    ERROR_STATE      = 99
+    START_STATE            =  0
+    IDLE_STATE             =  1
+    PRE_INPUT_STATE        =  2
+    INPUT_STATE            =  3
+    SUBMITTING_STATE       =  4
+    SUBMITTED_STATE        =  5
+    PASSED_STATE           =  6
+    FAILED_STATE           =  7
+    SHUTDOWN_STATE         =  8
+    PRE_IDLE_STATE         =  9
+    PRE_PASSED_STATE       = 10
+    PRE_FAILED_STATE       = 11
+    PRE_FAILED_RETRY_STATE = 12
+    FAILED_RETRY_STATE     = 13
+    SEND_RESULT_STATE      = 14
+    ERROR_STATE            = 99
     
     # --------------------------------------------------------------------------
     def __init__(self,
@@ -81,32 +89,51 @@ class Station(IStation):
         
         self._combo = None  # will hold a Combo object
         self._timedMsg = None  # generator
+        self._timedMsgNextState = self.IDLE_STATE
         self._colorToggle = None  # generator
-        self._preInputDuration = 6.0  # seconds to display msg
+        
+        self._preInputDuration  = 6.0   # seconds to display msg
+        self._passedDuration    = 15.0  # seconds to display msg
+        self._failedDuration    = 15.0  # seconds to display msg
+        self._preIdleDuration   = 5.0   # seconds to display msg
+        self._prePassedDuration = 5.0   # seconds to display msg
+        self._preFailedDuration = 5.0   # seconds to display msg
+        self._submittedDuration = 2.0   # seconds to display msg
         
         
         # Background cycle states: ([list of colors], rate_in_sec)
         # TODO: These constants could be moved to runstation.conf
-        self._idleBg     = (["WHITE", "WHITE", "BLUE", "YELLOW", "GREEN", "RED", "BLACK", "CYAN", "MAGENTA"], 0.75)
-        self._preInputBg = (["YELLOW", "YELLOW", "YELLOW", "YELLOW", "RED"], 0.15)
-        self._inputBg    = (["CYAN"], 1.0)
-        self._submit1Bg  = (["RED", "WHITE"], 0.15)
-        self._submit2Bg  = (["GREEN"], 1.0)
-        self._shutdownBg = (["GREEN"], 1.0)
-        self._errorBg    = (["RED", "RED", "RED", "RED", "RED", "WHITE"], 0.15)
+        self._preIdleBg   = (["CYAN"], 1.0)
+        self._prePassedBg = (["YELLOW", "WHITE"], 0.1)
+        self._preFailedBg = (["YELLOW", "WHITE"], 0.1)
+        self._idleBg      = (["WHITE", "BLUE", "YELLOW", "GREEN", "RED", "CYAN", "MAGENTA"], 0.75)
+        self._preInputBg  = (["YELLOW", "YELLOW", "YELLOW", "YELLOW", "RED"], 0.15)
+        self._inputBg     = (["CYAN"], 1.0)
+        self._submit1Bg   = (["RED", "WHITE"], 0.15)
+        self._submit2Bg   = (["WHITE"], 1.0)
+        self._passedBg    = (["GREEN", "CYAN"], 1.0)
+        #self._failedBg    = (["RED"], 1.0)
+        self._failedBg    = (["RED", "RED", "RED", "RED", "RED", "RED", "RED", "RED", "RED", "WHITE"], 0.1)
+        self._shutdownBg  = (["BLUE"], 1.0)
+        self._errorBg     = (["RED", "RED", "RED", "RED", "RED", "WHITE"], 0.15)
         
         # Display text for different states
         # TODO: These constants could be moved to runstation.conf
+        self._preIdleText         = "  Resetting...\n"
+        self._prePassedText       = "- Trying Your -\n- Combination -"
+        self._preFailedText       = "- Trying Your -\n- Combination -"
         self._idleText            = "==== CRACK =====\n== THE = SAFE =="
         self._preInputText        = "      HEY!!\n  Scan QR Code"
         self._enterLine1Text      = "Enter Code:"
         self._submittingLine1Text = "2nd ENTER Sends"
         self._submittedLine1Text  = "=Code Submitted="
+        self._passedText          = "  The Safe Is\n    UNLOCKED"
+        self._failedText          = "  The Safe Is\n  STILL LOCKED"
         self._shutdownText        = "Shutting down..."
-        self._errorText           = "Malfunction!"
+        self._errorText           = "  Malfunction!\n"
 
         # Station current operating state
-        self._state = self.START_STATE
+        self._ctsState = self.START_STATE
         self._pushButtonMonitor.setOnTickCallback(self.onTick)
         self.enterState(self.IDLE_STATE)
 
@@ -248,20 +275,33 @@ class Station(IStation):
         Returns:
             The state prior to being called
         """
-        oldState = self._state
+        oldState = self._ctsState
         
-        if newState != self._state:
+#         if newState != self._ctsState:
+        while newState != self._ctsState:
             
-            if self._state == self.PRE_INPUT_STATE:  # leaving this state
+            if self._ctsState in (self.PRE_INPUT_STATE,
+                                  self.PRE_IDLE_STATE,
+                                  self.PRE_PASSED_STATE,
+                                  self.PRE_FAILED_STATE,
+                                  self.PRE_FAILED_RETRY_STATE,
+                                  self.FAILED_RETRY_STATE,
+                                  self.PASSED_STATE,
+                                  self.FAILED_STATE,
+                                  self.SUBMITTED_STATE,
+                                  ):  # leaving this state
                 self._timedMsg = None
             
-            if newState == self.IDLE_STATE:
+            if newState == self.PRE_IDLE_STATE:
+                self._timedMsg = self.displayTimedMsg(self._preIdleText, self._preIdleDuration, self._preIdleBg, self.IDLE_STATE)
+
+            elif newState == self.IDLE_STATE:
                 self._display.setText(self._idleText)
                 self.setToggleColors(*self._idleBg)
                 self._pushButtonMonitor.startListening()
                 
             elif newState == self.PRE_INPUT_STATE:
-                self._timedMsg = self.displayTimedMsg(self._preInputText, self._preInputDuration, self._preInputBg)
+                self._timedMsg = self.displayTimedMsg(self._preInputText, self._preInputDuration, self._preInputBg, self.INPUT_STATE)
                 self._pushButtonMonitor.stopListening()
                 
             elif newState == self.INPUT_STATE:
@@ -275,12 +315,37 @@ class Station(IStation):
                 self.setToggleColors(*self._submit1Bg)
                 
             elif newState == self.SUBMITTED_STATE:
-                self._display.setLine1Text(self._submittedLine1Text)
-                self.setToggleColors(*self._submit2Bg)
+#                 self._display.setLine1Text(self._submittedLine1Text)
+#                 self.setToggleColors(*self._submit2Bg)
+                logger.debug("initializing SUBMITTED_STATE")
+                self._timedMsg = self.displayTimedMsg(self._submittedLine1Text, self._submittedDuration, self._submit2Bg, self.SEND_RESULT_STATE)
                 self._pushButtonMonitor.stopListening()
+                
+            elif newState == self.SEND_RESULT_STATE:
+                # Submit combo to MS
+                self.submitCombination()
+                
+            elif newState == self.PRE_PASSED_STATE:
+                self._timedMsg = self.displayTimedMsg(self._prePassedText, self._prePassedDuration, self._prePassedBg, self.PASSED_STATE)
+
+            elif newState == self.PASSED_STATE:
+                self._timedMsg = self.displayTimedMsg(self._passedText, self._passedDuration, self._passedBg, self.PRE_IDLE_STATE)
+                
+            elif newState == self.PRE_FAILED_RETRY_STATE:
+                self._timedMsg = self.displayTimedMsg(self._preFailedText, self._preFailedDuration, self._preFailedBg, self.FAILED_RETRY_STATE)
+                
+            elif newState == self.FAILED_RETRY_STATE:
+                self._timedMsg = self.displayTimedMsg(self._failedText, self._failedDuration, self._failedBg, self.INPUT_STATE)
+                
+            elif newState == self.PRE_FAILED_STATE:
+                self._timedMsg = self.displayTimedMsg(self._preFailedText, self._preFailedDuration, self._preFailedBg, self.FAILED_STATE)
+                
+            elif newState == self.FAILED_STATE:
+                self._timedMsg = self.displayTimedMsg(self._failedText, self._failedDuration, self._failedBg, self.PRE_IDLE_STATE)
                 
             elif newState == self.SHUTDOWN_STATE:
                 self._display.setText(self._shutdownText)
+                self.setToggleColors(*self._shutdownBg)
                 self._pushButtonMonitor.stopListening()
 
             else:
@@ -288,7 +353,7 @@ class Station(IStation):
                 self.setToggleColors(*self._errorBg)
                 self._pushButtonMonitor.stopListening()
             
-            self._state = newState
+            self._ctsState = newState
         
         return oldState
         
@@ -304,7 +369,7 @@ class Station(IStation):
             pushButtonName (string): Up, Down, Left, Right, or Enter
         """
         #logger.info('Push button %s pressed.' % (pushButtonName))
-        if self._state == self.IDLE_STATE:
+        if self._ctsState == self.IDLE_STATE:
             self.enterState(self.PRE_INPUT_STATE)
         elif pushButtonName == 'Up':
             if self.enterState(self.INPUT_STATE) == self.INPUT_STATE:
@@ -323,16 +388,14 @@ class Station(IStation):
                 self._combo.moveRight(1)
                 self.refreshDisplayedCombo()
         elif pushButtonName == 'Enter':
-            if self._state == self.INPUT_STATE:
+            if self._ctsState == self.INPUT_STATE:
                 self.enterState(self.SUBMITTING_STATE)
                 logger.info('1st enter key press received. Waiting for 2nd.')
-            elif self._state == self.SUBMITTING_STATE:
+            elif self._ctsState == self.SUBMITTING_STATE:
                 self.enterState(self.SUBMITTED_STATE)
                 logger.info('2nd enter key press received.')
-                # Submit combo to MS
-                self.submitCombination()
                 
-                self._state = self.SUBMITTED_STATE
+                #self._ctsState = self.SUBMITTED_STATE
         else:
             logger.debug("Invalid pushButtonName received: '{}'".format(pushButtonName))
 
@@ -356,7 +419,11 @@ class Station(IStation):
 
         """
         logger.info('CTS transitioned to Failed state with args [%s].' % (args))
-        self._display.setText("Failed.")
+        theatric_delay, is_correct, challenge_complete = args
+        if challenge_complete.lower() == "true":
+            self.enterState(self.PRE_FAILED_STATE)
+        else:
+            self.enterState(self.PRE_FAILED_RETRY_STATE)
 
         self._pushButtonMonitor.stopListening()
 
@@ -380,7 +447,7 @@ class Station(IStation):
 
         """
         logger.info('CTS transitioned to Passed state with args [%s].' % (args))
-        self._display.setText("Success!")
+        self.enterState(self.PRE_PASSED_STATE)
 
         self._pushButtonMonitor.stopListening()
 
@@ -435,7 +502,7 @@ class Station(IStation):
             self._display.setBgColor(colors[0])
         
     # --------------------------------------------------------------------------
-    def displayTimedMsg(self, msg, duration, bg):
+    def displayTimedMsg(self, msg, duration, bg, nextState):
         """ Display msg for duration, then go back to IDLE_STATE
         
         This is a generator function.  When first called, it sets the display
@@ -454,13 +521,18 @@ class Station(IStation):
             msg (string):  A message to be displayed
             duration (float):  Seconds to display msg
             bg (list, float):  Args to pass to self.toggleColors
+            nextState (STATE):  The state to enter after time expires
         
         Returns:
             a generator function that returns False when finished
         """
         tStart = time.time()
-        self._display.setText(msg)
+        if "\n" in msg:
+            self._display.setText(msg)
+        else:
+            self._display.setLine1Text(msg)
         self.setToggleColors(*bg)
+        self._timedMsgNextState = nextState
         
         while time.time() - tStart < duration:
             yield True  # keep displaying the msg
@@ -508,7 +580,8 @@ class Station(IStation):
         
         if self._timedMsg:
             if not self._timedMsg.next():
-                self.enterState(self.IDLE_STATE)
+                self._timedMsg = None
+                self.enterState(self._timedMsgNextState)
         
     # --------------------------------------------------------------------------
     def submitCombination(self):
