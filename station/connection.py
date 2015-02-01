@@ -495,15 +495,14 @@ class ConnectionManager(IConnectionManager):
                 'message_version'   : 0,
                 'message_timestamp' : self.timestamp(),
                 'candidate_answer'  : combo,
-                'is_correct'        : str(isCorrect), #"True" if isCorrect else "False",
+                'is_correct'        : isCorrect,
                 'fail_message'      : "" if isCorrect else "Incorrect combo provided."
             })
 
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (url))
+            # Note: the str() casts normalize string and bool inputs, but return a str
             self.handleSubmissionResp(response['theatric_delay_ms'],
-#                                       "True" if isCorrect else "False",
-#                                       response['challenge_complete'])
                                       str(isCorrect),
                                       str(response['challenge_complete']))
         elif status == httplib.NOT_FOUND:
@@ -534,7 +533,7 @@ class ConnectionManager(IConnectionManager):
         """
         logger.debug('Station submitting answer to master server')
 
-        isCorrect = "True" # TODO
+        isCorrect = True # TODO
 
         url = self._submitUrl
         (status, response) = self.callService(
@@ -551,6 +550,7 @@ class ConnectionManager(IConnectionManager):
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (url))
             self.handleSubmissionResp(response.theatric_delay_ms,
+                                      # Note: the str() casts normalize string and bool inputs, but return a str
                                       str(isCorrect),
                                       str(response.challenge_complete))
         elif status == httplib.NOT_FOUND:
