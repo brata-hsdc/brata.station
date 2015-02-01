@@ -392,8 +392,11 @@ class ConnectionManager(IConnectionManager):
                 'message_version'  : 0,
                 'message_timestamp': self.timestamp(),
                 'station_type'     : self._stationType,
-                # TODO 'station_url'      : 'http://todo:5000/rpi'
-                'station_url'      : 'http://192.168.43.240:5000/rpi'
+                # TODO 
+                #'station_url'      : 'http://172.27.164.9:5000/rpi'
+                'station_url'      : 'http://192.168.1.104:5000/rpi'
+                #'station_url'      : 'http://192.168.0.48:5000/rpi'
+                #'station_url'      : 'http://192.168.43.240:5000/rpi'
             })
 
         if status == httplib.ACCEPTED:

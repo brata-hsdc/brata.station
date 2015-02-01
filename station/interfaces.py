@@ -241,13 +241,15 @@ class ILed:
         """
         pass
 
-    def decay(self):
-        """Decay from full brightness to off
+    # --------------------------------------------------------------------------
+    @abstractmethod
+    def fade(self, startPercentageOn, endPercentageOn, durationInSeconds):
+        """Transitions an LED from one level to another over time.
 
-        Each call updates the LED (if enabled) to go from full brightness to
-        off in smooth steps.  True is returned if the LED is still on (non-zero
-        brightness). False is returned if the LED has decayed to off (zero)
-        brightness.
+           Change from startPercentageOn to endPercentageOn over the provided
+           durationInSeconds.  Technically can be used to slowly bring up 
+           light as well, but name was kept to stay consistent with the 
+           existing Pibrella interface.
         """
         pass
 
