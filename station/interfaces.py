@@ -241,6 +241,17 @@ class ILed:
         """
         pass
 
+    # --------------------------------------------------------------------------
+    @abstractmethod
+    def fade(self, startPercentageOn, endPercentageOn, durationInSeconds):
+        """Transitions an LED from one level to another over time.
+
+           Change from startPercentageOn to endPercentageOn over the provided
+           durationInSeconds.  Technically can be used to slowly bring up 
+           light as well, but name was kept to stay consistent with the 
+           existing Pibrella interface.
+        """
+        pass
 
 # ------------------------------------------------------------------------------
 class IPushButtonMonitor:
@@ -544,6 +555,92 @@ class IUrgencyLed:
         """
         pass 
     
+
+class IBuzzer:
+    """
+    Represents a single buzzer with a preconfigured song.
+    """
+    __metaclass__ = ABCMeta
+
+    # --------------------------------------------------------------------------
+    @abstractmethod
+    def off(self):
+        """Stops the buzzer.
+
+        Args:
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        pass
+
+    # --------------------------------------------------------------------------
+    @abstractmethod
+    def play(self):
+        """Plays or restarts the buzzer playing it's song asynchronously.
+
+        Args:
+            N/A.
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        pass
+
+    # --------------------------------------------------------------------------
+    @abstractmethod
+    def playSynchronously(self):
+        """Plays or restarts the buzzer playing it's song synchronously.
+
+        Args:
+            N/A.
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        pass
+
+    # --------------------------------------------------------------------------
+    @abstractmethod
+    def note(self, tone):
+        """Holds a specific note until off is called.
+
+        Args:
+            N/A.
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        pass
+
+# ------------------------------------------------------------------------------
+class IInput:
+    """
+    Represents a single input.
+    """
+    __metaclass__ = ABCMeta
+
+    # --------------------------------------------------------------------------
+    @abstractmethod
+    def read(self):
+        """Reads the input.
+
+        Args:
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        pass
 
 # ------------------------------------------------------------------------------
 # Module Initialization

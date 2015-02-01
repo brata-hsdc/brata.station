@@ -29,6 +29,69 @@ import tty
 
 
 # ------------------------------------------------------------------------------
+class Config(object):
+   pass
+
+# --------------------------------------------------------------------------
+def toFloat(floatString, defaultValueOnException):
+    """Safely return an int from a string and if not default the value.
+
+    TODO Detailed multi-line description if
+    necessary.
+
+    Args:
+        arg1 (type1): TODO describe arg, valid values, etc.
+        arg2 (type2): TODO describe arg, valid values, etc.
+        arg3 (type3): TODO describe arg, valid values, etc.
+    Returns:
+        TODO describe the return type and details
+    Raises:
+        TodoError1: if TODO.
+        TodoError2: if TODO.
+
+    """
+
+    returnValue = defaultValueOnException
+    try:
+        returnValue = float(floatString)
+    except ValueError, e:
+        exType, ex, tb = sys.exc_info()
+        logger.critical("String %s could not be converted to a float" % floatString)
+        logger.critical("Defaulting to value of %s" % defaultValueOnException)
+        logger.critical(str(e))
+        traceback.print_tb(tb)
+
+    return returnValue
+
+# --------------------------------------------------------------------------
+def toInt(integerString, defaultValueOnException):
+    """Safely return an int from a string and if not default the value.
+
+    TODO Detailed multi-line description if
+    necessary.
+
+    Args:
+        arg1 (type1): TODO describe arg, valid values, etc.
+        arg2 (type2): TODO describe arg, valid values, etc.
+        arg3 (type3): TODO describe arg, valid values, etc.
+    Returns:
+        TODO describe the return type and details
+    Raises:
+        TodoError1: if TODO.
+        TodoError2: if TODO.
+
+    """
+
+    try:
+        return int(integerString)
+    except ValueError, e:
+        exType, ex, tb = sys.exc_info()
+        logger.critical("Exception occurred of type %s in %s" % (exType.__name__))
+        logger.critical(str(e))
+        traceback.print_tb(tb)
+    return defaultValueOnException
+
+# ------------------------------------------------------------------------------
 def gcd(a, b):
     """Return greatest common divisor using Euclid's Algorithm."""
     while b:      

@@ -352,8 +352,19 @@ class ConnectionManager(IConnectionManager):
         response = requests.post(endpointUrl, data=data, headers=headers)
 
         logger.debug('Service returned %s with for HTTP method %s, endpoint URL %s, and args %s with headers %s, response %s, JSON response %s, and message %s' % (response.status_code, httpMethod, endpointUrl, args, response.headers, response, response.json, json.dumps(response.json)))
-        return (response.status_code, response.json)
-
+        #logger.debug('Force json %s' % (json.dumps(response.data)))
+        
+        try:
+            retData = response.json()
+            logger.debug('json() worked')
+            return (response.status_code, retData)
+        except:
+            logger.debug('json() failed')
+        try:
+            return (response.status_code, response.json)
+        except:
+            logger.debug('json failed')
+        return (response.status_code, 'None')
 
     # ===
     # Messages from Station to MS
@@ -514,6 +525,7 @@ class ConnectionManager(IConnectionManager):
     # --------------------------------------------------------------------------
     def submitCpaDetectionToMS(self,
                                hitDetected,
+                               isCorrect,
                                failMessage):
         """TODO strictly one-line summary
 
@@ -532,32 +544,33 @@ class ConnectionManager(IConnectionManager):
 
         """
         logger.debug('Station submitting answer to master server')
+        challengeComplete = 'Unknown'
+        url = self._submitUrl + '/' + self._stationId
 
-        isCorrect = True # TODO
-
-        url = self._submitUrl
         (status, response) = self.callService(
             HttpMethod.POST, url,
             {
                 'message_version'            : 0,
                 'message_timestamp'          : self.timestamp(),
-                'station_id'                 : self._stationId,
-                'hit_detected_within_window' : hitDetected,
+                'candidate_answer'           : hitDetected,
                 'is_correct'                 : isCorrect,
                 'fail_message'               : failMessage
             })
 
         if status == httplib.OK:
-            logger.debug('Service %s returned OK' % (url))
-            self.handleSubmissionResp(response.theatric_delay_ms,
+            try:
+              self.handleSubmissionResp(response.theatric_delay_ms,
                                       # Note: the str() casts normalize string and bool inputs, but return a str
                                       str(isCorrect),
                                       str(response.challenge_complete))
+            except:
+                logger.debug('Could not print response.  Check server provided json response')
         elif status == httplib.NOT_FOUND:
             logger.critical('Service %s returned NOT_FOUND' % (url))
         else:
             logger.critical('Unexpected HTTP response %s received from service %s' % (status, url))
 
+        return challengeComplete
 
     # ===
     # Messages from MS to Station
@@ -782,7 +795,6 @@ class ConnectionManager(IConnectionManager):
             resp.status_code = httplib.BAD_REQUEST
 
         return resp
-
 
 # ------------------------------------------------------------------------------
 # Module Initialization
