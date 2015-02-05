@@ -951,11 +951,11 @@ class VibrationMotor(IVibrationMotor):
 
 # ------------------------------------------------------------------------------
 class UrgencyLed(IUrgencyLed):
-	    # --------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     def __init__(self,
                  name,
                  outputPin):
-		"""TODO strictly one-line summary
+        """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
         necessary.
@@ -971,11 +971,21 @@ class UrgencyLed(IUrgencyLed):
             TodoError2: if TODO.
 
         """
-		self.Name = name
+        self.Name = name
+        logger.debug('Constructing urgency LED %s' % (self.Name))
+
         #TODO - Need to get these from config file [SS]
         #self.OnDuration_s = 0.5
         #self.OffDuration_s = 0.5
-		self.outputPin = getattr(pibrella.output, outputPin)
+
+        self.outputPin = getattr(pibrella.output, outputPin)
+
+        self._timeToExit = False
+        self._transitionToStarted = False
+
+        self._thread = Thread(target = self.run)
+        self._thread.daemon = True
+        self._thread.start()
     
     # --------------------------------------------------------------------------
     def __enter__(self):
@@ -995,10 +1005,10 @@ class UrgencyLed(IUrgencyLed):
             TodoError2: if TODO.
 
         """
-        logger.debug('Entering vibration motor %s', self.Name)
+        logger.debug('Entering urgency LED %s', self.Name)
         return self
 		
-	# --------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     def __exit__(self, type, value, traceback):
         """TODO strictly one-line summary
 
@@ -1016,10 +1026,64 @@ class UrgencyLed(IUrgencyLed):
             TodoError2: if TODO.
 
         """
-        logger.debug('Exiting vibration motor %s', self.Name)
+        logger.debug('Exiting urgency LED %s', self.Name)
         self.stop()		
+        stopListening(self)
+        self._timeToExit = True
+        self._thread.join()
 		
-		# --------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
+    def run(self):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+        logger.info('Starting thread for urgency LED %s' % (self.Name))
+
+        while not self._timeToExit:
+            try:
+                if self._transitionToStarted:
+                    # Working Test Code # TODO Delete
+                    if self.flag: # TODO Delete
+                        self.flag = False # TODO Delete
+                        self.outputPin.off() # TODO Delete
+                    else: # TODO Delete
+                        self.flag = True # TODO Delete
+                        self.outputPin.on() # TODO Delete
+        
+                    # TODO Experimental Code
+                    # TODO pibrella.pulse with array[i]
+                    # TODO sleep for tenthslice
+                    # TODO i--
+
+                    # TODO if (datetime.now < boomTime):
+                        # TODO logger.info('Urgency LED %s transitioning to stopped.' % (self.Name))
+                        # TODO self._transitionToStarted = False
+                else:
+                    pass # Nothing to do
+
+                sleep(1)
+            except Exception, e:
+               exType, ex, tb = sys.exc_info()
+               logger.critical("Exception occurred of type %s in urgency LED %s: %s" % (exType.__name__, self.Name, str(e)))
+               traceback.print_tb(tb)
+
+        logger.info('Stopping thread for urgency LED %s' % (self.Name))
+
+
+    # --------------------------------------------------------------------------
     def start(self, total_epoch_ms):
         """TODO strictly one-line summary
 
@@ -1037,26 +1101,19 @@ class UrgencyLed(IUrgencyLed):
             TodoError2: if TODO.
 
         """
-        logger.debug('Started urgency led \"%s\".', self.Name)
+        logger.debug('Started urgency LED \"%s\".', self.Name)
         
-        # Working Test Code
-        self.outputPin.on()
+        # Working Test Code # TODO Delete
+        self.flag = True # TODO Delete
+        self.outputPin.on() # TODO Delete
         
-        #Experimental Code
+        # TODO Experimental Code
+        # TODO boomTime = datetime.now() + total_epoch_ms
+        # TODO tenth_slice_ms = total_epoch_ms / 10
+        # TODO fill array with 10 values of pulse flash time
         
-        # boomTime  = datetime.now() + total_epoch_ms
-        
-        # tenth_slice_ms = total_epoch_ms / 10
-        
-        # fill array with 10 values of pulse flash time
-        # 
-        
-        #while(datetime.now < boomTime):
-            # pibrella.pulse with array[i]
-            # sleep for tenthslice
-            # i--
-        
-        
+        # TODO logger.info('Urgency LED %s transitioning to started.' % (self.Name))
+        self._transitionToStarted = True
 
     # --------------------------------------------------------------------------
     def stop(self):
@@ -1076,8 +1133,11 @@ class UrgencyLed(IUrgencyLed):
             TodoError2: if TODO.
 
         """
-        logger.debug('Stopped urgency led \"%s\".', self.Name)
+        logger.debug('Stopped urgency LED \"%s\".', self.Name)
         self.outputPin.off()
+        self._transitionToStarted = False
+
+# ------------------------------------------------------------------------------
 class Buzzer(IBuzzer):
     """
     The buzzer class enables a pibrella buzzer to be play or stop a
