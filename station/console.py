@@ -16,7 +16,6 @@
 TODO module description
 """
 
-from collections import namedtuple
 import logging
 import logging.handlers
 import sys
@@ -31,6 +30,7 @@ from station.interfaces import IVibrationMotor
 from station.interfaces import IBuzzer
 from station.interfaces import IInput
 from station.util import NonBlockingConsole
+from station.util import PushButton
 import station.util
 from mido import MidiFile
 import os
@@ -349,10 +349,6 @@ class Led(ILed):
 
         """
         logger.debug('Set LED %s flashing', self.Name)
-
-
-# ------------------------------------------------------------------------------
-PushButton = namedtuple('PushButton', 'Name Handler')
 
 
 # ------------------------------------------------------------------------------

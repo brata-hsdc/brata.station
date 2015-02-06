@@ -45,9 +45,7 @@ from interfaces import IInput
 from interfaces import IUrgencyLed
 
 from station.util import Config
-# TODO NonBlockingConsole was meant to be used with station.console to get keyboard input; it should not be needed in hw.py
-from station.util import NonBlockingConsole
-from station.console import PushButton # TODO shouldn't have a console import in this file
+from station.util import PushButton
 
 from mido import MidiFile
 import os
@@ -816,21 +814,21 @@ class PushButtonMonitor(IPushButtonMonitor):
             TodoError2: if TODO.
 
         """
-        with NonBlockingConsole() as nbc:
-            logger.debug('Starting key press thread for push button monitor')
+#         with NonBlockingConsole() as nbc:
+        logger.debug('Starting key press thread for push button monitor')
 
-            while not self._timeToExit:
-                try:
-                    if self._listening:
-                        self.pollPushButtons()
-                    self.onTick()  # event callback for animation
-                    sleep(self.DEBOUNCE_INTERVAL)
+        while not self._timeToExit:
+            try:
+                if self._listening:
+                    self.pollPushButtons()
+                self.onTick()  # event callback for animation
+                sleep(self.DEBOUNCE_INTERVAL)
 
-                except Exception, e:
-                    exType, ex, tb = sys.exc_info()
-                    logger.critical("Exception occurred of type %s in push button monitor" % (exType.__name__))
-                    logger.critical(str(e))
-                    traceback.print_tb(tb)
+            except Exception, e:
+                exType, ex, tb = sys.exc_info()
+                logger.critical("Exception occurred of type %s in push button monitor" % (exType.__name__))
+                logger.critical(str(e))
+                traceback.print_tb(tb)
 
 
 # ------------------------------------------------------------------------------

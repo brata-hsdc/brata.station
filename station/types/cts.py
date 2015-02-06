@@ -306,7 +306,7 @@ class Station(IStation):
                 self._pushButtonMonitor.startListening()
                 
             elif newState == self.PRE_INPUT_STATE:
-                self._timedMsg = self.displayTimedMsg(self._preInputText, self._preInputDuration, self._preInputBg, self.INPUT_STATE)
+                self._timedMsg = self.displayTimedMsg(self._preInputText, self._preInputDuration, self._preInputBg, self.IDLE_STATE)
                 self._pushButtonMonitor.stopListening()
                 
             elif newState == self.INPUT_STATE:

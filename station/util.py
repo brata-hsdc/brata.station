@@ -26,11 +26,16 @@ import sys
 # TODO There should be no problem with termios on a non-Pi
 import termios  # @UnresolvedImport when not on R-Pi
 import tty
+from collections import namedtuple
 
 
 # ------------------------------------------------------------------------------
 class Config(object):
    pass
+
+# ------------------------------------------------------------------------------
+PushButton = namedtuple('PushButton', 'Name Handler')
+
 
 # --------------------------------------------------------------------------
 def toFloat(floatString, defaultValueOnException):
