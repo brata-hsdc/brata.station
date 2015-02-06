@@ -246,7 +246,6 @@ class Station(IStation):
             expirationTime_ms = now_ms + delta_ms
             logger.info("Challenge started at time=%s seconds and will complete %s seconds later at time=%s seconds" % ((now_ms / 1000.0), delta_s, (expirationTime_ms / 1000.0)))
 
-            #TODO - Will need to run this function on a seperate thread as it executes a while loop for the entire period of delta_
             self._urgencyLed.start(delta_ms)
 
             self.expiredTimer = Timer(delta_s, self.onTimeExpired)
@@ -300,17 +299,28 @@ class Station(IStation):
         """
         logger.info('HMB transitioned to Failed state with args [%s].' % (args))
 
-        if self.expiredTimer != None:
-            self.expiredTimer.cancel()
-            self.expiredTimer = None
+        theatric_delay, is_correct, challenge_complete = args
 
-        for motor in self._vibrationMotors:
-            motor.stop()
+        if challenge_complete.lower() == "true":
+            logger.debug('Challenge complete.')
+            if self.expiredTimer != None:
+                self.expiredTimer.cancel()
+                self.expiredTimer = None
 
-        for name in self._leds.keys():
-            self._leds[name].turnOff()
+            for motor in self._vibrationMotors:
+                motor.stop()
 
-        self._leds['red'].turnOn()
+            for name in self._leds.keys():
+                self._leds[name].turnOff()
+
+            self._leds['red'].turnOn()
+        else:
+            logger.debug('Challenge not complete. Turning on red LED')
+            self._leds['red'].turnOn()
+            sleep(1)
+            logger.debug('Turning off red LED')
+            self._leds['red'].turnOff()
+
 
     # --------------------------------------------------------------------------
     def onPassed(self,
