@@ -1057,9 +1057,11 @@ class UrgencyLed(IUrgencyLed):
                     if self.flag: # TODO Delete
                         self.flag = False # TODO Delete
                         self.outputPin.off() # TODO Delete
+                        logger.debug('urgency LED \"%s\" pin off.', self.Name)
                     else: # TODO Delete
                         self.flag = True # TODO Delete
                         self.outputPin.on() # TODO Delete
+                        logger.debug('urgency LED \"%s\" pin on.', self.Name)
         
                     # TODO Experimental Code
                     # TODO pibrella.pulse with array[i]

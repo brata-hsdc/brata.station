@@ -350,6 +350,8 @@ class Station(IStation):
         for motor in self._vibrationMotors:
             motor.stop()
 
+        self._urgencyLed.stop()
+
         for name in self._leds.keys():
             self._leds[name].turnOff()
 
