@@ -16,6 +16,7 @@
 TODO module description
 """
 
+import datetime
 import logging
 import logging.handlers
 # TODO Is UnresolvedImport needed? hw.py should not be enabled on a non-Pi; same for LCD below.
@@ -1031,6 +1032,35 @@ class UrgencyLed(IUrgencyLed):
         self._thread.join()
 		
     # --------------------------------------------------------------------------
+    def computeDelay(self,
+                     percentComplete):
+        """TODO strictly one-line summary
+
+        TODO Detailed multi-line description if
+        necessary.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+            arg2 (type2): TODO describe arg, valid values, etc.
+            arg3 (type3): TODO describe arg, valid values, etc.
+        Returns:
+            TODO describe the return type and details
+        Raises:
+            TodoError1: if TODO.
+            TodoError2: if TODO.
+
+        """
+
+        # TODO make configurable:
+        min_period_ms = 100
+        max_period_ms = 2000
+
+        delay_ms = (1.0 - percentComplete) * max_period_ms + percentComplete * min_period_ms
+
+        logger.debug('computeDelay({}) returning {}'.format(percentComplete, delay_ms))
+        return delay_ms
+
+    # --------------------------------------------------------------------------
     def run(self):
         """TODO strictly one-line summary
 
@@ -1050,6 +1080,9 @@ class UrgencyLed(IUrgencyLed):
         """
         logger.info('Starting thread for urgency LED %s' % (self.Name))
 
+        # TODO make configurable:
+        delay_s = 2.0
+
         while not self._timeToExit:
             try:
                 if self._transitionToStarted:
@@ -1062,19 +1095,32 @@ class UrgencyLed(IUrgencyLed):
                         self.flag = True # TODO Delete
                         self.outputPin.on() # TODO Delete
                         logger.debug('urgency LED \"%s\" pin on.', self.Name)
-        
+
+                    now = datetime.datetime.now()
+                    currentDelta = now - self.startTime
+                    current_ms = int(currentDelta.total_seconds() * 1000.0)
+                    delay_ms = self.computeDelay(current_ms * 1.0 / self.boom_ms)
+                    delay_s = delay_ms / 1000.0
+                    logger.debug('current_ms={} vs. boom_ms={} => quotient={}, delay_ms={}, delay_s={}'.format(current_ms, self.boom_ms, current_ms * 1.0 / self.boom_ms, delay_ms, delay_s))
+
                     # TODO Experimental Code
                     # TODO pibrella.pulse with array[i]
-                    # TODO sleep for tenthslice
+                    # TODO sleep for self.tenth_slice_ms
                     # TODO i--
 
-                    # TODO if (datetime.now < boomTime):
-                        # TODO logger.info('Urgency LED %s transitioning to stopped.' % (self.Name))
-                        # TODO self._transitionToStarted = False
+                    if current_ms >= self.boom_ms:
+                    # TODO if (datetime.datetime.now >= self.boomTime):
+                        logger.info('Urgency LED %s transitioning to stopped.' % (self.Name))
+                        self._transitionToStarted = False
+
+                        # TODO make configurable:
+                        delay_s = 2.0
+
                 else:
                     pass # Nothing to do
 
-                sleep(1)
+                logger.debug('Urgency LED thread sleeping for {} s.'.format(delay_s))
+                sleep(delay_s)
             except Exception, e:
                exType, ex, tb = sys.exc_info()
                logger.critical("Exception occurred of type %s in urgency LED %s: %s" % (exType.__name__, self.Name, str(e)))
@@ -1084,7 +1130,8 @@ class UrgencyLed(IUrgencyLed):
 
 
     # --------------------------------------------------------------------------
-    def start(self, total_epoch_ms):
+    def start(self,
+              total_epoch_ms):
         """TODO strictly one-line summary
 
         TODO Detailed multi-line description if
@@ -1101,18 +1148,20 @@ class UrgencyLed(IUrgencyLed):
             TodoError2: if TODO.
 
         """
-        logger.debug('Started urgency LED \"%s\".', self.Name)
         
         # Working Test Code # TODO Delete
         self.flag = True # TODO Delete
         self.outputPin.on() # TODO Delete
-        
+        self.startTime = datetime.datetime.now()
+        self.boomTime = self.startTime + datetime.timedelta(milliseconds=total_epoch_ms)
+        self.boomDelta = self.boomTime - self.startTime
+        self.boom_ms = int(self.boomDelta.total_seconds() * 1000.0)
+
         # TODO Experimental Code
-        # TODO boomTime = datetime.now() + total_epoch_ms
-        # TODO tenth_slice_ms = total_epoch_ms / 10
+        # TODO self.tenth_slice_ms = total_epoch_ms / 10
         # TODO fill array with 10 values of pulse flash time
         
-        # TODO logger.info('Urgency LED %s transitioning to started.' % (self.Name))
+        logger.info('Urgency LED {} transitioning to started at time {} for boom at {} with total_epoch_ms={}.'.format(self.Name, self.startTime, self.boomTime, total_epoch_ms))
         self._transitionToStarted = True
 
     # --------------------------------------------------------------------------
