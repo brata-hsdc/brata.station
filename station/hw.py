@@ -974,8 +974,8 @@ class UrgencyLed(IUrgencyLed):
         logger.debug('Constructing urgency LED %s' % (self.Name))
 
         #TODO - Need to get these from config file [SS]
-        #self.OnDuration_s = 0.5
-        #self.OffDuration_s = 0.5
+        self.min_period_ms = 100
+        self.max_period_ms = 2000
 
         self.outputPin = getattr(pibrella.output, outputPin)
 
@@ -1051,11 +1051,7 @@ class UrgencyLed(IUrgencyLed):
 
         """
 
-        # TODO make configurable:
-        min_period_ms = 100
-        max_period_ms = 2000
-
-        delay_ms = (1.0 - percentComplete) * max_period_ms + percentComplete * min_period_ms
+        delay_ms = (1.0 - percentComplete) * self.max_period_ms + percentComplete * self.min_period_ms
 
         logger.debug('computeDelay({}) returning {}'.format(percentComplete, delay_ms))
         return delay_ms
@@ -1080,20 +1076,18 @@ class UrgencyLed(IUrgencyLed):
         """
         logger.info('Starting thread for urgency LED %s' % (self.Name))
 
-        # TODO make configurable:
-        delay_s = 2.0
+        delay_s = self.max_period_ms / 1000.0
 
         while not self._timeToExit:
             try:
                 if self._transitionToStarted:
-                    # Working Test Code # TODO Delete
-                    if self.flag: # TODO Delete
-                        self.flag = False # TODO Delete
-                        self.outputPin.off() # TODO Delete
+                    if self.flag:
+                        self.flag = False
+                        self.outputPin.off()
                         logger.debug('urgency LED \"%s\" pin off.', self.Name)
-                    else: # TODO Delete
-                        self.flag = True # TODO Delete
-                        self.outputPin.on() # TODO Delete
+                    else:
+                        self.flag = True
+                        self.outputPin.on()
                         logger.debug('urgency LED \"%s\" pin on.', self.Name)
 
                     now = datetime.datetime.now()
@@ -1103,23 +1097,16 @@ class UrgencyLed(IUrgencyLed):
                     delay_s = delay_ms / 1000.0
                     logger.debug('current_ms={} vs. boom_ms={} => quotient={}, delay_ms={}, delay_s={}'.format(current_ms, self.boom_ms, current_ms * 1.0 / self.boom_ms, delay_ms, delay_s))
 
-                    # TODO Experimental Code
-                    # TODO pibrella.pulse with array[i]
-                    # TODO sleep for self.tenth_slice_ms
-                    # TODO i--
-
                     if current_ms >= self.boom_ms:
-                    # TODO if (datetime.datetime.now >= self.boomTime):
                         logger.info('Urgency LED %s transitioning to stopped.' % (self.Name))
                         self._transitionToStarted = False
 
-                        # TODO make configurable:
-                        delay_s = 2.0
+                        delay_s = self.max_period_ms / 1000.0
 
+                    logger.debug('Urgency LED thread sleeping for {} s.'.format(delay_s))
                 else:
                     pass # Nothing to do
 
-                logger.debug('Urgency LED thread sleeping for {} s.'.format(delay_s))
                 sleep(delay_s)
             except Exception, e:
                exType, ex, tb = sys.exc_info()
@@ -1149,18 +1136,13 @@ class UrgencyLed(IUrgencyLed):
 
         """
         
-        # Working Test Code # TODO Delete
-        self.flag = True # TODO Delete
-        self.outputPin.on() # TODO Delete
+        self.flag = True
+        self.outputPin.on()
         self.startTime = datetime.datetime.now()
         self.boomTime = self.startTime + datetime.timedelta(milliseconds=total_epoch_ms)
         self.boomDelta = self.boomTime - self.startTime
         self.boom_ms = int(self.boomDelta.total_seconds() * 1000.0)
 
-        # TODO Experimental Code
-        # TODO self.tenth_slice_ms = total_epoch_ms / 10
-        # TODO fill array with 10 values of pulse flash time
-        
         logger.info('Urgency LED {} transitioning to started at time {} for boom at {} with total_epoch_ms={}.'.format(self.Name, self.startTime, self.boomTime, total_epoch_ms))
         self._transitionToStarted = True
 
