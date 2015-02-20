@@ -974,7 +974,7 @@ class UrgencyLed(IUrgencyLed):
         logger.debug('Constructing urgency LED %s' % (self.Name))
 
         #TODO - Need to get these from config file [SS]
-        self.min_period_ms = 100
+        self.min_period_ms = 300
         self.max_period_ms = 2000
 
         self.outputPin = getattr(pibrella.output, outputPin)

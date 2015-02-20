@@ -111,7 +111,9 @@ def lcm(a, b):
 # ------------------------------------------------------------------------------
 def lcmm(*args):
     """Return lcm of args."""   
-    return reduce(lcm, args)
+    result = reduce(lcm, args)
+    logger.debug('lcmm({}) = {}'.format(args, result))
+    return result
 
 # ------------------------------------------------------------------------------
 def get_ip_address(ifname):
