@@ -805,7 +805,7 @@ class Combo:
 # Module Initialization
 # ------------------------------------------------------------------------------
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG) # TODO - delete
+logger.setLevel(logging.INFO)
 handler = logging.handlers.SysLogHandler(address = '/dev/log')
 logger.addHandler(handler)
 
