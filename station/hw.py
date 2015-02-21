@@ -1081,33 +1081,40 @@ class UrgencyLed(IUrgencyLed):
         while not self._timeToExit:
             try:
                 if self._transitionToStarted:
-                    if self.flag:
-                        self.flag = False
-                        self.outputPin.off()
-                        logger.debug('urgency LED \"%s\" pin off.', self.Name)
-                    else:
-                        self.flag = True
-                        self.outputPin.on()
-                        logger.debug('urgency LED \"%s\" pin on.', self.Name)
-
                     now = datetime.datetime.now()
                     currentDelta = now - self.startTime
                     current_ms = int(currentDelta.total_seconds() * 1000.0)
                     delay_ms = self.computeDelay(current_ms * 1.0 / self.boom_ms)
                     delay_s = delay_ms / 1000.0
-                    logger.debug('current_ms={} vs. boom_ms={} => quotient={}, delay_ms={}, delay_s={}'.format(current_ms, self.boom_ms, current_ms * 1.0 / self.boom_ms, delay_ms, delay_s))
+
+                    if self.flag:
+                        self.flag = False
+                        self.outputPin.off()
+                        logger.debug('urgency LED \"%s\" pin off.', self.Name)
+
+                        sleepDelay_s = delay_s - (self.min_period_ms / 1000.0)
+                    else:
+                        self.flag = True
+                        self.outputPin.on()
+                        logger.debug('urgency LED \"%s\" pin on.', self.Name)
+
+                        sleepDelay_s = self.min_period_ms / 1000.0
+
+                    logger.debug('current_ms={} vs. boom_ms={} => quotient={}, delay_ms={}, delay_s={}, sleepDelay_s={}'.format(current_ms, self.boom_ms, current_ms * 1.0 / self.boom_ms, delay_ms, delay_s, sleepDelay_s))
 
                     if current_ms >= self.boom_ms:
                         logger.info('Urgency LED %s transitioning to stopped.' % (self.Name))
                         self._transitionToStarted = False
 
                         delay_s = self.max_period_ms / 1000.0
+                        sleepDelay_s = delay_s
 
-                    logger.debug('Urgency LED thread sleeping for {} s.'.format(delay_s))
+                    logger.debug('Urgency LED thread sleeping for {} sec with flag={}.'.format(sleepDelay_s, self.flag))
                 else:
                     pass # Nothing to do
+                    sleepDelay_s = delay_s
 
-                sleep(delay_s)
+                sleep(sleepDelay_s)
             except Exception, e:
                exType, ex, tb = sys.exc_info()
                logger.critical("Exception occurred of type %s in urgency LED %s: %s" % (exType.__name__, self.Name, str(e)))
