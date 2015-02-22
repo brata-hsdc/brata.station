@@ -655,7 +655,7 @@ class ConnectionManager(IConnectionManager):
             cpa_window_time_tolerance_ms = request.json['cpa_window_time_tolerance_ms']
             cpa_pulse_width_ms = request.json['cpa_pulse_width_ms']
             cpa_pulse_width_tolerance_ms = request.json['cpa_pulse_width_tolerance_ms']
-            self._callback.args = [cpa_velocity, cpa_velocity_tolerance_ms, cpa_window_time_ms, cpa_window_time_tolerance_ms, cpa_pulse_width_ms, cpa_pulse_width_tolerance_ms]
+            self._callback.args = [cpa_velocity, cpa_velocity_tolerance_ms, cpa_window_time_ms, cpa_window_time_tolerance_ms, cpa_pulse_width_ms, cpa_pulse_width_tolerance_ms, theatric_delay_ms]
             logger.debug('Master server requesting station start_challenge (ver %s) at %s with theatric delay of %s ms, CPA velocity %s with tolerance %s, window time %s ms with tolerance %s ms, and pulse width %s ms with tolerance %s ms' % (message_version, message_timestamp, theatric_delay_ms, cpa_velocity, cpa_velocity_tolerance_ms, cpa_window_time_ms, cpa_window_time_tolerance_ms, cpa_pulse_width_ms, cpa_pulse_width_tolerance_ms))
         elif 'cts_combo' in request.json:
             logger.debug('Received a start_challenge request for CTS station')

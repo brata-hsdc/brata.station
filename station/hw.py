@@ -477,7 +477,7 @@ class Led(ILed):
             self.outputPin = getattr(pibrella.light, config.OutputPin)
         else:
             # TODO verify channel is valid
-            self.outputPin = PibrellaLedFacade(int(name), 4095, 64, False)
+            self.outputPin = PibrellaLedFacade(int(name), 4095, 16, False)
 
     def stop(self):
         if self._LedType == LedType.adafruit:

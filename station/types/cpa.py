@@ -27,6 +27,8 @@ from station.util import Config
 from station.util import toFloat
 
 from station.interfaces import IStation
+sys.path.append('/user/lib/python2.7/dist-packages')
+import pygame
 
 
 # ------------------------------------------------------------------------------
@@ -34,6 +36,73 @@ class Station(IStation):
     """
     Provides the implementation for a CPA station to support TODO.
     """
+    def waitDone(self):
+      while pygame.mixer.music.get_busy() == True:
+        pass
+
+    def playCountdown(self, val):
+      try:
+        wait = True
+        if self._countDownToggle:
+          if val > 2:
+            led='red'
+            pygame.mixer.music.load('/opt/designchallenge2015/brata.station/bin/Tone_2000_500ms.wav')
+          elif val == 2:
+            # This really should be a separate tone but mike wants the same
+            led='yellow'
+            pygame.mixer.music.load('/opt/designchallenge2015/brata.station/bin/Tone_2000_500ms.wav')
+          if val < 2:
+            # This play must be asynchronous or the timing will be messed up
+            wait = False
+            led='green'
+            pygame.mixer.music.load('/opt/designchallenge2015/brata.station/bin/Tone_1000_500ms.wav')
+            self._countDownToggle =  not self._countDownToggle
+          self._leds[led].turnOn()
+          pygame.mixer.music.play()
+          if wait:
+            self.waitDone()
+            self._leds[led].turnOff()
+            time.sleep(0.5)
+        else:
+          if val > 2:
+            led='red'
+          elif val == 2:
+            led='yellow'
+          if val < 2:
+            # This play must be asynchronous or the timing will be messed up
+            wait = False
+            led='green'
+            self._countDownToggle =  not self._countDownToggle
+          self._leds[led].turnOn()
+          if wait:
+            self._buzzers[led].playSynchronously()
+            self._leds[led].turnOff()
+          else:
+            self._buzzers[led].play()
+      except Exception, e:
+        exType, ex, tb = sys.exc_info()
+        logger.critical("Exception occurred of type %s in cpa playCountdown: %s" % (exType.__name__, str(e)))
+        traceback.print_tb(tb)
+
+    def playBond(self):
+      try:
+        pygame.mixer.music.load('/opt/designchallenge2015/brata.station/bin/bond_theme.wav')
+        pygame.mixer.music.play()
+        self.waitDone()  
+      except Exception, e:
+          exType, ex, tb = sys.exc_info()
+          logger.critical("Exception occurred of type %s in cpa playBond: %s" % (exType.__name__, str(e)))
+          traceback.print_tb(tb)
+
+    def playFail(self):
+      try:
+        pygame.mixer.music.load('/opt/designchallenge2015/brata.station/bin/uh_oh.wav')
+        pygame.mixer.music.play()
+        self.waitDone()  
+      except Exception, e:
+          exType, ex, tb = sys.exc_info()
+          logger.critical("Exception occurred of type %s in cpa playFail: %s" % (exType.__name__, str(e)))
+          traceback.print_tb(tb)
 
     # --------------------------------------------------------------------------
     def __init__(self,
@@ -56,6 +125,7 @@ class Station(IStation):
 
         """
         logger.debug('Constructing CPA')
+        pygame.mixer.init()
 
         try:
             ledClassName = config.LedClassName
@@ -75,9 +145,11 @@ class Station(IStation):
                 self._powerOutputs[i.Name] = powerOutputClass(i.Name, i.OutputPin)
 
             for name in self._powerOutputs.keys():
-              self._powerOutputs[name].start()
-              msg = 'Enabled power output %s' %(name)
-              logger.info(msg)
+              if name != "LaserWindow":
+                self._powerOutputs[name].start()
+                msg = 'Enabled power output %s' %(name)
+                logger.info(msg)
+          
 
             self._leds = {}
 
@@ -127,6 +199,9 @@ class Station(IStation):
         self._cpa_pulse_width_tolerance_s = 0.01
         self._ledTimes = {}
         self._ledDecay = 0.1
+        self._theatric_delay_s = 2.0
+ 
+        self._countDownToggle = True
 
         self._thread = Thread(target=self.run)
         #self._thread.daemon = True # TODO why daemon
@@ -184,6 +259,8 @@ class Station(IStation):
           while self._isRunning:
             if self._isNewStartOrRetry:
               logger.debug('CPA is setting up for a new run')
+              # Need to add theatrical delay
+              time.sleep(self._theatric_delay_s)
               # Need to reinitialize everything and increase attempt count
               self._correctFlashDetected = False
               self._attemptCount = self._attemptCount + 1
@@ -197,17 +274,13 @@ class Station(IStation):
                 self._leds[name].turnOff()
               for name in self._buzzers.keys():
                 self._buzzers[name].off()
-              self._leds['red'].turnOn()
-              self._buzzers['red'].playSynchronously()
-              self._leds['red'].turnOff()
-              self._leds['yellow'].turnOn()
-              self._buzzers['yellow'].playSynchronously()
-              self._leds['yellow'].turnOff()
-              self._leds['green'].turnOn()
-              self._startTime = time.time()
+              self.playCountdown(3)
+              self.playCountdown(3)
+              self.playCountdown(2)
               # This play must be asynchronous or the timing will be messed up
-              self._buzzers['green'].play()
-              self._leds['green'].turnOff()
+              self.playCountdown(1)
+              self._startTime = time.time()
+              #self._leds['green'].turnOff()
               self._isNewStartOrRetry = False
             try:
                 elapsed_time = time.time() - self._startTime
@@ -287,6 +360,7 @@ class Station(IStation):
                 #logger.debug('elapsed = %s' %(elapsed_time) )
 
                 if windowIsOpenNotReported and elapsed_time > self._minTimeForFlashStart:
+                  self._powerOutputs["LaserWindow"].start()
                   logger.debug('Window opened at %s should have been %s' %(elapsed_time,self._minTimeForFlashStart) )
                   windowIsOpenNotReported = False
 
@@ -442,12 +516,12 @@ class Station(IStation):
 
         # args = [cpa_velocity(tbd change this), cpa_velocity_tolerance_ms(tbd remove), 
         # cpa_window_time_ms, cpa_window_time_tolerance_ms, 
-        # cpa_pulse_width_ms, cpa_pulse_width_tolerance_ms]
+        # cpa_pulse_width_ms, cpa_pulse_width_tolerance_ms, theatric_delay_ms]
 
         # TODO rework indexing if change arguments
         # would be nice if these were named value pairs but for now 
         # follow the existing design
-        if 6 == len(args):
+        if 7 == len(args):
             # Make sure is not running before tweaking params
             if self._isRunning:
               # Then we have a problem as MS did not wait for us to send 
@@ -490,6 +564,10 @@ class Station(IStation):
             self._cpa_pulse_width_tolerance_s = toFloat(args[5], 0.0) / 1000.0
             logger.debug('cpa_pulse_width_tolerance_s  = %s', self._cpa_pulse_width_tolerance_s )
 
+            # set the theatric delay
+            self._theatric_delay_s = (toFloat(args[6], 0.0)) / 1000.0
+            logger.debug('theatric_delay_s = %s', self._theatric_delay_s)
+
             self._isRunning = True
             logger.debug('CPA is running')
 
@@ -519,6 +597,7 @@ class Station(IStation):
         logger.info('CPA transitioned to Failed state with args hitDetected=%s failMessage=%s.' %(hitDetected, failMessage))
 
         # Reset inputs and outputs
+        self._powerOutputs["LaserWindow"].stop()
         for name in self._leds.keys():
             self._leds[name].turnOff()
         for name in self._buzzers.keys():
@@ -531,7 +610,8 @@ class Station(IStation):
         if self.ConnectionManager != None:
             self.ConnectionManager.submitCpaDetectionToMS(hitDetected,False,failMessage)
         # TODO shoud have a final you failed after MAX that is different?
-        self._buzzers['FailBuzzer'].playSynchronously()
+        #self._buzzers['FailBuzzer'].playSynchronously()
+        self.playFail()
         self._leds['red'].turnOff()
         if shouldTryAgain:
           # signal to do over
@@ -548,6 +628,11 @@ class Station(IStation):
               # Yes we could tighten this loop but leaving as is so overall timing
               # is more consistent to stick with idea of constant velocity
               for j in range(15, -1, -1):
+                self._leds[str(j)].decay()
+                self._leds[str(j)].decay()
+                self._leds[str(j)].decay()
+                self._leds[str(j)].decay()
+                self._leds[str(j)].decay()
                 self._leds[str(j)].decay()
         else:
           # All done so have the main thread go back to waiting state
@@ -578,6 +663,7 @@ class Station(IStation):
         logger.info('CPA transitioned to Passed state with msg [%s].' % (msg))
 
         # Reset inputs and outputs
+        self._powerOutputs["LaserWindow"].stop()
         for name in self._leds.keys():
             self._leds[name].turnOff()
         for name in self._buzzers.keys():
@@ -588,7 +674,15 @@ class Station(IStation):
         if self.ConnectionManager != None:
             self.ConnectionManager.submitCpaDetectionToMS('True','True',msg)
 
-        self._buzzers['SuccessBuzzer'].playSynchronously()
+        #self._buzzers['SuccessBuzzer'].playSynchronously()
+        try:
+          self.playBond()
+        except Exception, e:
+          exType, ex, tb = sys.exc_info()
+          logger.critical("Exception occurred of type %s in cpa playing bond: %s" % (exType.__name__, str(e)))
+          traceback.print_tb(tb)
+          
+        #time.sleep(10)
         self._leds['green'].turnOff()
         # All done so have the main thread go back to waiting state
         self._isRunning = False
