@@ -220,7 +220,7 @@ class ConnectionManager(IConnectionManager):
         """
         logger.info('Starting TODO thread for connection manager')
 
-        sleep_time = 1 #TODO load this from runstation.conf file
+        sleep_time = 5 #TODO load this from runstation.conf file
 
         while not self._timeToExit:
             try:
@@ -228,16 +228,21 @@ class ConnectionManager(IConnectionManager):
                 if self._listening:
 
                     if (not self._connected):
+                        logger.debug('Not connected. Attempting to join.')
                         self.join()
+                        logger.debug('Join successful. Setting _connected.')
                         self._connected = True
 
-                        # TODO named constant
+                        logger.debug('Starting HTTP server listening on port {}.'.format(self._listenPort))
                         server = HTTPServer(WSGIContainer(self._app))
                         server.listen(self._listenPort)
+                        logger.warning('TODO This blocks. Need to look into later. (Issue 4)')
                         IOLoop.instance().start()
-                    # TODO
-                    #pass
+                        logger.debug('IOLoop started.')
+                    else:
+                        logger.debug('Already connected.')
 
+                logger.debug('Connection thread sleeping for {} sec'.format(sleep_time))
                 sleep(sleep_time)
             except requests.ConnectionError, e:
                 logger.critical(str(e))
@@ -800,6 +805,7 @@ class ConnectionManager(IConnectionManager):
 # Module Initialization
 # ------------------------------------------------------------------------------
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG) # TODO Delete
+#TODO logger.setLevel(logging.INFO)
 handler = logging.handlers.SysLogHandler(address = '/dev/log')
 logger.addHandler(handler)
