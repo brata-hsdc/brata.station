@@ -30,7 +30,6 @@ from station.interfaces import IStation
 sys.path.append('/user/lib/python2.7/dist-packages')
 import pygame
 
-
 # ------------------------------------------------------------------------------
 class Station(IStation):
     """
@@ -40,22 +39,26 @@ class Station(IStation):
       while pygame.mixer.music.get_busy() == True:
         pass
 
+    def waitForBusy(self):
+      while pygame.mixer.music.get_busy() == False:
+        pass
+
     def playCountdown(self, val):
       try:
         wait = True
         if self._countDownToggle:
           if val > 2:
             led='red'
-            pygame.mixer.music.load('/opt/designchallenge2015/brata.station/bin/Tone_2000_500ms.wav')
+            pygame.mixer.music.load('/opt/designchallenge2015/brata.station/bin/Tone_1000_500ms.wav')
           elif val == 2:
             # This really should be a separate tone but mike wants the same
             led='yellow'
-            pygame.mixer.music.load('/opt/designchallenge2015/brata.station/bin/Tone_2000_500ms.wav')
+            pygame.mixer.music.load('/opt/designchallenge2015/brata.station/bin/Tone_1000_500ms.wav')
           if val < 2:
             # This play must be asynchronous or the timing will be messed up
             wait = False
             led='green'
-            pygame.mixer.music.load('/opt/designchallenge2015/brata.station/bin/Tone_1000_500ms.wav')
+            pygame.mixer.music.load('/opt/designchallenge2015/brata.station/bin/Tone_2000_500ms.wav')
             self._countDownToggle =  not self._countDownToggle
           self._leds[led].turnOn()
           pygame.mixer.music.play()
@@ -84,8 +87,23 @@ class Station(IStation):
         logger.critical("Exception occurred of type %s in cpa playCountdown: %s" % (exType.__name__, str(e)))
         traceback.print_tb(tb)
 
+    def playCount(self):
+      try:
+        pygame.mixer.quit()
+        pygame.mixer.init(frequency=8000, buffer=512)
+        pygame.mixer.music.load('/opt/designchallenge2015/brata.station/bin/countdown.wav')
+        time.sleep(3)
+        pygame.mixer.music.play()
+        self.waitForBusy()
+      except Exception, e:
+          exType, ex, tb = sys.exc_info()
+          logger.critical("Exception occurred of type %s in cpa playBond: %s" % (exType.__name__, str(e)))
+          traceback.print_tb(tb)
+
     def playBond(self):
       try:
+        pygame.mixer.quit()
+        pygame.mixer.init()
         pygame.mixer.music.load('/opt/designchallenge2015/brata.station/bin/bond_theme.wav')
         pygame.mixer.music.play()
         self.waitDone()  
@@ -125,7 +143,6 @@ class Station(IStation):
 
         """
         logger.debug('Constructing CPA')
-        pygame.mixer.init()
 
         try:
             ledClassName = config.LedClassName
@@ -274,11 +291,25 @@ class Station(IStation):
                 self._leds[name].turnOff()
               for name in self._buzzers.keys():
                 self._buzzers[name].off()
-              self.playCountdown(3)
-              self.playCountdown(3)
-              self.playCountdown(2)
+              self.playCount()
+              self._leds['red'].turnOn()
+              time.sleep(0.5)
+              self._leds['red'].turnOff()
+              time.sleep(0.5)
+              self._leds['red'].turnOn()
+              time.sleep(0.5)
+              self._leds['red'].turnOff()
+              time.sleep(0.5)
+              self._leds['yellow'].turnOn()
+              time.sleep(0.5)
+              self._leds['yellow'].turnOff()
+              time.sleep(0.5)
+              self._leds['green'].turnOn()
+              #self.playCountdown(3)
+              #self.playCountdown(3)
+              #self.playCountdown(2)
               # This play must be asynchronous or the timing will be messed up
-              self.playCountdown(1)
+              #self.playCountdown(1)
               self._startTime = time.time()
               #self._leds['green'].turnOff()
               self._isNewStartOrRetry = False
@@ -716,7 +747,7 @@ class Station(IStation):
 # Module Initialization
 # ------------------------------------------------------------------------------
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG) # TODO - delete
 handler = logging.handlers.SysLogHandler(address='/dev/log')
 logger.addHandler(handler)
 
