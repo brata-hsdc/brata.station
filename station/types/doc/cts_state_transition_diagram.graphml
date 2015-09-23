@@ -18,7 +18,7 @@
       <data key="d5"/>
       <data key="d6">
         <y:GenericNode configuration="com.yworks.flowchart.start1">
-          <y:Geometry height="40.0" width="53.333984375" x="291.54306640625" y="-355.5380859375"/>
+          <y:Geometry height="40.0" width="53.333984375" x="291.54306640625" y="-370.03662109375"/>
           <y:Fill color="#E8EEF7" color2="#B7C9E3" transparent="false"/>
           <y:BorderStyle color="#000000" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="18.701171875" modelName="custom" textColor="#000000" visible="true" width="43.333984375" x="5.0" y="10.6494140625">START<y:LabelModel>
@@ -35,7 +35,7 @@
       <data key="d5"/>
       <data key="d6">
         <y:GenericNode configuration="com.yworks.flowchart.start1">
-          <y:Geometry height="73.59999999999997" width="187.6371093749999" x="224.39150390625002" y="-245.83808593749998"/>
+          <y:Geometry height="73.59999999999997" width="187.6371093749999" x="224.39150390625002" y="-260.33662109374995"/>
           <y:Fill color="#E8EEF7" color2="#B7C9E3" transparent="false"/>
           <y:BorderStyle color="#000000" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="48.103515625" modelName="custom" textColor="#000000" visible="true" width="152.037109375" x="17.799999999999955" y="12.748242187499983">IDLE
@@ -54,7 +54,7 @@ start listening for buttons<y:LabelModel>
       <data key="d5"/>
       <data key="d6">
         <y:GenericNode configuration="com.yworks.flowchart.start1">
-          <y:Geometry height="64.0" width="173.404296875" x="558.7494140625" y="-241.0380859375"/>
+          <y:Geometry height="64.0" width="173.404296875" x="558.7494140625" y="-255.53662109375"/>
           <y:Fill color="#E8EEF7" color2="#B7C9E3" transparent="false"/>
           <y:BorderStyle color="#000000" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="48.103515625" modelName="custom" textColor="#000000" visible="true" width="163.404296875" x="5.0" y="7.9482421875">PRE_INPUT
@@ -166,7 +166,7 @@ display: The Safe is STILL LOCKED<y:LabelModel>
       <data key="d5"/>
       <data key="d6">
         <y:GenericNode configuration="com.yworks.flowchart.start1">
-          <y:Geometry height="58.0" width="118.71875" x="-50.17763671875002" y="-238.0380859375"/>
+          <y:Geometry height="58.0" width="118.71875" x="-50.17763671875002" y="-252.53662109375"/>
           <y:Fill color="#E8EEF7" color2="#B7C9E3" transparent="false"/>
           <y:BorderStyle color="#000000" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="33.40234375" modelName="custom" textColor="#000000" visible="true" width="108.71875" x="5.0" y="12.298828125">PRE_IDLE
@@ -341,7 +341,7 @@ stop listening for buttons<y:LabelModel>
       <data key="d5"/>
       <data key="d6">
         <y:ShapeNode>
-          <y:Geometry height="18.701171875" width="78.705078125" x="126.33974609375002" y="-344.888671875"/>
+          <y:Geometry height="18.701171875" width="78.705078125" x="126.33974609375002" y="-359.38720703125"/>
           <y:Fill hasColor="false" transparent="false"/>
           <y:BorderStyle hasColor="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="italic" hasBackgroundColor="false" hasLineColor="false" height="18.701171875" modelName="internal" modelPosition="l" textColor="#000000" visible="true" width="68.705078125" x="4.0" y="0.0">ready signal</y:NodeLabel>
@@ -353,7 +353,7 @@ stop listening for buttons<y:LabelModel>
       <data key="d5"/>
       <data key="d6">
         <y:ShapeNode>
-          <y:Geometry height="18.701171875" width="106.71875" x="950.642578125" y="-218.388671875"/>
+          <y:Geometry height="18.701171875" width="106.71875" x="950.642578125" y="-232.88720703125"/>
           <y:Fill hasColor="false" transparent="false"/>
           <y:BorderStyle hasColor="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="italic" hasBackgroundColor="false" hasLineColor="false" height="18.701171875" modelName="internal" modelPosition="l" textColor="#000000" visible="true" width="96.71875" x="4.0" y="0.0">processing signal</y:NodeLabel>
@@ -518,7 +518,7 @@ retries (I think it allowed 3)</y:NodeLabel>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0">
-            <y:Point x="-2.8182617187500227" y="-274.0380859375"/>
+            <y:Point x="-2.8182617187500227" y="-288.53662109375"/>
           </y:Path>
           <y:LineStyle color="#000000" type="line" width="1.0"/>
           <y:Arrows source="none" target="standard"/>
@@ -550,7 +550,7 @@ retries (I think it allowed 3)</y:NodeLabel>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0">
-            <y:Point x="645.4515625" y="-283.0380859375"/>
+            <y:Point x="645.4515625" y="-297.53662109375"/>
           </y:Path>
           <y:LineStyle color="#000000" type="line" width="1.0"/>
           <y:Arrows source="none" target="standard"/>
@@ -674,17 +674,20 @@ retries (I think it allowed 3)</y:NodeLabel>
         </y:PolyLineEdge>
       </data>
     </edge>
-    <edge id="e15" source="n7" target="n3">
+    <edge id="e15" source="n7" target="n14">
       <data key="d10">
         <y:PolyLineEdge>
-          <y:Path sx="18.07708333333403" sy="-0.5625" tx="0.0" ty="0.0"/>
+          <y:Path sx="-55.6975885826771" sy="-16.670767716535465" tx="13.895999938484238" ty="3.07529527559052">
+            <y:Point x="608.4566929133858" y="-128.96062992125985"/>
+            <y:Point x="119.54330708661416" y="-128.96062992125985"/>
+          </y:Path>
           <y:LineStyle color="#000000" type="line" width="1.0"/>
           <y:Arrows source="none" target="standard"/>
-          <y:EdgeLabel alignment="center" anchorX="41.061027548335574" anchorY="-22.92899361799053" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="18.701171875" modelName="custom" ratio="0.5" textColor="#000000" upX="-0.8220916960727565" upY="-0.5693551117257301" visible="true" width="36.015625" x="25.68694944306869" y="-63.1847476616536">5 sec.<y:LabelModel>
+          <y:EdgeLabel alignment="center" anchorX="-54.482699193747294" anchorY="-136.9389717128842" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="18.701171875" modelName="custom" ratio="0.5" textColor="#000000" upX="-0.8680232346215145" upY="0.496523578651813" visible="true" width="36.015625" x="-88.59835790827938" y="-168.2013710222997">5 sec.<y:LabelModel>
               <y:RotatedSliderEdgeLabelModel angle="0.0" autoRotationEnabled="true" distance="2.0" distanceRelativeToEdge="true" mode="side_slider"/>
             </y:LabelModel>
             <y:ModelParameter>
-              <y:RotatedSliderEdgeLabelModelParameter invertingSign="false" ratio="0.25000000000000033" segment="1"/>
+              <y:RotatedSliderEdgeLabelModelParameter invertingSign="false" ratio="0.3999999999999995" segment="0"/>
             </y:ModelParameter>
             <y:PreferredPlacementDescriptor angle="0.0" angleOffsetOnRightSide="0" angleReference="relative_to_edge_flow" angleRotationOnRightSide="co" distance="-1.0" placement="center" side="left|right" sideReference="relative_to_edge_flow"/>
           </y:EdgeLabel>
@@ -809,11 +812,11 @@ retries (I think it allowed 3)</y:NodeLabel>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0">
-            <y:Point x="521.9982421875005" y="-134.35416666666686"/>
+            <y:Point x="511.16359651820915" y="-181.75574146981648"/>
           </y:Path>
           <y:LineStyle color="#000000" type="line" width="1.0"/>
           <y:Arrows source="none" target="standard"/>
-          <y:EdgeLabel alignment="center" anchorX="30.28383178710925" anchorY="33.14589448311392" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="18.701171875" modelName="custom" ratio="0.5" textColor="#000000" upX="0.3440986280218866" upY="-0.9389335089309867" visible="true" width="70.041015625" x="30.28383178710925" y="15.586737553398692">button press<y:LabelModel>
+          <y:EdgeLabel alignment="center" anchorX="16.709674072265557" anchorY="24.799120112268582" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="18.701171875" modelName="custom" ratio="0.5" textColor="#000000" upX="0.21162890840597096" upY="-0.9773500934296252" visible="true" width="70.041015625" x="16.709674072265557" y="6.521528032993853">button press<y:LabelModel>
               <y:RotatedSliderEdgeLabelModel angle="0.0" autoRotationEnabled="true" distance="2.0" distanceRelativeToEdge="true" mode="side_slider"/>
             </y:LabelModel>
             <y:ModelParameter>
@@ -959,7 +962,7 @@ button press == RIGHT | move right<y:PreferredPlacementDescriptor angle="0.0" an
           <y:Path sx="40.066341145834" sy="-13.8125" tx="0.0" ty="0.0"/>
           <y:LineStyle color="#000000" type="line" width="1.0"/>
           <y:Arrows source="none" target="standard"/>
-          <y:EdgeLabel alignment="center" anchorX="33.655526603939535" anchorY="-51.678487594282785" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="18.701171875" modelName="custom" ratio="0.5" textColor="#000000" upX="-0.9725290149148917" upY="-0.23278168989134476" visible="true" width="42.689453125" x="15.468094342591705" y="-97.54850978120547">15 sec.<y:LabelModel>
+          <y:EdgeLabel alignment="center" anchorX="34.314807795200544" anchorY="-58.994850153609406" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="18.701171875" modelName="custom" ratio="0.5" textColor="#000000" upX="-0.976191329127363" upY="-0.21691124668064712" visible="true" width="42.689453125" x="16.058885966305034" y="-104.72441864521872">15 sec.<y:LabelModel>
               <y:RotatedSliderEdgeLabelModel angle="0.0" autoRotationEnabled="true" distance="2.0" distanceRelativeToEdge="true" mode="side_slider"/>
             </y:LabelModel>
             <y:ModelParameter>
