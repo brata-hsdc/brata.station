@@ -338,13 +338,16 @@ class FlightProfileApp(object):
         self.duration = self.dockSim.flightDuration()
         if self.duration is None:  # flight did not complete (0 or neg. velocity)
             self.duration = DockSim.MAX_FLIGHT_DURATION_S
+        print("duration:", self.duration)
         
         self.simDuration = min(self.duration, self.MAX_SIM_DURATION_S)
+        print("simDuration:", self.simDuration)
         
-        self.missionTimeScale = self.duration/self.MAX_SIM_DURATION_S
+        self.missionTimeScale = float(self.duration)/self.MAX_SIM_DURATION_S
         if self.missionTimeScale < 1.0:
             self.missionTimeScale = 1.0
-    
+        print("missionTimeScale:", self.missionTimeScale)
+        
     def drawCharts(self):
         pass
     
@@ -364,14 +367,17 @@ class FlightProfileApp(object):
     def update(self):
         """ Update the simulation """
         # Update time
-        if self.timer.elapsedSec() >= self.simDuration:
-            self.timer.stop()
+#         if self.timer.elapsedSec() >= self.simDuration:
+#             self.timer.stop()
         t = self.timer.elapsedSec()
         self.simulatedTime.setValue(t)
         self.actualTime.setValue(t * self.missionTimeScale)
         
         # Update stats
-        state = self.dockSim.shipState(t)
+        state = self.dockSim.shipState(t * self.missionTimeScale)
+        
+        if state.phase == DockSim.END_PHASE:
+            self.timer.stop()
         
         self.profile.maxVelocity = max(self.profile.maxVelocity, state.currVelocity)
         self.distance.setValue("{:0.2f} m".format(self.profile.dist - state.distTraveled))
