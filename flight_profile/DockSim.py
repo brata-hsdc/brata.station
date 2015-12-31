@@ -7,8 +7,11 @@
 #----------------------------------------------------------------------------
 from __future__ import print_function, division
 
+from collections import namedtuple
 from math import sqrt
 
+
+StateVec = namedtuple('StateVec', 'phase distTraveled currVelocity fuelConsumed fuelRemaining tEnd')
 
 #----------------------------------------------------------------------------
 class DockSim(object):
@@ -34,19 +37,6 @@ class DockSim(object):
                   END_PHASE  : "END",
                 }
     MAX_FLIGHT_DURATION_S = 1000 * 60  # 1000 minutes
-    
-    class StateVec(object):
-        def __init__(self, phase, distTraveled, currVelocity, fuelConsumed, fuelRemaining, tEnd=-1.0):
-            self.phase         = phase
-            self.distTraveled  = distTraveled
-            self.currVelocity  = currVelocity
-            self.fuelConsumed  = fuelConsumed
-            self.fuelRemaining = fuelRemaining
-            self.tEnd          = tEnd
-        
-        def __str__(self):
-            return ("Phase {}; distTraveled {:.2f}; currVelocity {:.2f}; fuelConsumed {:.2f}; fuelRemaining {:.2f}; tEnd {:.2f}".format(
-                    self.phase, self.distTraveled, self.currVelocity, self.fuelConsumed, self.fuelRemaining, self.tEnd))
     
     def __init__(self, tAft, tCoast, tFore, aAft, aFore, rFuel, qFuel, dist):
         """ Store the simulation parameters """
@@ -127,7 +117,7 @@ class DockSim(object):
         currVelocity = self.v0 + self.aAft * t
         fuelConsumed = min(self.rFuel * t, self.qFuel)
         fuelRemaining = self.qFuel - fuelConsumed
-        return DockSim.StateVec(phase, distTraveled, currVelocity, fuelConsumed, fuelRemaining, t)
+        return StateVec(phase, distTraveled, currVelocity, fuelConsumed, fuelRemaining, t)
         
     def computeCoastPhase(self, t, stateVec):
         """ Computes a state vector for the coast phase at time t.
@@ -147,7 +137,7 @@ class DockSim(object):
         currVelocity = stateVec.currVelocity
         fuelConsumed = stateVec.fuelConsumed
         fuelRemaining = stateVec.fuelRemaining
-        return DockSim.StateVec(phase, distTraveled, currVelocity, fuelConsumed, fuelRemaining, t)
+        return StateVec(phase, distTraveled, currVelocity, fuelConsumed, fuelRemaining, t)
         
     def computeDecelPhase(self, t, stateVec):
         """ Computes a state vector for the deceleration phase at time t.
@@ -167,7 +157,7 @@ class DockSim(object):
         currVelocity = stateVec.currVelocity + (-self.aFore) * dt
         fuelConsumed = min(stateVec.fuelConsumed + self.rFuel * dt, self.qFuel)
         fuelRemaining = self.qFuel - fuelConsumed
-        return DockSim.StateVec(phase, distTraveled, currVelocity, fuelConsumed, fuelRemaining, t)
+        return StateVec(phase, distTraveled, currVelocity, fuelConsumed, fuelRemaining, t)
         
     def computeGlidePhase(self, t, stateVec):
         """ Computes a state vector for the glide phase at time t.
@@ -189,7 +179,7 @@ class DockSim(object):
         currVelocity = stateVec.currVelocity
         fuelConsumed = stateVec.fuelConsumed
         fuelRemaining = stateVec.fuelRemaining
-        return DockSim.StateVec(phase, distTraveled, currVelocity, fuelConsumed, fuelRemaining, t)
+        return StateVec(phase, distTraveled, currVelocity, fuelConsumed, fuelRemaining, t)
         
     def shipState(self, t):
         """ Return ship state vector for time t.
