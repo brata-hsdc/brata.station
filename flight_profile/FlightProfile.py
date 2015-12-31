@@ -40,7 +40,10 @@ class Text(pygame.sprite.DirtySprite):
     MIDDLE = 0x20
     TOP    = 0x40
     
-    def __init__(self, pt, value="", size=100, font='freesansbold.ttf', justify=LEFT|BOTTOM, color=Colors.WHITE):
+    DEFAULT_FONT = 'freesansbold.ttf'
+    DEFAULT_FONT_SIZE = 100
+    
+    def __init__(self, pt, value="", size=DEFAULT_FONT_SIZE, font=DEFAULT_FONT, justify=LEFT|BOTTOM, color=Colors.WHITE):
         super(Text, self).__init__()
         self.pos = pt
         self.pointSize = size
@@ -139,13 +142,15 @@ class Clock(Text):
         """
         tSeconds = float(value)
         super(Clock, self).setValue("{:02d}:{:02d}:{:02d}".format(int(tSeconds//60), int(tSeconds%60), int((tSeconds%1) * 100)))
-        
+
+
 #----------------------------------------------------------------------------
-class ImgObj(pygame.sprite.Sprite):
+class ImgObj(pygame.sprite.DirtySprite):
     
-    def __init__(self, path, canvas=None, alpha=False):
+    def __init__(self, path, canvas=None, alpha=False, pivot=(0,0)):
         # Call the parent class (Sprite) constructor
-        pygame.sprite.Sprite.__init__(self)
+#         pygame.sprite.Sprite.__init__(self)
+        super(ImgObj, self).__init__()
        
         # Load an image, creating a Surface.
         self.image = pygame.image.load(path)
@@ -155,6 +160,10 @@ class ImgObj(pygame.sprite.Sprite):
             self.image = self.image.convert_alpha()
         else:
             self.image = self.image.convert()
+            
+        self.pivot = pivot
+        
+        self.children = []  # Tethered children
 
         # Fetch the rectangle object that has the dimensions of the image
         # Update the position of this object by setting the values of rect.x and rect.y
@@ -164,14 +173,24 @@ class ImgObj(pygame.sprite.Sprite):
     def x(self): return self.rect.x
     def y(self): return self.rect.y
     def pos(self): return (self.x(), self.y())
+    def pivotX(self): return self.rect.x + self.pivot[0]
+    def pivotY(self): return self.rect.y + self.pivot[1]
+    def pivotPos(self): return (self.pivotX(), self.pivotY())
     
     def lerp(self, st, en, p):
         return float(en - st) * p + float(st)
     
     def moveTo(self, p):
         """ Move to point (x,y) """
-        self.rect.x = p[0]
-        self.rect.y = p[1]
+        self.rect.x = p[0] - self.pivot[0]
+        self.rect.y = p[1] - self.pivot[1]
+        
+        if self.children:
+            self.moveChildren()
+    
+    def moveChildren(self):
+        for c in self.children:
+            c.moveTo((0, 0))
     
     def moveBetween(self, p1, p2, frac):
         """ Linearly interpolate between p1 and p2.
@@ -179,6 +198,67 @@ class ImgObj(pygame.sprite.Sprite):
             frac is the interpolation amount.
         """
         self.moveTo((self.lerp(p1[0], p2[0], frac), self.lerp(p1[1], p2[1], frac)))
+    
+    def addChild(self, tetheredChild):
+        self.children.append(tetheredChild)
+
+#----------------------------------------------------------------------------
+class TetheredImgObj(ImgObj):
+    """ An ImgObj that moves relative to a parent ImgObj. """
+    
+    def __init__(self, path, canvas=None, alpha=False, pivot=(0,0), parent=None, offset=(0,0)):
+        super(TetheredImgObj, self).__init__(path, canvas=canvas, alpha=alpha, pivot=pivot)
+        self.parent = parent
+        self.parent.addChild(self)
+        self.offset = offset
+    
+    def moveTo(self, dxy):
+        """ Move to offset relative to parent specified by delta """
+#         self.offset = dxy
+        super(TetheredImgObj, self).moveTo((self.parent.pivotX() + self.offset[0], self.parent.pivotY() + self.offset[1]))
+    
+#----------------------------------------------------------------------------
+class AnimGroup(pygame.sprite.LayeredDirty):
+    """ A Group that can sequence through multi-image sprites.
+        This creates an effect like an animated GIF.
+        The group can handle multiple sequences.
+    """
+
+    def __init__(self):
+        self.sequences = []  # list of sequences; each seq is a list [curr#, (sprite, sprite, ...)]
+        super(AnimGroup, self).__init__()
+#         pygame.sprite.RenderUpdates.__init__(self, [])
+        
+    
+    def add(self, seq=None):
+        """ Add an image sequence to the group.
+            seq is a list or tuple of Sprites.
+        """
+        if seq:
+            # Make all images invisible to start
+            for s in seq:
+                s.visible = 0
+                
+            self.sequences.append([0, seq])
+            super(AnimGroup, self).add(*seq)
+    
+    def draw(self, surface):
+        """ Activate the next image in each sequence and draw. """
+        for s in self.sequences:
+            n,seq = s
+            seq[n].visible = 0
+            n = (n + 1) % len(seq)
+            s[0] = n
+            seq[n].visible = 1  # make the nth image visible for one frame
+            seq[n].dirty = 1
+        
+        return super(AnimGroup, self).draw(surface)
+    
+    def removeAll(self):
+        """ Remove all sprites and sequences from the group """
+        for s in self.sequences:
+            self.remove(s[1])
+        self.sequences = []
         
 
 #----------------------------------------------------------------------------
@@ -191,15 +271,39 @@ class FlightProfileApp(object):
     
     MAX_SIM_DURATION_S = 45.0  # sim will not run for more than 45 sec.
     
-    BG_LAYER = 0
+    BG_LAYER    = 0
     LABEL_LAYER = 1
-    TEXT_LAYER = 2
-    SHIP_LAYER = 3
+    TEXT_LAYER  = 2
+    SHIP_LAYER  = 3
     
+    FLIGHT_PATH_START = (400, 600)
+    FLIGHT_PATH_END   = (1600, 750)
+    
+    STARS_BG_IMG = "img/Star-field_2_cropped.jpg"
     STARS_BG_POS = (0, 0)
+    
+    EARTH_BG_IMG = "img/earth_cropped.png"
     EARTH_BG_POS = (0, 800)
-    STATION_POS  = (1000, 550)
-    CAPSULE_POS  = (1, 600)
+    
+    STATION_IMG   = "img/station_2.png"
+    STATION_PIVOT = (16, 225)  # docking port
+    STATION_POS   = FLIGHT_PATH_END
+    
+    CAPSULE_IMG   = "img/capsule_2.png"
+    CAPSULE_PIVOT = (234, 98) # nose
+    CAPSULE_POS   = FLIGHT_PATH_START
+    
+    FLAME_IMG     = ("img/flame-1.png", "img/flame-2.png", "img/flame-3.png", "img/flame-4.png")
+    FLAME_PIVOT   = (198, 98) # base of flame
+    FLAME_OFFSET  = (-200, 0)
+    
+    FLAME_UP_IMG    = ("img/small_flame_up-1.png", "img/small_flame_up-2.png", "img/small_flame_up-3.png", "img/small_flame_up-4.png")
+    FLAME_UP_PIVOT  = (11, 86)
+    FLAME_UP_OFFSET = (-24, -21)
+    
+    FLAME_DOWN_IMG    = ("img/small_flame_down-1.png", "img/small_flame_down-2.png", "img/small_flame_down-3.png", "img/small_flame_down-4.png")
+    FLAME_DOWN_PIVOT  = (11, 16)
+    FLAME_DOWN_OFFSET = (-24, 21)
     
     class FlightParams(object):
         """ An object to hold the flight profile parameters """
@@ -225,6 +329,7 @@ class FlightProfileApp(object):
         self.staticGroup = pygame.sprite.LayeredUpdates()
         self.statsGroup  = pygame.sprite.RenderUpdates()
         self.movingGroup = pygame.sprite.OrderedUpdates()
+        self.animGroup   = AnimGroup()
 
     def initPygame(self):
         """ Initialize the pygame modules that we need """
@@ -235,10 +340,10 @@ class FlightProfileApp(object):
         
     def setupBackgroundDisplay(self):
         scriptDir = os.path.dirname(__file__)
-        self.stars = ImgObj(os.path.join(scriptDir, "img/Star-field_cropped.jpg"), alpha=False)
+        self.stars = ImgObj(os.path.join(scriptDir, self.STARS_BG_IMG), alpha=False)
         self.stars.moveTo(self.STARS_BG_POS)
         
-        self.earth = ImgObj(os.path.join(scriptDir, "img/earth_cropped.png"), alpha=True)
+        self.earth = ImgObj(os.path.join(scriptDir, self.EARTH_BG_IMG), alpha=True)
         self.earth.moveTo(self.EARTH_BG_POS)
         
         self.staticGroup.add((self.stars, self.earth), layer=self.BG_LAYER)
@@ -289,10 +394,16 @@ class FlightProfileApp(object):
         
     def setupSpaceshipDisplay(self):
         scriptDir = os.path.dirname(__file__)
-        self.capsule = ImgObj(os.path.join(scriptDir, "img/capsule.png"), alpha=True)
+        
+        # Load animated flames
+        self.capsule = ImgObj(os.path.join(scriptDir, self.CAPSULE_IMG), alpha=True, pivot=self.CAPSULE_PIVOT)
         self.capsule.moveTo(self.CAPSULE_POS)
         
-        self.station = ImgObj(os.path.join(scriptDir, "img/station.png"), alpha=True)
+        self.rearFlame = [TetheredImgObj(os.path.join(scriptDir, f), alpha=True, pivot=self.FLAME_PIVOT, parent=self.capsule, offset=self.FLAME_OFFSET) for f in self.FLAME_IMG]
+        self.frontFlameUp = [TetheredImgObj(os.path.join(scriptDir, f), alpha=True, pivot=self.FLAME_UP_PIVOT, parent=self.capsule, offset=self.FLAME_UP_OFFSET) for f in self.FLAME_UP_IMG]
+        self.frontFlameDown = [TetheredImgObj(os.path.join(scriptDir, f), alpha=True, pivot=self.FLAME_DOWN_PIVOT, parent=self.capsule, offset=self.FLAME_DOWN_OFFSET) for f in self.FLAME_DOWN_IMG]
+        
+        self.station = ImgObj(os.path.join(scriptDir, self.STATION_IMG), alpha=True, pivot=self.STATION_PIVOT)
         self.station.moveTo(self.STATION_POS)
         
         self.movingGroup.add((self.station, self.capsule))
@@ -318,8 +429,8 @@ class FlightProfileApp(object):
     def readFlightProfile(self):
         # Get flight profile parameters
         p = self.profile = self.FlightParams()
-        p.tAft   = 8.2
-        p.tCoast = 0
+        p.tAft   = 8.3
+        p.tCoast = 1 #0
         p.tFore  = 13.1
         p.aAft   = 0.15
         p.aFore  = 0.09
@@ -347,6 +458,8 @@ class FlightProfileApp(object):
         if self.missionTimeScale < 1.0:
             self.missionTimeScale = 1.0
         print("missionTimeScale:", self.missionTimeScale)
+    
+        self.simPhase = DockSim.START_PHASE  # set phase to initial simulation phase
         
     def drawCharts(self):
         pass
@@ -359,6 +472,7 @@ class FlightProfileApp(object):
         rectList = self.statsGroup.draw(self.canvas)
         
         # Draw graphical objects (capsule and station)
+        rectList += self.animGroup.draw(self.canvas)
         rectList += self.movingGroup.draw(self.canvas)
         
         # Only copy the modified parts of the canvas to the display
@@ -383,14 +497,28 @@ class FlightProfileApp(object):
         self.distance.setValue("{:0.2f} m".format(self.profile.dist - state.distTraveled))
         self.velocity.setValue("{:0.2f} m/sec".format(state.currVelocity))
         self.vmax.setValue("{:0.2f} m/sec".format(self.profile.maxVelocity))
-        self.acceleration.setValue("{:0.2f} m/sec".format((0, self.profile.aAft, self.profile.coastVel, self.profile.aFore, self.profile.glideVel)[state.phase]))
+        self.acceleration.setValue("{:0.2f} m/sec".format((0, self.profile.aAft, self.profile.coastVel, self.profile.aFore, self.profile.glideVel, 0)[state.phase]))
         self.fuelRemaining.setValue("{:0.2f}".format(state.fuelRemaining))
         self.phase.setValue(DockSim.PHASE_STR[state.phase])
         
         # Update graphics
+        
+        if state.phase != self.simPhase:
+            self.simPhase = state.phase
+            if state.phase == DockSim.ACCEL_PHASE:
+                self.animGroup.removeAll()
+                self.animGroup.add(self.rearFlame)
+            elif state.phase == DockSim.DECEL_PHASE:
+                self.animGroup.removeAll()
+                self.animGroup.add(self.frontFlameUp)
+                self.animGroup.add(self.frontFlameDown)
+            else:
+                self.animGroup.removeAll()
+        
         frac = state.distTraveled/self.profile.dist
 #         self.capsule.moveBetween((1, 600), (1000, 600), self.timer.elapsedSec()/self.simDuration)
-        self.capsule.moveBetween((1, 600), (1000, 600), frac)
+#         self.capsule.moveBetween((1, 600), (1000, 600), frac)
+        self.capsule.moveBetween(self.FLIGHT_PATH_START, self.FLIGHT_PATH_END, frac)
         
     def mainLoop(self):
         """ Receive events from the user and/or application objects, and update the display """

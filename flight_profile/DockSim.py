@@ -19,17 +19,19 @@ class DockSim(object):
     MIN_V_DOCK = 0.01 # m/sec
     INITIAL_V  = 0.0  # m/sec
     
+    START_PHASE = 0
     ACCEL_PHASE = 1
     COAST_PHASE = 2
     DECEL_PHASE = 3
     GLIDE_PHASE = 4
-    END_PHASE   = 0
+    END_PHASE   = 5
     
-    PHASE_STR = {ACCEL_PHASE: "ACCELERATION",
-                 COAST_PHASE: "COAST",
-                 DECEL_PHASE: "DECELERATION",
-                 GLIDE_PHASE: "GLIDE",
-                 END_PHASE: "END",
+    PHASE_STR = { START_PHASE: "START",
+                  ACCEL_PHASE: "ACCELERATION",
+                  COAST_PHASE: "COAST",
+                  DECEL_PHASE: "DECELERATION",
+                  GLIDE_PHASE: "GLIDE",
+                  END_PHASE: "END",
                 }
     MAX_FLIGHT_DURATION_S = 1000 * 60  # 1000 minutes
     
@@ -194,6 +196,7 @@ class DockSim(object):
             t is time in seconds since the start of the maneuver.
             Returns a StateVec containing (phase, distTraveled, currVelocity, fuelConsumed, fuelRemaining, tEnd)
         """
+        ## TODO: Handle running out of fuel during any phase
         if t < self.tAft:
             stateVec = self.computeAccelPhase(t)
         else:
