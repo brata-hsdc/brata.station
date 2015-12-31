@@ -15,9 +15,9 @@ class DockSim(object):
     """ DockSim contains the flight profile simulation parameters and computes
         simulation output values.
     """
-    MAX_V_DOCK = 0.1  # m/sec
-    MIN_V_DOCK = 0.01 # m/sec
-    INITIAL_V  = 0.0  # m/sec
+    MAX_V_DOCK = 0.1  # max terminal velocity for successful dock in m/sec
+    MIN_V_DOCK = 0.01 # min terminal velocity for successful dock in m/sec
+    INITIAL_V  = 0.0  # velocity at start of simulation in m/sec
     
     START_PHASE = 0
     ACCEL_PHASE = 1
@@ -31,7 +31,7 @@ class DockSim(object):
                   COAST_PHASE: "COAST",
                   DECEL_PHASE: "DECELERATION",
                   GLIDE_PHASE: "GLIDE",
-                  END_PHASE: "END",
+                  END_PHASE  : "END",
                 }
     MAX_FLIGHT_DURATION_S = 1000 * 60  # 1000 minutes
     

@@ -11,6 +11,7 @@ from __future__ import print_function, division
 
 import sys
 import os.path
+import itertools
 import pygame.sprite
 import pygame.image
 import pygame.font
@@ -43,17 +44,24 @@ class Text(pygame.sprite.DirtySprite):
     DEFAULT_FONT = 'freesansbold.ttf'
     DEFAULT_FONT_SIZE = 100
     
-    def __init__(self, pt, value="", size=DEFAULT_FONT_SIZE, font=DEFAULT_FONT, justify=LEFT|BOTTOM, color=Colors.WHITE):
+    def __init__(self, pt, value="", size=DEFAULT_FONT_SIZE, font=DEFAULT_FONT, justify=LEFT|BOTTOM, color=Colors.WHITE, intervalsMs=(1000,0)):
+        """ intervalMs is a list of (off, on, off, on, ...) time intervals used to toggle the text visibility """
         super(Text, self).__init__()
+        
         self.pos = pt
         self.pointSize = size
         self.font = pygame.font.Font(font, self.pointSize)
         self.justify = justify
         self.color = color
         self.image = None # required by sprite.draw()
+        self.intervalsMs = itertools.cycle(intervalsMs)  # create a cycle iterator
+        self.toggleTimeMs = 0
         self.rect = None  # required by sprite.draw()
         self._value = None
         self.setValue(value)  # sets _value and image
+        
+        self.visible=0
+        self.update()
         
     def value(self):
         return self._value
@@ -79,6 +87,14 @@ class Text(pygame.sprite.DirtySprite):
             self.rect.centery = self.pos[1]
         else: # self.TOP
             self.rect.top = self.pos[1]
+    
+    def update(self):
+        """ Determine the visibility, then draw """
+        t = pygame.time.get_ticks()
+        while t >= self.toggleTimeMs:
+            self.visible = (self.visible + 1) % 2  # toggle between 0 and 1
+            self.dirty = self.visible + 1  # set to 2 (always dirty) when visible
+            self.toggleTimeMs = t + next(self.intervalsMs)
     
 #----------------------------------------------------------------------------
 class Timer(object):
@@ -239,27 +255,26 @@ class AnimGroup(pygame.sprite.LayeredDirty):
             for s in seq:
                 s.visible = 0
                 
-            self.sequences.append([0, seq])
+#             self.sequences.append([0, seq])
+            self.sequences.append(itertools.cycle(seq))
             super(AnimGroup, self).add(*seq)
     
     def draw(self, surface):
         """ Activate the next image in each sequence and draw. """
-        for s in self.sequences:
-            n,seq = s
-            seq[n].visible = 0
-            n = (n + 1) % len(seq)
-            s[0] = n
-            seq[n].visible = 1  # make the nth image visible for one frame
-            seq[n].dirty = 1
+        visibleSprites = []
         
-        return super(AnimGroup, self).draw(surface)
-    
-    def removeAll(self):
-        """ Remove all sprites and sequences from the group """
         for s in self.sequences:
-            self.remove(s[1])
-        self.sequences = []
+            sp = next(s)
+            sp.visible = 1
+            sp.dirty = 1
+            visibleSprites.append(sp)
         
+        rects = super(AnimGroup, self).draw(surface)
+        
+        for sp in visibleSprites:
+            sp.visible = 0
+        
+        return rects
 
 #----------------------------------------------------------------------------
 class FlightProfileApp(object):
@@ -276,6 +291,7 @@ class FlightProfileApp(object):
     TEXT_LAYER  = 2
     SHIP_LAYER  = 3
     
+    SCREEN_CENTER     = (960, 540)
     FLIGHT_PATH_START = (400, 600)
     FLIGHT_PATH_END   = (1600, 750)
     
@@ -327,7 +343,8 @@ class FlightProfileApp(object):
         self.frameClock = None
         
         self.staticGroup = pygame.sprite.LayeredUpdates()
-        self.statsGroup  = pygame.sprite.RenderUpdates()
+        self.statsGroup  = pygame.sprite.LayeredDirty()
+        self.blinkingTextGroup = pygame.sprite.LayeredDirty()
         self.movingGroup = pygame.sprite.OrderedUpdates()
         self.animGroup   = AnimGroup()
 
@@ -460,20 +477,26 @@ class FlightProfileApp(object):
         print("missionTimeScale:", self.missionTimeScale)
     
         self.simPhase = DockSim.START_PHASE  # set phase to initial simulation phase
+    
+    def createPassFailText(self, passed=True):
+        GIANT_TEXT = 300
+        text = Text(self.SCREEN_CENTER, value="SUCCESS!" if passed else "FAIL!", size=GIANT_TEXT, color=Colors.GREEN, justify=Text.CENTER|Text.MIDDLE, intervalsMs=(1000,250))
+        self.blinkingTextGroup.add(text)
         
     def drawCharts(self):
         pass
     
     def draw(self):
         # Draw background and labels (should only do when necessary)
-        self.staticGroup.draw(self.canvas)
+        rectList = self.staticGroup.draw(self.canvas)
         
         # Draw changing text fields
-        rectList = self.statsGroup.draw(self.canvas)
+        rectList += self.statsGroup.draw(self.canvas)
         
         # Draw graphical objects (capsule and station)
         rectList += self.animGroup.draw(self.canvas)
         rectList += self.movingGroup.draw(self.canvas)
+        rectList += self.blinkingTextGroup.draw(self.canvas)
         
         # Only copy the modified parts of the canvas to the display
         pygame.display.update(rectList)
@@ -486,6 +509,7 @@ class FlightProfileApp(object):
         t = self.timer.elapsedSec()
         self.simulatedTime.setValue(t)
         self.actualTime.setValue(t * self.missionTimeScale)
+#         self.actualTime.update() # blink for testing
         
         # Update stats
         state = self.dockSim.shipState(t * self.missionTimeScale)
@@ -503,22 +527,29 @@ class FlightProfileApp(object):
         
         # Update graphics
         
+        # Detect a phase change
         if state.phase != self.simPhase:
             self.simPhase = state.phase
             if state.phase == DockSim.ACCEL_PHASE:
-                self.animGroup.removeAll()
+                self.animGroup.empty()
                 self.animGroup.add(self.rearFlame)
             elif state.phase == DockSim.DECEL_PHASE:
-                self.animGroup.removeAll()
+                self.animGroup.empty()
                 self.animGroup.add(self.frontFlameUp)
                 self.animGroup.add(self.frontFlameDown)
+            elif state.phase == DockSim.END_PHASE:
+                self.animGroup.empty()
+                self.createPassFailText(passed=self.dockSim.dockIsSuccessful())
             else:
-                self.animGroup.removeAll()
+                self.animGroup.empty()
         
         frac = state.distTraveled/self.profile.dist
 #         self.capsule.moveBetween((1, 600), (1000, 600), self.timer.elapsedSec()/self.simDuration)
 #         self.capsule.moveBetween((1, 600), (1000, 600), frac)
         self.capsule.moveBetween(self.FLIGHT_PATH_START, self.FLIGHT_PATH_END, frac)
+        
+        for sp in self.blinkingTextGroup.sprites():
+            sp.update()
         
     def mainLoop(self):
         """ Receive events from the user and/or application objects, and update the display """
