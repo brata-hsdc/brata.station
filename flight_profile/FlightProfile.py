@@ -480,7 +480,12 @@ class FlightProfileApp(object):
     
     def createPassFailText(self, passed=True):
         GIANT_TEXT = 300
-        text = Text(self.SCREEN_CENTER, value="SUCCESS!" if passed else "FAIL!", size=GIANT_TEXT, color=Colors.GREEN, justify=Text.CENTER|Text.MIDDLE, intervalsMs=(1000,250))
+        text = Text(self.SCREEN_CENTER,
+                    value="SUCCESS!" if passed else "FAIL!",
+                    size=GIANT_TEXT,
+                    color=Colors.GREEN if passed else Colors.RED,
+                    justify=Text.CENTER|Text.MIDDLE,
+                    intervalsMs=(1000,250))
         self.blinkingTextGroup.add(text)
         
     def drawCharts(self):
