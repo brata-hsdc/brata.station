@@ -123,114 +123,131 @@ class DockSim(object):
         else:
             return (-v0 + sqrt(v0**2 - 2 * a * (-d))) / a
     
-    def computePhase(self, dt, v0, a, qFuel):
+    def computeTravelInterval(self, dt, v0, a, qFuel):
         """ Compute distance traveled, velocity, and fuel consumed.
-            Return a tuple (dist, v, fuelConsumed)
+
+            Correctly handles running out of fuel part way through
+            the interval.  Does not check whether the ship traveled
+            past the destination.
+            
+            Return a tuple (dist, v, fuelRemaining)
         """
-        dist = 0.0
+        dist = 0.0       # total distance traveled during dt
+        distAccel = 0.0  # distance traveled under acceleration during dt
         v = v0
-        fuelConsumed = 0.0
+#         fuelConsumed = 0.0
+        fuelRemaining = qFuel
         
         if dt > 0.0:
             if a != 0.0:
-                # Will be consuming fuel
-                fuelConsumed = self.rFuel * dt
-                if fuelConsumed > qFuel:  # fuel runs out
-                    tBurn = self.qFuel/self.rFuel
-                    dist,v0,fuelConsumed = self.computePhase(tBurn, v0, a)
+                # Will be consuming fuel when accelerating
+#                 fuelConsumed = self.rFuel * dt
+                fuelRemaining -= self.rFuel * dt
+#                 if fuelConsumed > qFuel:  # fuel runs out
+                if fuelRemaining <= 0.0:  # fuel runs out
+                    tAccel = qFuel/self.rFuel  # how long we can fire the rockets
+#                     dist,v0,fuelConsumed = self.computeTravelInterval(tAccel, v0, a, qFuel)
+                    dist,distAccel,v0,fuelRemaining = self.computeTravelInterval(tAccel, v0, a, qFuel)
                     a = 0.0  # can't accelerate any more (no fuel left)
-                    dt = dt - tBurn  # remaining time will be coasting
+                    dt = dt - tAccel  # remaining time will be coasting
             
             # If we ran out of fuel, a == 0
-            dist += self.distanceTraveled(dt, v0, a)
+#             dist += self.distanceTraveled(dt, v0, a)
+            distConstantVel = self.distanceTraveled(dt, v0, a)
+            dist = distAccel + distConstantVel
             v = self.velocity(dt, v0, a)
         
-        return (dist, v, fuelConsumed)
-        
-    def computeAccelPhase(self, t):
+#         return (dist, v, fuelConsumed)
+        return (dist, distAccel, v, fuelRemaining)
+    
+    def nextPhase(self, phase):
+        return {self.START_PHASE: self.ACCEL_PHASE,
+                self.ACCEL_PHASE: self.COAST_PHASE,
+                self.COAST_PHASE: self.DECEL_PHASE,
+                self.DECEL_PHASE: self.GLIDE_PHASE,
+                self.GLIDE_PHASE: self.END_PHASE,
+                self.END_PHASE  : self.END_PHASE,
+                }[phase]
+    
+    def acceleration(self, phase):
+        return {self.START_PHASE: 0.0,
+                self.ACCEL_PHASE: self.aAft,
+                self.COAST_PHASE: 0.0,
+                self.DECEL_PHASE: -self.aFore,
+                self.GLIDE_PHASE: 0.0,
+                self.END_PHASE  : 0.0,
+                }[phase]
+                
+    def computePhase(self, t, stateVec):
         """ Computes a state vector for an acceleration phase of time t.
             t is time in seconds since the start of the maneuver.
             Returns a StateVec containing (phase, distTraveled, currVelocity, fuelConsumed, fuelRemaining, tEnd)
         """
-        phase = self.ACCEL_PHASE
-        distTraveled = 0.0
-        accel = self.aAft
+        phase = self.nextPhase(stateVec.phase)
+        accel = self.acceleration(phase)
+        dt = t - stateVec.tEnd  # time delta between end of last phase and t
         
-        d,v,fuelConsumed = self.computePhase(t, self.v0, accel, self.qFuel)
-        if d + distTraveled > self.dist: # went past the destination
-            # Compute time to reach dest
-            t = self.timeToTravel(self.dist, self.v0, accel)
-            d,v,fuelConsumed = self.computePhase(t, self.v0, accel, self.qFuel)
-            phase = self.END_PHASE
+#         d,v,fuelConsumed = self.computeTravelInterval(dt, stateVec.currVelocity, accel, stateVec.fuelRemaining)
+        d,v,fuelRemaining = self.computeTravelInterval(dt, stateVec.currVelocity, accel, stateVec.fuelRemaining)
+        if d + stateVec.distTraveled > self.dist: # went past the destination
+            # Did we run out of fuel?
+            if fuelRemaining <= 0.0: # then we ran out
+                # Did we run out before we reached the destination?
+                # Then compute the solution in two parts: the accelerated part and the constant velocity part
+                pass
+            else:
+                # Compute time to reach dest
+                dt = self.timeToTravel(self.dist - stateVec.distTraveled, stateVec.currVelocity, accel)
+    #             d,v,fuelConsumed = self.computeTravelInterval(dt, stateVec.currVelocity, accel, self.qFuel)
+                d,v,fuelRemaining = self.computeTravelInterval(dt, stateVec.currVelocity, accel, stateVec.fuelRemaining)
+                phase = self.END_PHASE
             
-        fuelRemaining = self.qFuel - fuelConsumed
-        return StateVec(phase, d + distTraveled, v, fuelConsumed, fuelRemaining, t)
+#         fuelRemaining = self.qFuel - (stateVec.fuelConsumed + fuelConsumed)
+#         return StateVec(phase, d + stateVec.distTraveled, v, stateVec.fuelConsumed + fuelConsumed, fuelRemaining, stateVec.tEnd + dt)
+        return StateVec(phase, d + stateVec.distTraveled, v, self.qFuel - fuelRemaining, fuelRemaining, stateVec.tEnd + dt)
+    
+    def computeAccelPhase(self, t, stateVec):
+        """ Computes a state vector for an acceleration phase of time t.
+            t is time in seconds since the start of the maneuver.
+            Returns a StateVec containing (phase, distTraveled, currVelocity, fuelConsumed, fuelRemaining, tEnd)
+        """
+        return self.computePhase(t, stateVec)
     
     def computeCoastPhase(self, t, stateVec):
         """ Computes a state vector for the coast phase at time t.
             t is time in seconds since the start of the maneuver.
             Returns a StateVec containing (phase, distTraveled, currVelocity, fuelConsumed, fuelRemaining, tEnd)
         """
-        phase = self.COAST_PHASE
-        dt = t - stateVec.tEnd
-        distTraveled = stateVec.distTraveled
-        accel = 0.0
-
-        d,v,fuelConsumed = self.computePhase(dt, stateVec.currVelocity, accel, stateVec.fuelRemaining)
-        if d + distTraveled > self.dist: # went past the destination
-            # Compute time to reach dest
-            dt = self.timeToTravel(d, stateVec.currVelocity, accel)
-            d,v,fuelConsumed = self.computePhase(dt, stateVec.currVelocity, accel, stateVec.fuelRemaining)
-            phase = self.END_PHASE
-            
-        fuelRemaining = stateVec.fuelRemaining - fuelConsumed
-        return StateVec(phase, d + distTraveled, v, fuelConsumed, fuelRemaining, stateVec.tEnd + dt)
+        return self.computePhase(t, stateVec)
         
     def computeDecelPhase(self, t, stateVec):
         """ Computes a state vector for the deceleration phase at time t.
             t is time in seconds since the start of the maneuver.
             Returns a StateVec containing (phase, distTraveled, currVelocity, fuelConsumed, fuelRemaining, tEnd)
         """
-        phase = self.DECEL_PHASE
-        dt = t - stateVec.tEnd
-        distTraveled = stateVec.distTraveled
-        accel = -self.aFore
-        
-        d,v,fuelConsumed = self.computePhase(dt, stateVec.currVelocity, accel, stateVec.fuelRemaining)
-        if d + distTraveled > self.dist: # went past the destination
-            # Compute time to reach dest
-            dt = self.timeToTravel(d, stateVec.currVelocity, accel)
-            d,v,fuelConsumed = self.computePhase(dt, stateVec.currVelocity, accel, stateVec.fuelRemaining)
-            phase = self.END_PHASE
-            
-        fuelRemaining = stateVec.fuelRemaining - fuelConsumed
-        return StateVec(phase, d + distTraveled, v, fuelConsumed, fuelRemaining, stateVec.tEnd + dt)
+        return self.computePhase(t, stateVec)
 
     def computeGlidePhase(self, t, stateVec):
         """ Computes a state vector for the glide phase at time t.
             t is time in seconds since the start of the maneuver.
             Returns a StateVec containing (phase, distTraveled, currVelocity, fuelConsumed, fuelRemaining, tEnd)
         """
-        phase = self.GLIDE_PHASE
-        dt = t - stateVec.tEnd
-        distTraveled = stateVec.distTraveled
-        accel = 0.0
-        
-        d,v,fuelConsumed = self.computePhase(dt, stateVec.currVelocity, accel, stateVec.fuelRemaining)
-        if d + distTraveled > self.dist: # went past the destination
-            # Compute time to reach dest
-            dt = self.timeToTravel(d, stateVec.currVelocity, accel)
-            d,v,fuelConsumed = self.computePhase(dt, stateVec.currVelocity, accel, stateVec.fuelRemaining)
-            phase = self.END_PHASE
-            
-        fuelRemaining = stateVec.fuelRemaining - fuelConsumed
-        return StateVec(phase, d + distTraveled, v, fuelConsumed, fuelRemaining, stateVec.tEnd + dt)
+        return self.computePhase(t, stateVec)
         
     def flightDuration(self):
         """ Return the total duration of the docking maneuver.
             Return None if the terminal velocity is < 0.
         """
-        stateVec = self.computeAccelPhase(self.tAft)
+        # Create initial stateVec
+        stateVec = StateVec(phase=self.START_PHASE,
+                            distTraveled=0.0,
+                            currVelocity=self.v0,
+                            fuelConsumed=0.0,
+                            fuelRemaining=self.qFuel,
+                            tEnd=0.0)
+
+        # Walk through the individual simulation phases
+        stateVec = self.computeAccelPhase(self.tAft, stateVec)
         if stateVec.phase == self.END_PHASE:
             # Capsule reached port during acceleration phase
             tEnd = stateVec.tEnd
@@ -259,10 +276,20 @@ class DockSim(object):
             Returns a StateVec containing (phase, distTraveled, currVelocity, fuelConsumed, fuelRemaining, tEnd)
         """
         ## TODO: Handle running out of fuel during any phase
+        
+        # Create initial stateVec
+        stateVec = StateVec(phase=self.START_PHASE,
+                            distTraveled=0.0,
+                            currVelocity=self.v0,
+                            fuelConsumed=0.0,
+                            fuelRemaining=self.qFuel,
+                            tEnd=0.0)
+
+        # Walk through the individual simulation phases
         if t < self.tAft:
-            stateVec = self.computeAccelPhase(t)
+            stateVec = self.computeAccelPhase(t, stateVec)
         else:
-            stateVec = self.computeAccelPhase(self.tAft)
+            stateVec = self.computeAccelPhase(self.tAft, stateVec)
             if stateVec.phase != self.END_PHASE:
                 if (t - self.tAft) < self.tCoast:
                     stateVec = self.computeCoastPhase(t, stateVec)

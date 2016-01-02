@@ -279,12 +279,13 @@ class AnimGroup(pygame.sprite.LayeredDirty):
 #----------------------------------------------------------------------------
 class FlightProfileApp(object):
     """ The app reads and displays flight profile information from the Master Server.
-        The app uses pygame to display sprite-based graphics and matplotlib to display
-        plots of the numerical flight profile data.
+        The app uses pygame to display sprite-based graphics.
     """
     WINDOW_TITLE = "Flight Profile"
+    FULLSCREEN = True
     
-    MAX_SIM_DURATION_S = 45.0  # sim will not run for more than 45 sec.
+    MAX_SIM_DURATION_S = 45.0  # longer sim will be compressed to 45 sec.
+#     MAX_SIM_DURATION_S = 10.0  # longer sim will be compressed to 10 sec.
     
     BG_LAYER    = 0
     LABEL_LAYER = 1
@@ -371,17 +372,21 @@ class FlightProfileApp(object):
         LINE_SPACE = 70
         BIG_TEXT = 80
         SMALL_TEXT = 60
+        TINY_TEXT = 35
         TAB1 = 300
         TAB2 = TAB1 + 40
         
         self.missionTimeLabel = Text((X, Y), value="Mission Time", size=BIG_TEXT)
         self.simulatedLabel   = Text((X+TAB1, Y+LINE_SPACE), value="Simulated:", size=SMALL_TEXT, justify=Text.RIGHT|Text.BOTTOM)
         self.actualLabel      = Text((X+TAB1, Y+LINE_SPACE*2), value="Actual:", size=SMALL_TEXT, justify=Text.RIGHT|Text.BOTTOM)
-        self.staticGroup.add((self.missionTimeLabel, self.simulatedLabel, self.actualLabel), layer=self.LABEL_LAYER)
+        self.compressionLabel = Text((X+TAB1, int(Y+LINE_SPACE*2.7)), value="Time Compression:", size=TINY_TEXT, justify=Text.RIGHT|Text.BOTTOM)
+        self.staticGroup.add((self.missionTimeLabel, self.simulatedLabel, self.actualLabel, self.compressionLabel), layer=self.LABEL_LAYER)
         
         self.simulatedTime    = Clock((X+TAB2, Y+LINE_SPACE), size=SMALL_TEXT)
-        self.actualTime       = Clock((X+TAB2, Y+LINE_SPACE*2), size=SMALL_TEXT, color=Colors.RED)
+        self.actualTime       = Clock((X+TAB2, Y+LINE_SPACE*2), size=SMALL_TEXT)
+        self.compression      = Text((X+TAB2, int(Y+LINE_SPACE*2.7)), value="{:0.1f}x".format(self.missionTimeScale), size=TINY_TEXT)
         self.statsGroup.add((self.simulatedTime, self.actualTime))
+        self.staticGroup.add((self.compression), layer=self.LABEL_LAYER)
     
     def setupStatsDisplay(self):
         X = 900
@@ -428,7 +433,10 @@ class FlightProfileApp(object):
     def setupDisplay(self):
         """ Create the display window and the components within it """
         # Create the window
-        self.canvas = pygame.display.set_mode((0,1080), pygame.FULLSCREEN | pygame.DOUBLEBUF | pygame.HWSURFACE)# | pygame.OPENGL)
+        if self.FULLSCREEN:
+            self.canvas = pygame.display.set_mode((0,1080), pygame.FULLSCREEN | pygame.DOUBLEBUF | pygame.HWSURFACE)# | pygame.OPENGL)
+        else:
+            self.canvas = pygame.display.set_mode((0,1080), pygame.DOUBLEBUF | pygame.HWSURFACE)# | pygame.OPENGL)
 #         self.canvas = pygame.display.set_mode((0,1080), pygame.FULLSCREEN | pygame.HWSURFACE)# | pygame.OPENGL)
         pygame.display.set_caption(self.WINDOW_TITLE)
         
@@ -446,13 +454,13 @@ class FlightProfileApp(object):
     def readFlightProfile(self):
         # Get flight profile parameters
         p = self.profile = self.FlightParams()
-        p.tAft   = 8.3
+        p.tAft   = 8.5#8.2#8.4#8.3
         p.tCoast = 1 #0
         p.tFore  = 13.1
         p.aAft   = 0.15
         p.aFore  = 0.09
         p.rFuel  = 0.7
-        p.qFuel  = 20
+        p.qFuel  = 5#20
         p.dist   = 15.0
         
         # Create a simulation object initialized with the flight profile
@@ -471,9 +479,7 @@ class FlightProfileApp(object):
         self.simDuration = min(self.duration, self.MAX_SIM_DURATION_S)
         print("simDuration:", self.simDuration)
         
-        self.missionTimeScale = float(self.duration)/self.MAX_SIM_DURATION_S
-        if self.missionTimeScale < 1.0:
-            self.missionTimeScale = 1.0
+        self.missionTimeScale = max(1.0, float(self.duration)/self.MAX_SIM_DURATION_S)
         print("missionTimeScale:", self.missionTimeScale)
     
         self.simPhase = DockSim.START_PHASE  # set phase to initial simulation phase
@@ -591,9 +597,9 @@ class FlightProfileApp(object):
             lastFrameMs = self.frameClock.tick(self.frameRate)
 
     def run(self):
+        self.readFlightProfile()
         self.initPygame()
         self.setupDisplay()
-        self.readFlightProfile()
         self.mainLoop()
         
 #============================================================================
