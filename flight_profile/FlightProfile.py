@@ -66,8 +66,10 @@ class Text(pygame.sprite.DirtySprite):
     def value(self):
         return self._value
     
-    def setValue(self, value):
+    def setValue(self, value, color=None):
         self._value = value
+        if color:
+            self.color = color
         self.image = self.font.render(self._value, True, self.color)
         self.dirty = 1
 
@@ -343,6 +345,9 @@ class FlightProfileApp(object):
         self.frameRate = 30 # fps
         self.frameClock = None
         
+        self.simPhase = DockSim.START_PHASE
+        self.outOfFuel = False
+        
         self.staticGroup = pygame.sprite.LayeredUpdates()
         self.statsGroup  = pygame.sprite.LayeredDirty()
         self.blinkingTextGroup = pygame.sprite.LayeredDirty()
@@ -454,13 +459,13 @@ class FlightProfileApp(object):
     def readFlightProfile(self):
         # Get flight profile parameters
         p = self.profile = self.FlightParams()
-        p.tAft   = 8.5#8.2#8.4#8.3
+        p.tAft   = 8.2#8.4#8.3
         p.tCoast = 1 #0
         p.tFore  = 13.1
         p.aAft   = 0.15
         p.aFore  = 0.09
         p.rFuel  = 0.7
-        p.qFuel  = 5#20
+        p.qFuel  = 20
         p.dist   = 15.0
         
         # Create a simulation object initialized with the flight profile
@@ -483,6 +488,7 @@ class FlightProfileApp(object):
         print("missionTimeScale:", self.missionTimeScale)
     
         self.simPhase = DockSim.START_PHASE  # set phase to initial simulation phase
+        self.outOfFuel = False
     
     def createPassFailText(self, passed=True):
         GIANT_TEXT = 300
@@ -530,24 +536,40 @@ class FlightProfileApp(object):
         
         self.profile.maxVelocity = max(self.profile.maxVelocity, state.currVelocity)
         self.distance.setValue("{:0.2f} m".format(self.profile.dist - state.distTraveled))
-        self.velocity.setValue("{:0.2f} m/sec".format(state.currVelocity))
+        self.velocity.setValue("{:0.2f} m/sec".format(state.currVelocity), color=Colors.GREEN if self.dockSim.safeDockingVelocity(state.currVelocity) else Colors.RED)
         self.vmax.setValue("{:0.2f} m/sec".format(self.profile.maxVelocity))
-        self.acceleration.setValue("{:0.2f} m/sec".format((0, self.profile.aAft, self.profile.coastVel, self.profile.aFore, self.profile.glideVel, 0)[state.phase]))
-        self.fuelRemaining.setValue("{:0.2f}".format(state.fuelRemaining))
+        self.acceleration.setValue("{:0.2f} m/sec^2".format((0.0,
+                                                             self.profile.aAft if not self.outOfFuel else 0.0,
+                                                             0.0,
+                                                             -self.profile.aFore if not self.outOfFuel else 0.0,
+                                                             0.0,
+                                                             0.0)[state.phase]))
+        self.fuelRemaining.setValue("{:0.2f}".format(state.fuelRemaining), color=Colors.WHITE if state.fuelRemaining > 0.0 else Colors.RED)
         self.phase.setValue(DockSim.PHASE_STR[state.phase])
         
         # Update graphics
+        changeDetected = False
         
+        # Detect running out of fuel
+        if not self.outOfFuel and state.fuelRemaining <= 0.0:
+            self.outOfFuel = True
+            changeDetected = True
+            
         # Detect a phase change
         if state.phase != self.simPhase:
             self.simPhase = state.phase
+            changeDetected = True
+        
+        if changeDetected:
             if state.phase == DockSim.ACCEL_PHASE:
                 self.animGroup.empty()
-                self.animGroup.add(self.rearFlame)
+                if not self.outOfFuel:
+                    self.animGroup.add(self.rearFlame)
             elif state.phase == DockSim.DECEL_PHASE:
                 self.animGroup.empty()
-                self.animGroup.add(self.frontFlameUp)
-                self.animGroup.add(self.frontFlameDown)
+                if not self.outOfFuel:
+                    self.animGroup.add(self.frontFlameUp)
+                    self.animGroup.add(self.frontFlameDown)
             elif state.phase == DockSim.END_PHASE:
                 self.animGroup.empty()
                 self.createPassFailText(passed=self.dockSim.dockIsSuccessful())
