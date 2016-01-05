@@ -38,22 +38,23 @@ class DockSim(object):
                 }
     MAX_FLIGHT_DURATION_S = 1000 * 60  # 1000 minutes
     
-    def __init__(self, tAft, tCoast, tFore, aAft, aFore, rFuel, qFuel, dist):
+    def __init__(self, fp):
         """ Store the simulation parameters.
+            fp is a FlightProfile.FlightParams namedtuple.
             Raises ValueError if any of the flight characteristics are out of
             range, but allows the user-supplied time values to be anything.
         """
         # User-supplied flight profile parameters
-        self.tAft   = tAft   # sec (aft acceleration burn)
-        self.tCoast = tCoast # sec (coasting interval)
-        self.tFore  = tFore  # sec (forward deceleration burn)
+        self.tAft   = fp.tAft   # sec (aft acceleration burn)
+        self.tCoast = fp.tCoast # sec (coasting interval)
+        self.tFore  = fp.tFore  # sec (forward deceleration burn)
         
         # Capsule flight characteristics parameters
-        self.aAft  = aAft  # m/sec^2 (aft acceleration)
-        self.aFore = aFore # m/sec^2 (forward deceleration)
-        self.rFuel = rFuel # kg/sec (fuel consumption rate)
-        self.qFuel = qFuel # kg (initial fuel quantity)
-        self.dist  = dist  # m (initial distance to dock)
+        self.aAft  = fp.aAft  # m/sec^2 (aft acceleration)
+        self.aFore = fp.aFore # m/sec^2 (forward deceleration)
+        self.rFuel = fp.rFuel # kg/sec (fuel consumption rate)
+        self.qFuel = fp.qFuel # kg (initial fuel quantity)
+        self.dist  = fp.dist  # m (initial distance to dock)
         self.v0    = self.INITIAL_V # m/sec (initial velocity)
         
         # Validate some parameters

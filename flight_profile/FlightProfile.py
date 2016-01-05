@@ -9,6 +9,7 @@ Display the flight profile of a team's docking attempt.
 """
 from __future__ import print_function, division
 
+from collections import namedtuple
 import sys
 import os.path
 import itertools
@@ -324,9 +325,16 @@ class FlightProfileApp(object):
     FLAME_DOWN_PIVOT  = (11, 16)
     FLAME_DOWN_OFFSET = (-24, 21)
     
-    class FlightParams(object):
-        """ An object to hold the flight profile parameters """
-        pass
+    # An object to hold the flight profile parameters
+    #   tAft    is the duration of the acceleration burn, in seconds
+    #   tCoast  is the duration of the coast phase, in seconds
+    #   tFore   is the duration of the deceleration burn, in seconds
+    #   aAft    is the force of acceleration, in m/sec^2
+    #   aFore   is the force of deceleration, in m/sec^2
+    #   rFuel   is the rate of fuel consumption in kg/sec
+    #   qFuel   is the initial amount of fuel, in kg
+    #   dist    is the initial distance to the dock, in m
+    FlightParams = namedtuple('FlightParams', 'tAft tCoast tFore aAft aFore rFuel qFuel dist')
     
     def __init__(self):
         self.canvas = None
@@ -345,6 +353,7 @@ class FlightProfileApp(object):
         self.frameRate = 30 # fps
         self.frameClock = None
         
+        self.maxVelocity = 0.0
         self.simPhase = DockSim.START_PHASE
         self.outOfFuel = False
         
@@ -405,7 +414,7 @@ class FlightProfileApp(object):
         self.paramsLabel = Text((X, Y), value="Flight Profile Parameters", size=BIG_TEXT)
         self.distLabel   = Text((X+TAB1, Y + LINE_SPACE), value="Closing Distance:", size=SMALL_TEXT, justify=Text.RIGHT|Text.BOTTOM)
         self.velLabel    = Text((X+TAB1, Y + LINE_SPACE*2), value="Relative Velocity:", size=SMALL_TEXT, justify=Text.RIGHT|Text.BOTTOM)
-        self.vmaxLabel   = Text((X+TAB1, Y + LINE_SPACE*3), value="Vmax:", size=SMALL_TEXT, justify=Text.RIGHT|Text.BOTTOM)
+        self.vmaxLabel   = Text((X+TAB1, Y + LINE_SPACE*3), value="Max Rel Velocity:", size=SMALL_TEXT, justify=Text.RIGHT|Text.BOTTOM)
         self.accelLabel  = Text((X+TAB1, Y + LINE_SPACE*4), value="Acceleration:", size=SMALL_TEXT, justify=Text.RIGHT|Text.BOTTOM)
         self.fuelLabel   = Text((X+TAB1, Y + LINE_SPACE*5), value="Fuel Remaining:", size=SMALL_TEXT, justify=Text.RIGHT|Text.BOTTOM)
         self.phaseLabel  = Text((X+TAB1, Y + LINE_SPACE*6), value="Phase:", size=SMALL_TEXT, justify=Text.RIGHT|Text.BOTTOM)
@@ -458,22 +467,23 @@ class FlightProfileApp(object):
         
     def readFlightProfile(self):
         # Get flight profile parameters
-        p = self.profile = self.FlightParams()
-        p.tAft   = 8.2#8.4#8.3
-        p.tCoast = 1 #0
-        p.tFore  = 13.1
-        p.aAft   = 0.15
-        p.aFore  = 0.09
-        p.rFuel  = 0.7
-        p.qFuel  = 20
-        p.dist   = 15.0
+        self.profile = self.FlightParams(
+                                         tAft=8.2,#8.4#8.3
+                                         tCoast=1, #0
+                                         tFore=13.1,
+                                         aAft=0.15,
+                                         aFore=0.09,
+                                         rFuel=0.7,
+                                         qFuel=20,
+                                         dist=15.0,
+                                        )
         
         # Create a simulation object initialized with the flight profile
-        self.dockSim = DockSim(p.tAft, p.tCoast, p.tFore, p.aAft, p.aFore, p.rFuel, p.qFuel, p.dist)
+        self.dockSim = DockSim(self.profile)
         
-        self.profile.coastVel = self.dockSim.coastVelocity()
-        self.profile.glideVel = self.dockSim.terminalVelocity()
-        self.profile.maxVelocity = 0.0
+#         self.profile.coastVel = self.dockSim.coastVelocity()
+#         self.profile.glideVel = self.dockSim.terminalVelocity()
+        self.maxVelocity = 0.0
         
         # Get the total time of flight
         self.duration = self.dockSim.flightDuration()
@@ -534,17 +544,17 @@ class FlightProfileApp(object):
         if state.phase == DockSim.END_PHASE:
             self.timer.stop()
         
-        self.profile.maxVelocity = max(self.profile.maxVelocity, state.currVelocity)
+        self.maxVelocity = max(self.maxVelocity, state.currVelocity)
         self.distance.setValue("{:0.2f} m".format(self.profile.dist - state.distTraveled))
         self.velocity.setValue("{:0.2f} m/sec".format(state.currVelocity), color=Colors.GREEN if self.dockSim.safeDockingVelocity(state.currVelocity) else Colors.RED)
-        self.vmax.setValue("{:0.2f} m/sec".format(self.profile.maxVelocity))
+        self.vmax.setValue("{:0.2f} m/sec".format(self.maxVelocity))
         self.acceleration.setValue("{:0.2f} m/sec^2".format((0.0,
                                                              self.profile.aAft if not self.outOfFuel else 0.0,
                                                              0.0,
                                                              -self.profile.aFore if not self.outOfFuel else 0.0,
                                                              0.0,
                                                              0.0)[state.phase]))
-        self.fuelRemaining.setValue("{:0.2f}".format(state.fuelRemaining), color=Colors.WHITE if state.fuelRemaining > 0.0 else Colors.RED)
+        self.fuelRemaining.setValue("{:0.2f} kg".format(state.fuelRemaining), color=Colors.WHITE if state.fuelRemaining > 0.0 else Colors.RED)
         self.phase.setValue(DockSim.PHASE_STR[state.phase])
         
         # Update graphics
