@@ -45,7 +45,7 @@ from station.util import get_ip_address
 # ------------------------------------------------------------------------------
 class ConnectionManager(IConnectionManager):
     """
-    TODO class comment
+    Station Connection Manager
     """
 
     _app = Flask(__name__)
@@ -57,20 +57,16 @@ class ConnectionManager(IConnectionManager):
                  station,
                  stationTypeId,
                  config):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
+        """Station Connection Manager __init__
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            station (Station): station class
+            stationTypeId (type): ID for station
+            config (Config): Configuration parameters
         Returns:
-            TODO describe the return type and details
+            N/A
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            N/A
 
         """
 
@@ -87,7 +83,8 @@ class ConnectionManager(IConnectionManager):
         logger.debug('Flask logger? %s' % (self._app.config['LOGGER_NAME']))
         logger.debug('Flask server? %s' % (self._app.config['SERVER_NAME']))
         # TODO make configurable
-        self._ifName = "wlan0"
+##        self._ifName = "wlan0"
+        self._ifName = "eth0"
         self._ipAddr = get_ip_address(self._ifName)
         self._listenPort = 5000
 
@@ -117,9 +114,9 @@ class ConnectionManager(IConnectionManager):
                                self.startChallenge,
                                methods=['POST'])
 
-        self._app.add_url_rule(config.HandleSubmissionUrlRule,
-                               'handle_submission',
-                               self.handleSubmission,
+        self._app.add_url_rule(config.PostChallengeUrlRule,
+                               'post_challenge',
+                               self.postChallenge,
                                methods=['POST'])
 
         self._app.add_url_rule(config.ShutdownUrlRule,
@@ -140,14 +137,11 @@ class ConnectionManager(IConnectionManager):
         necessary.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            N/A
         Returns:
-            TODO describe the return type and details
+            N/A
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            N/A
 
         """
         return self._connectedValue
@@ -162,18 +156,12 @@ class ConnectionManager(IConnectionManager):
     def __enter__(self):
         """TODO strictly one-line summary
 
-        TODO Detailed multi-line description if
-        necessary.
-
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            N/A
         Returns:
-            TODO describe the return type and details
+            N/A
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            N/A
 
         """
         logger.debug('Entering connection manager')
@@ -183,18 +171,14 @@ class ConnectionManager(IConnectionManager):
     def __exit__(self, type, value, traceback):
         """TODO strictly one-line summary
 
-        TODO Detailed multi-line description if
-        necessary.
-
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+TODO            type (type): ??
+TODO            value (??): ??
+TODO            traceback (??): ??
         Returns:
-            TODO describe the return type and details
+            N/A
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            N/A
 
         """
         logger.debug('Exiting connection manager')
@@ -481,101 +465,50 @@ class ConnectionManager(IConnectionManager):
         self._callback.args = [theatric_delay_ms, candidate_answer]
         self._callback.State = State.FAILED
 
-
     # --------------------------------------------------------------------------
-    def submitCtsComboToMS(self,
-                           combo,
-                           isCorrect):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
+    def submit(self,
+                           candidateAnswer,
+                           isCorrect, failMessage):
+        """Submit candidate answer to Master Server
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            candidateAnswer (list): list of 4 values 0-7 for SECURE,
+                                    list of 6 values 00-99 for RETURN
+            isCorrect (string): "True" or "False"
+            failMessage (string): For SECURE, "True" if isCorrect, else
+                                  a message indicating failure
         Returns:
-            TODO describe the return type and details
+            N/A
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            N/A
 
         """
-        logger.debug('Station submitting answer to master server')
-
+        logger.debug('Station submitting answer to master server, Answer=%s, isCorrect=%s, failMessage=%s' % (candidateAnswer, isCorrect, failMessage))
+        
         url = self._submitUrl + "/" + self._stationId
         (status, response) = self.callService(
             HttpMethod.POST, url,
             {
                 'message_version'   : 0,
                 'message_timestamp' : self.timestamp(),
-                'candidate_answer'  : combo,
+                'candidate_answer'  : candidateAnswer,
                 'is_correct'        : isCorrect,
-                'fail_message'      : "" if isCorrect else "Incorrect combo provided."
+                'fail_message'      : "" if isCorrect.lower() == "true" else failMessage
             })
 
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (url))
             # Note: the str() casts normalize string and bool inputs, but return a str
-            self.handleSubmissionResp(response['theatric_delay_ms'],
-                                      str(isCorrect),
+            self.handleSubmissionResp(str(isCorrect),
                                       str(response['challenge_complete']))
         elif status == httplib.NOT_FOUND:
             logger.critical('Service %s returned NOT_FOUND' % (url))
         else:
             logger.critical('Unexpected HTTP response %s received from service %s' % (status, url))
 
-
-    # --------------------------------------------------------------------------
-    def submitCpaDetectionToMS(self,
-                               hitDetected,
-                               isCorrect,
-                               failMessage):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
-        """
-        logger.debug('Station submitting answer to master server')
-        challengeComplete = 'Unknown'
-        url = self._submitUrl + '/' + self._stationId
-
-        (status, response) = self.callService(
-            HttpMethod.POST, url,
-            {
-                'message_version'            : 0,
-                'message_timestamp'          : self.timestamp(),
-                'candidate_answer'           : hitDetected,
-                'is_correct'                 : isCorrect,
-                'fail_message'               : failMessage
-            })
-
-        if status == httplib.OK:
-            try:
-              self.handleSubmissionResp(response.theatric_delay_ms,
-                                      # Note: the str() casts normalize string and bool inputs, but return a str
-                                      str(isCorrect),
-                                      str(response.challenge_complete))
-            except:
-                logger.debug('Could not print response.  Check server provided json response')
-        elif status == httplib.NOT_FOUND:
-            logger.critical('Service %s returned NOT_FOUND' % (url))
-        else:
-            logger.critical('Unexpected HTTP response %s received from service %s' % (status, url))
-
-        return challengeComplete
+        logger.debug('SUBMIT')
+        logger.debug('Submit response: %s' % (response['challenge_complete']))
+        return response['challenge_complete']
 
     # ===
     # Messages from MS to Station
@@ -640,28 +573,19 @@ class ConnectionManager(IConnectionManager):
 
         message_version = request.json['message_version']
         message_timestamp = request.json['message_timestamp']
-        theatric_delay_ms = request.json['theatric_delay_ms']
+#        theatric_delay_ms = request.json['theatric_delay_ms']
 
-        if 'hmb_vibration_pattern_ms' in request.json:
-            logger.debug('Received a start_challenge request for HMB station')
-            hmb_vibration_pattern_ms = request.json['hmb_vibration_pattern_ms']
-            self._callback.args = hmb_vibration_pattern_ms
-            logger.debug('Master server requesting station start_challenge (ver %s) at %s with theatric delay of %s ms, HMB vibration pattern %s' % (message_version, message_timestamp, theatric_delay_ms, hmb_vibration_pattern_ms))
-        elif 'cpa_velocity' in request.json:
-            logger.debug('Received a start_challenge request for CPA station')
-            cpa_velocity = request.json['cpa_velocity']
-            cpa_velocity_tolerance_ms = request.json['cpa_velocity_tolerance_ms']
-            cpa_window_time_ms = request.json['cpa_window_time_ms']
-            cpa_window_time_tolerance_ms = request.json['cpa_window_time_tolerance_ms']
-            cpa_pulse_width_ms = request.json['cpa_pulse_width_ms']
-            cpa_pulse_width_tolerance_ms = request.json['cpa_pulse_width_tolerance_ms']
-            self._callback.args = [cpa_velocity, cpa_velocity_tolerance_ms, cpa_window_time_ms, cpa_window_time_tolerance_ms, cpa_pulse_width_ms, cpa_pulse_width_tolerance_ms, theatric_delay_ms]
-            logger.debug('Master server requesting station start_challenge (ver %s) at %s with theatric delay of %s ms, CPA velocity %s with tolerance %s, window time %s ms with tolerance %s ms, and pulse width %s ms with tolerance %s ms' % (message_version, message_timestamp, theatric_delay_ms, cpa_velocity, cpa_velocity_tolerance_ms, cpa_window_time_ms, cpa_window_time_tolerance_ms, cpa_pulse_width_ms, cpa_pulse_width_tolerance_ms))
-        elif 'cts_combo' in request.json:
-            logger.debug('Received a start_challenge request for CTS station')
-            cts_combo = request.json['cts_combo']
-            self._callback.args = cts_combo
-            logger.debug('Master server requesting station start_challenge (ver %s) at %s with theatric delay of %s ms, CTS combo %s' % (message_version, message_timestamp, theatric_delay_ms, cts_combo))
+        if 'secure_tone_Pattern' in request.json:
+            logger.debug('Received a start_challenge request for SECURE station')
+            secure_tone_pattern = request.json['secure_tone_Pattern']
+            secure_state = request.json['secure_state']
+            self._callback.args = [secure_tone_pattern] # The Pulse pattern is not required, since it is in the tone pattern
+            logger.debug('Master server requesting station start_challenge (ver %s) at %s, SECURE Tone pattern %s, SECURE State %s' % (message_version, message_timestamp, secure_tone_pattern, secure_state))
+        elif 'return_guidance_pattern' in request.json:
+            logger.debug('Received a start_challenge request for RETURN station')
+            return_guidance_pattern = request.json['return_guidance_Pattern']
+            self._callback.args = return_guidance_pattern
+            logger.debug('Master server requesting station start_challenge (ver %s) at %s, RETURN Guidance pattern %s' % (message_version, message_timestamp, return_guidance_pattern))
         else:
             logger.critical('Received a start_challenge request for unrecognized station')
 
@@ -677,54 +601,90 @@ class ConnectionManager(IConnectionManager):
         resp.status_code = httplib.OK
         return resp
 
-
-
     # --------------------------------------------------------------------------
-    def handleSubmission(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
+    def postChallenge(self):
+        """Start the second part of the challenge 
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            N/A
         Returns:
-            TODO describe the return type and details
+            N/A
         Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
+            N/A
 
         """
 
-        logger.debug('Received handleSubmission message from MS with json %s' % (json.dumps(request.json)))
+        logger.debug('Received POST message from MS with json %s' % (json.dumps(request.json)))
 
-        # TODO...
-        #if not request.json or not 'title' in request.json:
         if not request.json:
             #TODO abort(httplib.BAD_REQUEST
             logger.debug('return BAD_REQUEST?')
 
         message_version = request.json['message_version']
         message_timestamp = request.json['message_timestamp']
-        theatric_delay_ms = request.json['theatric_delay_ms']
-        is_correct = str(request.json['is_correct'])
-        challenge_complete = str(request.json['challenge_complete'])
 
-        logger.debug('Master server relaying (ver %s) user answer to at %s. Theatric delay %s ms is correct? %s. Challenge complete? %s' % (message_version, message_timestamp, theatric_delay_ms, is_correct, challenge_complete))
-        self.handleSubmissionResp(theatric_delay_ms,
-                                  str(is_correct),
-                                  str(challenge_complete))
+        if 'secure_pulse_Pattern' in request.json:
+            logger.debug('Received a POST request for SECURE station')
+            secure_pulse_pattern = request.json['secure_pulse_Pattern']
+            secure_max_pulse_width = request.json['secure_max_pulse_width']
+            secure_max_gap = request.json['secure_max_gap']
+            secure_min_gap = request.json['secure_min_gap']
+
+            self._callback.args = [secure_pulse_pattern, secure_max_pulse_width, secure_max_gap, secure_min_gap] # The Pulse pattern is not required, since it is in the tone pattern
+            logger.debug('Master server requesting station post_challenge (ver %s) at %s, SECURE Code pattern %s, Max pulse width %s, Max pulse gap %s, Min pulse gap %s' % (message_version, message_timestamp, secure_pulse_pattern, secure_max_pulse_width, secure_max_gap, secure_min_gap))
+        else:
+            logger.critical('Received a post_challenge request for unrecognized station')
+
+        self._callback.State = State.PROCESSING2
 
         resp = jsonify({})
         resp.status_code = httplib.OK
         return resp
 
-
-    # --------------------------------------------------------------------------
+##    # --------------------------------------------------------------------------
+##    def handleSubmission(self):
+##        """TODO strictly one-line summary
+##
+##        TODO Detailed multi-line description if
+##        necessary.
+##
+##        Args:
+##            arg1 (type1): TODO describe arg, valid values, etc.
+##            arg2 (type2): TODO describe arg, valid values, etc.
+##            arg3 (type3): TODO describe arg, valid values, etc.
+##        Returns:
+##            TODO describe the return type and details
+##        Raises:
+##            TodoError1: if TODO.
+##            TodoError2: if TODO.
+##
+##        """
+##
+##        logger.debug('Received handleSubmission message from MS with json %s' % (json.dumps(request.json)))
+##
+##        # TODO...
+##        #if not request.json or not 'title' in request.json:
+##        if not request.json:
+##            #TODO abort(httplib.BAD_REQUEST
+##            logger.debug('return BAD_REQUEST?')
+##
+##        message_version = request.json['message_version']
+##        message_timestamp = request.json['message_timestamp']
+##        theatric_delay_ms = request.json['theatric_delay_ms']
+##        is_correct = str(request.json['is_correct'])
+##        challenge_complete = str(request.json['challenge_complete'])
+##
+##        logger.debug('Master server relaying (ver %s) user answer to at %s. Theatric delay %s ms is correct? %s. Challenge complete? %s' % (message_version, message_timestamp, theatric_delay_ms, is_correct, challenge_complete))
+##        self.handleSubmissionResp(str(is_correct),
+##                                  str(challenge_complete))
+##
+##        resp = jsonify({})
+##        resp.status_code = httplib.OK
+##        return resp
+##
+##
+##    # --------------------------------------------------------------------------
     def handleSubmissionResp(self,
-                             theatric_delay_ms,
                              is_correct,
                              challenge_complete):
         """TODO strictly one-line summary
@@ -744,9 +704,9 @@ class ConnectionManager(IConnectionManager):
 
         """
 
-        logger.debug('Handling submission response: Theatric delay %s ms is correct? %s. Challenge complete? %s' % (theatric_delay_ms, is_correct, challenge_complete))
+        logger.debug('Handling submission response: is correct? %s. Challenge complete? %s' % ( is_correct, challenge_complete))
 
-        self._callback.args = [theatric_delay_ms, is_correct, challenge_complete]
+        self._callback.args = [is_correct, challenge_complete]
 
 #         if is_correct.lower() == "true":
 #             self._callback.State = State.PASSED
