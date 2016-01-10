@@ -30,6 +30,7 @@ class Colors(object):
     YELLOW  = (255, 255,   0)
     CYAN    = (  0, 255, 255)
     MAGENTA = (255,   0, 255)
+    ORANGE  = (255, 128,   0)
 
 #----------------------------------------------------------------------------
 class Text(pygame.sprite.DirtySprite):
@@ -334,7 +335,10 @@ class FlightProfileApp(object):
     #   rFuel   is the rate of fuel consumption in kg/sec
     #   qFuel   is the initial amount of fuel, in kg
     #   dist    is the initial distance to the dock, in m
-    FlightParams = namedtuple('FlightParams', 'tAft tCoast tFore aAft aFore rFuel qFuel dist')
+    #   vMin    is the minimum sucessful docking velocity, in m/s
+    #   vMax    is the maximum sucessful docking velocity, in m/s
+    #   vInit   is the ship's initial velocity, in m/s
+    FlightParams = namedtuple('FlightParams', 'tAft tCoast tFore aAft aFore rFuel qFuel dist vMin vMax vInit tSim')
     
     def __init__(self):
         self.canvas = None
@@ -391,15 +395,15 @@ class FlightProfileApp(object):
         TAB1 = 300
         TAB2 = TAB1 + 40
         
-        self.missionTimeLabel = Text((X, Y), value="Mission Time", size=BIG_TEXT)
-        self.simulatedLabel   = Text((X+TAB1, Y+LINE_SPACE), value="Simulated:", size=SMALL_TEXT, justify=Text.RIGHT|Text.BOTTOM)
-        self.actualLabel      = Text((X+TAB1, Y+LINE_SPACE*2), value="Actual:", size=SMALL_TEXT, justify=Text.RIGHT|Text.BOTTOM)
-        self.compressionLabel = Text((X+TAB1, int(Y+LINE_SPACE*2.7)), value="Time Compression:", size=TINY_TEXT, justify=Text.RIGHT|Text.BOTTOM)
+        self.missionTimeLabel = Text((X, Y), value="Mission Time", size=BIG_TEXT, color=Colors.ORANGE)
+        self.simulatedLabel   = Text((X+TAB1, Y+LINE_SPACE), value="Simulated:", size=SMALL_TEXT, color=Colors.ORANGE, justify=Text.RIGHT|Text.BOTTOM)
+        self.actualLabel      = Text((X+TAB1, Y+LINE_SPACE*2), value="Actual:", size=SMALL_TEXT, color=Colors.ORANGE, justify=Text.RIGHT|Text.BOTTOM)
+        self.compressionLabel = Text((X+TAB1, int(Y+LINE_SPACE*2.7)), value="Time Compression:", color=Colors.ORANGE, size=TINY_TEXT, justify=Text.RIGHT|Text.BOTTOM)
         self.staticGroup.add((self.missionTimeLabel, self.simulatedLabel, self.actualLabel, self.compressionLabel), layer=self.LABEL_LAYER)
         
         self.simulatedTime    = Clock((X+TAB2, Y+LINE_SPACE), size=SMALL_TEXT)
         self.actualTime       = Clock((X+TAB2, Y+LINE_SPACE*2), size=SMALL_TEXT)
-        self.compression      = Text((X+TAB2, int(Y+LINE_SPACE*2.7)), value="{:0.1f}x".format(self.missionTimeScale), size=TINY_TEXT)
+        self.compression      = Text((X+TAB2, int(Y+LINE_SPACE*2.7)), value="1 sim = {:0.2f} actual sec".format(self.missionTimeScale), size=TINY_TEXT)
         self.statsGroup.add((self.simulatedTime, self.actualTime))
         self.staticGroup.add((self.compression), layer=self.LABEL_LAYER)
     
@@ -412,13 +416,13 @@ class FlightProfileApp(object):
         TAB1 = 450
         TAB2 = TAB1 + 40
         
-        self.paramsLabel = Text((X, Y), value="Flight Profile Parameters", size=BIG_TEXT)
-        self.distLabel   = Text((X+TAB1, Y + LINE_SPACE), value="Closing Distance:", size=SMALL_TEXT, justify=Text.RIGHT|Text.BOTTOM)
-        self.velLabel    = Text((X+TAB1, Y + LINE_SPACE*2), value="Relative Velocity:", size=SMALL_TEXT, justify=Text.RIGHT|Text.BOTTOM)
-        self.vmaxLabel   = Text((X+TAB1, Y + LINE_SPACE*3), value="Max Rel Velocity:", size=SMALL_TEXT, justify=Text.RIGHT|Text.BOTTOM)
-        self.accelLabel  = Text((X+TAB1, Y + LINE_SPACE*4), value="Acceleration:", size=SMALL_TEXT, justify=Text.RIGHT|Text.BOTTOM)
-        self.fuelLabel   = Text((X+TAB1, Y + LINE_SPACE*5), value="Fuel Remaining:", size=SMALL_TEXT, justify=Text.RIGHT|Text.BOTTOM)
-        self.phaseLabel  = Text((X+TAB1, Y + LINE_SPACE*6), value="Phase:", size=SMALL_TEXT, justify=Text.RIGHT|Text.BOTTOM)
+        self.paramsLabel = Text((X, Y), value="Flight Profile Parameters", size=BIG_TEXT, color=Colors.ORANGE)
+        self.distLabel   = Text((X+TAB1, Y + LINE_SPACE), value="Closing Distance:", size=SMALL_TEXT, color=Colors.ORANGE, justify=Text.RIGHT|Text.BOTTOM)
+        self.velLabel    = Text((X+TAB1, Y + LINE_SPACE*2), value="Relative Velocity:", size=SMALL_TEXT, color=Colors.ORANGE, justify=Text.RIGHT|Text.BOTTOM)
+        self.vmaxLabel   = Text((X+TAB1, Y + LINE_SPACE*3), value="Max Rel Velocity:", size=SMALL_TEXT, color=Colors.ORANGE, justify=Text.RIGHT|Text.BOTTOM)
+        self.accelLabel  = Text((X+TAB1, Y + LINE_SPACE*4), value="Acceleration:", size=SMALL_TEXT, color=Colors.ORANGE, justify=Text.RIGHT|Text.BOTTOM)
+        self.fuelLabel   = Text((X+TAB1, Y + LINE_SPACE*5), value="Fuel Remaining:", size=SMALL_TEXT, color=Colors.ORANGE, justify=Text.RIGHT|Text.BOTTOM)
+        self.phaseLabel  = Text((X+TAB1, Y + LINE_SPACE*6), value="Phase:", size=SMALL_TEXT, color=Colors.ORANGE, justify=Text.RIGHT|Text.BOTTOM)
         self.staticGroup.add((self.paramsLabel, self.distLabel, self.velLabel, self.vmaxLabel, self.accelLabel, self.fuelLabel, self.phaseLabel), layer=self.LABEL_LAYER)
         
         self.distance      = Text((X+TAB2, Y + LINE_SPACE), value="0", size=SMALL_TEXT)
@@ -426,7 +430,7 @@ class FlightProfileApp(object):
         self.vmax          = Text((X+TAB2, Y + LINE_SPACE*3), value="0", size=SMALL_TEXT)
         self.acceleration  = Text((X+TAB2, Y + LINE_SPACE*4), value="0", size=SMALL_TEXT)
         self.fuelRemaining = Text((X+TAB2, Y + LINE_SPACE*5), value="0", size=SMALL_TEXT)
-        self.phase         = Text((X+TAB2, Y + LINE_SPACE*6), value="ACCELERATION", size=SMALL_TEXT)
+        self.phase         = Text((X+TAB2, Y + LINE_SPACE*6), value=DockSim.PHASE_STR[DockSim.ACCEL_PHASE], size=SMALL_TEXT)
         self.statsGroup.add((self.distance, self.velocity, self.vmax, self.acceleration, self.fuelRemaining, self.phase))
         
     def setupSpaceshipDisplay(self):
@@ -479,6 +483,9 @@ class FlightProfileApp(object):
                                              rFuel=0.7,
                                              qFuel=20,
                                              dist=15.0,
+                                             vMin=0.01,
+                                             vMax=0.1,
+                                             tSim=self.MAX_SIM_DURATION_S,
                                             )
         
         # Create a simulation object initialized with the flight profile
@@ -492,10 +499,10 @@ class FlightProfileApp(object):
             self.duration = DockSim.MAX_FLIGHT_DURATION_S
         print("duration:", self.duration)
         
-        self.simDuration = min(self.duration, self.MAX_SIM_DURATION_S)
+        self.simDuration = min(self.duration, self.profile.tSim)
         print("simDuration:", self.simDuration)
         
-        self.missionTimeScale = max(1.0, float(self.duration)/self.MAX_SIM_DURATION_S)
+        self.missionTimeScale = max(1.0, float(self.duration)/self.profile.tSim)
         print("missionTimeScale:", self.missionTimeScale)
         print("terminalVelocity:", self.dockSim.terminalVelocity())
         print("success:", self.dockSim.dockIsSuccessful())
@@ -556,7 +563,7 @@ class FlightProfileApp(object):
                                                              -self.profile.aFore if not self.outOfFuel else 0.0,
                                                              0.0,
                                                              0.0)[state.phase]))
-        self.fuelRemaining.setValue("{:0.2f} kg".format(state.fuelRemaining), color=Colors.WHITE if state.fuelRemaining > 0.0 else Colors.RED)
+        self.fuelRemaining.setValue("{:0.2f} kg".format(state.fuelRemaining), color=Colors.GREEN if state.fuelRemaining > 0.0 else Colors.RED)
         self.phase.setValue(DockSim.PHASE_STR[state.phase])
         
         # Update graphics
@@ -646,6 +653,10 @@ if __name__ == "__main__":
     parser.add_argument("--rFuel",  type=float, required=True, help="rate of fuel consumption, in kg/sec")
     parser.add_argument("--qFuel",  type=float, required=True, help="initial fuel amount, in kg")
     parser.add_argument("--dist",   type=float, required=True, help="initial dock distance, in m")
+    parser.add_argument("--vMin",   type=float, default=DockSim.MIN_V_DOCK, help="minimum velocity for successfull doc, in m/sec")
+    parser.add_argument("--vMax",   type=float, default=DockSim.MAX_V_DOCK, help="maximum velocity for successfull doc, in m/sec")
+    parser.add_argument("--vInit",  type=float, default=DockSim.INITIAL_V,  help="initial velocity, in m/sec")
+    parser.add_argument("--tSim",   type=int,   default=FlightProfileApp.MAX_SIM_DURATION_S, help="max simulation time, in sec")
     args = parser.parse_args()
 
     flightProfile = FlightProfileApp.FlightParams(tAft=args.tAft,
@@ -656,6 +667,10 @@ if __name__ == "__main__":
                                                   rFuel=args.rFuel,
                                                   qFuel=args.qFuel,
                                                   dist=args.dist,
+                                                  vMin=args.vMin,
+                                                  vMax=args.vMax,
+                                                  vInit=args.vInit,
+                                                  tSim=args.tSim,
                                                  )
     app = FlightProfileApp()
     app.fullscreen = args.fullscreen
