@@ -76,7 +76,6 @@ class Text(pygame.sprite.DirtySprite):
         self.dirty = 1
 
         self.rect = self.image.get_rect()
-#         self.eraseRect = self.rect.copy()
         
         if self.justify & self.LEFT:
             self.rect.left = self.pos[0]
@@ -154,7 +153,6 @@ class Timer(object):
 class Clock(Text):
     """ An Text object that knows how to format a time value """
     def __init__(self, pt, value=0, size=100, justify=Text.BOTTOM|Text.LEFT, **kwargs):
-#         self.startTimeMs = 0
         super(Clock, self).__init__(pt, value=value, size=size, justify=justify, **kwargs)
     
     def setValue(self, value=None):
@@ -169,13 +167,10 @@ class ImgObj(pygame.sprite.DirtySprite):
     
     def __init__(self, path, canvas=None, alpha=False, pivot=(0,0)):
         # Call the parent class (Sprite) constructor
-#         pygame.sprite.Sprite.__init__(self)
         super(ImgObj, self).__init__()
        
         # Load an image, creating a Surface.
         self.image = pygame.image.load(path)
-#         self.canvas = canvas
-#         if canvas:
         if alpha:
             self.image = self.image.convert_alpha()
         else:
@@ -234,7 +229,6 @@ class TetheredImgObj(ImgObj):
     
     def moveTo(self, dxy):
         """ Move to offset relative to parent specified by delta """
-#         self.offset = dxy
         super(TetheredImgObj, self).moveTo((self.parent.pivotX() + self.offset[0], self.parent.pivotY() + self.offset[1]))
     
 #----------------------------------------------------------------------------
@@ -247,8 +241,6 @@ class AnimGroup(pygame.sprite.LayeredDirty):
     def __init__(self):
         self.sequences = []  # list of sequences; each seq is a list [curr#, (sprite, sprite, ...)]
         super(AnimGroup, self).__init__()
-#         pygame.sprite.RenderUpdates.__init__(self, [])
-        
     
     def add(self, seq=None):
         """ Add an image sequence to the group.
@@ -259,7 +251,6 @@ class AnimGroup(pygame.sprite.LayeredDirty):
             for s in seq:
                 s.visible = 0
                 
-#             self.sequences.append([0, seq])
             self.sequences.append(itertools.cycle(seq))
             super(AnimGroup, self).add(*seq)
     
@@ -289,7 +280,6 @@ class FlightProfileApp(object):
     FULLSCREEN = True
     
     MAX_SIM_DURATION_S = 45.0  # longer sim will be compressed to 45 sec.
-#     MAX_SIM_DURATION_S = 10.0  # longer sim will be compressed to 10 sec.
     
     BG_LAYER    = 0
     LABEL_LAYER = 1
@@ -456,7 +446,8 @@ class FlightProfileApp(object):
             self.canvas = pygame.display.set_mode((0,1080), pygame.FULLSCREEN | pygame.DOUBLEBUF | pygame.HWSURFACE)# | pygame.OPENGL)
         else:
             self.canvas = pygame.display.set_mode((0,1080), pygame.DOUBLEBUF | pygame.HWSURFACE)# | pygame.OPENGL)
-#         self.canvas = pygame.display.set_mode((0,1080), pygame.FULLSCREEN | pygame.HWSURFACE)# | pygame.OPENGL)
+
+        # Set the window title (not visible in fullscreen mode)
         pygame.display.set_caption(self.WINDOW_TITLE)
         
         # Set up parts of the display
@@ -499,6 +490,7 @@ class FlightProfileApp(object):
             self.duration = DockSim.MAX_FLIGHT_DURATION_S
         print("duration:", self.duration)
         
+        # Compute time scaling for simulation playback
         self.simDuration = min(self.duration, self.profile.tSim)
         print("simDuration:", self.simDuration)
         
@@ -506,8 +498,6 @@ class FlightProfileApp(object):
         print("missionTimeScale:", self.missionTimeScale)
         print("terminalVelocity:", self.dockSim.terminalVelocity())
         print("success:", self.dockSim.dockIsSuccessful())
-#         print("profile:", self.profile)
-#         print("")
     
         self.simPhase = DockSim.START_PHASE  # set phase to initial simulation phase
         self.outOfFuel = False

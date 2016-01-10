@@ -123,9 +123,11 @@ class DockSim(object):
         return (v0 + 0.5 * a * dt) * dt
     
     def velocity(self, dt, v0, a):
+        """ Compute resulting velocity from initial velocity, accel, and time interval """
         return v0 + a * dt
     
     def fuelConsumed(self, dt):
+        """ Compute amount of fuel consumed by a burn of dt """
         return dt * self.rFuel  # time * rate of consumption
     
     def timeToTravel(self, d, v0, a):
@@ -139,6 +141,9 @@ class DockSim(object):
             or the negative time it takes for the velocity to go to 0
             if a negative acceleration causes the velocity to go negative,
             or None if v0 <= 0
+            
+            Note:  This may handle more cases than it needs to, but that's
+                   okay.
         """
         if a == 0.0:
             if v0 == 0.0:
@@ -184,101 +189,6 @@ class DockSim(object):
         """
         return qFuel/self.rFuel
     
-#     def computeTravelInterval(self, dt, v0, a, distToDest, qFuel):
-#         """ Compute distance traveled, velocity, and fuel consumed.
-# 
-#             Correctly handles running out of fuel part way through
-#             the interval.  Also checks whether the ship would travel
-#             past the destination.
-#             
-#             If the destination is reached during dt, the values are
-#             returned with dist = distToDest, and v = the final velocity
-#             at docking (not 0).
-#             
-#             Return a tuple (distanceTraveled, endVelocity, fuelRemaining, timeRemaining)
-#         """
-#         dist = 0.0             # total distance traveled during dt
-#         v = v0                 # current velocity
-#         fuelRemaining = qFuel  # amount of fuel in the tank
-#         timeRemaining = 0.0    # time left if dest reached before end of dt
-#         
-#         fuelConsumptionRate = 0.0 if a == 0.0 else self.rFuel
-#         
-#         if dt > 0.0:
-# #             if a != 0.0:
-#             # There is acceleration (which could be negative), so we are
-#             # consuming fuel.
-#             # We need to figure out the situation:
-#             #  1. a != 0: accelerate until dt
-#             #  2. Accelerate until dest is reached
-#             #  3. a == 0, or accelerate until we run out of fuel:
-#             #     a. ...then glide until dt
-#             #     b. ...then glide until dest
-#             
-#             # Check if we will run out of fuel before dt
-# #             if fuelRemaining < fuelConsumptionRate * dt: # it will run out
-# 
-#             #   How far will we go before the fuel runs out?
-#             #   Solve for t:  fuelRemaining = self.rFuel * t
-#             tAccel = min(dt, 0.0 if fuelConsumptionRate <= 0.0 else (fuelRemaining/fuelConsumptionRate))  # burn duration
-#             dAccel = self.distanceTraveled(tAccel, v, a)  # burn distance
-#             
-#             # Condition #2 or #3, or #1 with a == 0:
-#             # Check if we will run out of fuel before reaching dest
-#             if dAccel >= distToDest: # burn the entire way
-#                 # Condition #2, or #1 with a != 0:
-#                 #   Compute time until dest is reached
-#                 tAccel = self.timeToTravel(dAccel, v, a)
-#                 dist = distToDest
-#                 v = self.velocity(tAccel, v, a)
-#                 timeRemaining = dt - tAccel
-#             else:
-#                 # Condition #3 (a == 0, or fuel runs out), or Condition #1:
-#                 #   Compute the velocity at end of burn
-#                 vConst = self.velocity(tAccel, v, a)  # v at end of acceleration
-#                 dConstVel = self.distanceTraveled(dt - tAccel, vConst, 0.0)  # dist traveled at const v in remaining time
-#                 
-#                 # Check if we will reach dest before dt
-#                 if dAccel + dConstVel < distToDest: # dest not reached during dt
-#                     # Condition #3a:
-#                     #   Compute how far it gets by the end of the time interval
-#                     dist = dAccel + dConstVel
-#                     v = vConst
-#                 else:
-#                     # Condition #3b:
-#                     #   Destination reached
-#                     dist = distToDest
-#                     v = vConst
-#                     timeRemaining = dt - self.timeToTravel(dist, v, 0.0)
-#                     
-#             fuelRemaining = max(0.0, qFuel - fuelConsumptionRate * tAccel)
-# #             else:
-# #                 # Condition #1 with a != 0:
-# #                 dist = self.distanceTraveled(dt, v, a)
-# #                 v = self.velocity(dt, v, a)
-# #                 fuelRemaining = qFuel - fuelConsumptionRate * dt
-# #                 timeRemaining = 0.0
-# 
-# #             else:
-# #                 # Constant velocity, no acceleration        
-# #                 dist = self.distanceTraveled(dt, v, 0.0)
-# #                 v = self.velocity(dt, v, 0.0)
-# #                 fuelRemaining = qFuel
-# #                 timeRemaining = 0
-#                     
-# #                 fuelRemaining -= self.rFuel * dt
-# #                 if fuelRemaining <= 0.0:  # fuel runs out
-# #                     tAccel = qFuel/self.rFuel  # how long we can fire the rockets
-# #                     dist,distAccel,v,fuelRemaining = self.computeTravelInterval(tAccel, v, a, qFuel)
-# #                     a = 0.0  # can't accelerate any more (no fuel left)
-# #                     dt = dt - tAccel  # remaining time will be coasting
-# #             
-# #             # If we ran out of fuel, a == 0
-# #             distConstantVel = self.distanceTraveled(dt, v, a)
-# #             dist = distAccel + distConstantVel
-# #             v = self.velocity(dt, v, a)
-#         
-#         return (dist, v, fuelRemaining, timeRemaining)
     
     def computeNoThrustTravelInterval(self, dt, v0, distToDest, qFuel):
         """ Compute distance traveled, ending velocity, time remaining, and end condition.
@@ -340,13 +250,6 @@ class DockSim(object):
              
             Return a tuple (distanceTraveled, endVelocity, fuelRemaining, timeRemaining, endCondition)
         """
-#         dist = 0.0             # total distance traveled during dt
-#         v = v0                 # current velocity
-#         fuelRemaining = qFuel  # amount of fuel in the tank
-#         timeRemaining = 0.0    # time left if dest reached before end of dt
-#          
-#         fuelConsumptionRate = 0.0 if a == 0.0 else self.rFuel
-        
         # Validate the inputs
         if distToDest <= 0.0:  # we are done
             return (0.0, # already at (or past) dest
@@ -423,64 +326,6 @@ class DockSim(object):
                 constVelocityInterval[4]   # final state is state at end of constV phase
                )
         
-#         # Compute time to destination, assuming acceleration is constant
-#         # over the entire distance
-#         tDest = self.timeToTravel(distToDest, v0, a)  !!! gets an exception if velocity goes negative during the acceleration and can't compute a finite tDest
-#         if tDest is None:
-#             return (0.0, 0.0, qFuel, dt)
-#         elif tDest < 0.0 and tDest < dt:
-#             tDest = -tDest
-#             return(self.distanceTraveled(tDest, v0, a),  # distance traveled before v goes to 0
-#                    0.0,  # v goes to 0
-#                    qFuel - self.fuelConsumed(tDest),  # fuel consumed before v goes to 0
-#                    dt - tDest,  # time left
-#                   )
-#         
-#         if a == 0.0:
-#             # This is the simple, constant velocity case
-#             if dt < tDest:
-#                 # Dest is not reached during this time interval
-#                 return (self.distanceTraveled(dt, v0, a),  # how far traveled in dt
-#                         v0,  # velocity unchanged because a == 0
-#                         qFuel,  # no fuel used, because a == 0   
-#                         0.0,  # no time left in the interval
-#                        )
-#         else:
-#             # If accelerating or decelerating, compute time until OutOfFuel
-#             # at the given acceleration
-#             tOutOfFuel = qFuel/self.rFuel  # amount of fuel/rate of consumption
-#         
-#             # Figure out if fuel runs out during the interval
-#             if tDest <= dt and tDest <= tOutOfFuel:
-#                 # Dest reached before running out of fuel or reaching end of interval dt
-#                 return (distToDest,  # the entire distance to the destination was traversed
-#                         self.velocity(tDest, v0, a),  # constant acceleration until dest reached
-#                         max(0.0, qFuel - self.fuelConsumed(tDest)),  # amount of fuel remaining
-#                         dt - tDest,  # some time is left over
-#                        )
-#             elif dt < tDest and dt <= tOutOfFuel:
-#                 # End of time interval reached before running out of fuel or reaching dest
-#                 return (self.distanceTraveled(dt, v0, a),  # how far traveled in dt
-#                         self.velocity(dt, v0, a),  # constant acceleration for dt
-#                         max(0.0, qFuel - self.fuelConsumed(tDest)),  # amount of fuel remaining
-#                         0.0,  # no time left in the interval
-#                        )
-#             else:
-#                 # Out of fuel while accelerating (or decelerating)
-#                 dOutOfFuel = self.distanceTraveled(tOutOfFuel, v0, a)  # distance traveled during burn
-#                 vOutOfFuel = self.velocity(tOutOfFuel, v0, a),  # final v is v when fuel runs out 
-#                 (dCoast,_,_,tCoast) = self.computeTravelInterval(dt=dt - tOutOfFuel,
-#                                                                     v0=vOutOfFuel,
-#                                                                     a=0.0,
-#                                                                     distToDest=distToDest - dOutOfFuel,
-#                                                                     qFuel=0.0,  # fuel is all used up
-#                                                                    )
-#                 return (dOutOfFuel + dCoast,
-#                         vOutOfFuel,
-#                         0.0,  # no fuel remaining
-#                         dt - tOutOfFuel - tCoast,
-#                        )
-         
     def currPhase(self, t):
         """ Return the flight phase for time t. """
         if   t <= 0.0: return self.START_PHASE
@@ -490,6 +335,7 @@ class DockSim(object):
         else: return self.GLIDE_PHASE
 
     def nextPhase(self, phase):
+        """ Return the next flight phase after phase """
         return {self.START_PHASE: self.ACCEL_PHASE,
                 self.ACCEL_PHASE: self.COAST_PHASE,
                 self.COAST_PHASE: self.DECEL_PHASE,
@@ -499,6 +345,7 @@ class DockSim(object):
                 }[phase]
     
     def acceleration(self, phase):
+        """ Return the acceleration amount for the specified phase """
         return {self.START_PHASE: 0.0,
                 self.ACCEL_PHASE: self.aAft,
                 self.COAST_PHASE: 0.0,
@@ -519,95 +366,17 @@ class DockSim(object):
         
         d,v,fuelRemaining,tRemaining,intervalStatus = self.computeTravelInterval(dt, stateVec.currVelocity, accel, distRemaining, stateVec.fuelRemaining)
         
-# #         if d + stateVec.distTraveled > self.dist: # went past the destination
-# #             # Did we run out of fuel?
-# #             if fuelRemaining <= 0.0: # then we ran out
-# #                 # Did we run out before we reached the destination?
-# #                 # Then compute the solution in two parts: the accelerated part and the constant velocity part
-# #                 pass
-# #             else:
-# #                 # Compute time to reach dest
-# #                 dt = self.timeToTravel(self.dist - stateVec.distTraveled, stateVec.currVelocity, accel)
-# #                 d,v,fuelRemaining,tRemaining = self.computeTravelInterval(dt, stateVec.currVelocity, accel, distRemaining, stateVec.fuelRemaining)
-# #                 phase = self.END_PHASE
-#                 
-#         if d >= distRemaining: # dest was reached
-#             phase = self.END_PHASE
-#             dt -= tRemaining
-#             
-# #         fuelRemaining = self.qFuel - (stateVec.fuelConsumed + fuelConsumed)
-# #         return StateVec(phase, d + stateVec.distTraveled, v, stateVec.fuelConsumed + fuelConsumed, fuelRemaining, stateVec.tEnd + dt)
-
         endTime = stateVec.tEnd + dt - tRemaining
-#         phase = self.currPhase(endTime)
         
         if intervalStatus in (self.INTERVAL_DNF, self.INTERVAL_DEST):
             phase = self.END_PHASE
 
         return StateVec(phase, d + stateVec.distTraveled, v, fuelRemaining, endTime)
     
-    def computeAccelPhase(self, t, stateVec):
-        """ Computes a state vector for an acceleration phase of time t.
-            t is time in seconds since the start of the maneuver.
-            Returns a StateVec containing (phase, distTraveled, currVelocity, fuelRemaining, tEnd)
-        """
-        return self.computePhase(t, stateVec)
-    
-    def computeCoastPhase(self, t, stateVec):
-        """ Computes a state vector for the coast phase at time t.
-            t is time in seconds since the start of the maneuver.
-            Returns a StateVec containing (phase, distTraveled, currVelocity, fuelRemaining, tEnd)
-        """
-        return self.computePhase(t, stateVec)
-        
-    def computeDecelPhase(self, t, stateVec):
-        """ Computes a state vector for the deceleration phase at time t.
-            t is time in seconds since the start of the maneuver.
-            Returns a StateVec containing (phase, distTraveled, currVelocity, fuelRemaining, tEnd)
-        """
-        return self.computePhase(t, stateVec)
-
-    def computeGlidePhase(self, t, stateVec):
-        """ Computes a state vector for the glide phase at time t.
-            t is time in seconds since the start of the maneuver.
-            Returns a StateVec containing (phase, distTraveled, currVelocity, fuelRemaining, tEnd)
-        """
-        return self.computePhase(t, stateVec)
-        
     def flightDuration(self):
         """ Return the total duration of the docking maneuver.
             Return None if the terminal velocity is < 0.
         """
-#         # Create initial stateVec
-#         stateVec = StateVec(phase=self.START_PHASE,
-#                             distTraveled=0.0,
-#                             currVelocity=self.v0,
-#                             fuelRemaining=self.qFuel,
-#                             tEnd=0.0)
-# 
-#         # Walk through the individual simulation phases
-#         stateVec = self.computeAccelPhase(self.tAft, stateVec)
-#         if stateVec.phase == self.END_PHASE:
-#             # Capsule reached port during acceleration phase
-#             tEnd = stateVec.tEnd
-#         else:
-#             stateVec = self.computeCoastPhase(self.tAft + self.tCoast, stateVec)
-#             if stateVec.phase == self.END_PHASE:
-#                 # Capsule reached port during coast phase
-#                 tEnd = stateVec.tEnd
-#             else:
-#                 stateVec = self.computeDecelPhase(self.tAft + self.tCoast + self.tFore, stateVec)
-#                 if stateVec.phase == self.END_PHASE:
-#                     # Capsule reached port during deceleration phase
-#                     tEnd = stateVec.tEnd
-#                 else:
-#                     t = self.timeToTravel(self.dist - stateVec.distTraveled, stateVec.currVelocity, 0.0)
-#                     if t is not None:
-#                         # Capsule reached port during glide phase
-#                         tEnd = stateVec.tEnd + t
-#                     else:
-#                         tEnd = None
-
         stateVec = self.shipState(self.tAft + self.tCoast + self.tFore)
         if stateVec.phase == self.END_PHASE:
             tEnd = stateVec.tEnd
@@ -641,23 +410,6 @@ class DockSim(object):
                 stateVec = self.computePhase(t, stateVec)
                 break
             
-#         # Walk through the individual simulation phases
-#         if t < self.tAft:
-#             stateVec = self.computeAccelPhase(t, stateVec)
-#         else:
-#             stateVec = self.computeAccelPhase(self.tAft, stateVec)
-#             if stateVec.phase != self.END_PHASE:
-#                 if (t - self.tAft) < self.tCoast:
-#                     stateVec = self.computeCoastPhase(t, stateVec)
-#                 else:
-#                     stateVec = self.computeCoastPhase(self.tAft + self.tCoast, stateVec)
-#                     if stateVec.phase != self.END_PHASE:
-#                         if (t - self.tAft - self.tCoast) < self.tFore:
-#                             stateVec = self.computeDecelPhase(t, stateVec)
-#                         else:
-#                             stateVec = self.computeDecelPhase(self.tAft + self.tCoast + self.tFore, stateVec)
-#                             if stateVec.phase != self.END_PHASE:
-#                                 stateVec = self.computeGlidePhase(t, stateVec)
         return stateVec
 
 
