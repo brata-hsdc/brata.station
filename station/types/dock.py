@@ -46,13 +46,14 @@ class Station(IStation):
         """
         logger.debug('Constructing DOCK')
 
-        displayClassName = config.DisplayClassName
-        pushButtonMonitorClassName = config.PushButtonMonitorClassName
-
-        displayClass = getattr(hwModule, displayClassName)
-        pushButtonMonitorClass = getattr(hwModule, pushButtonMonitorClassName)
-
-        self._display = displayClass(config.Display)
+##        displayClassName = config.DisplayClassName
+##        pushButtonMonitorClassName = config.PushButtonMonitorClassName
+##
+##        displayClass = getattr(hwModule, displayClassName)
+##        pushButtonMonitorClass = getattr(hwModule, pushButtonMonitorClassName)
+##
+##        self._display = displayClass(config.Display)
+        
 #         self._display.setText("Initializing...")
 # 
 #         logger.info('Initializing pushButtonMonitor')

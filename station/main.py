@@ -57,8 +57,15 @@ class StationLoader(object):
         stationModuleName = config.StationType
         stationClassName = config.StationClassName
 
+        logger.info("connectionModuleName: " + connectionModuleName)
+        logger.info("hwModuleName: " + hwModuleName)
+        logger.info("stationModuleName: " + stationModuleName)
+
         connectionModule = import_module(connectionModuleName)
-        hwModule = import_module(hwModuleName)
+        if hwModuleName:
+            hwModule = import_module(hwModuleName)
+        else:
+            hwModule = None
         stationModule = import_module(stationModuleName)
 
         connectionManagerClass = getattr(connectionModule,
