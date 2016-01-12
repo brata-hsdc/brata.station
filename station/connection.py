@@ -662,6 +662,21 @@ class ConnectionManager(IConnectionManager):
             cts_combo = request.json['cts_combo']
             self._callback.args = cts_combo
             logger.debug('Master server requesting station start_challenge (ver %s) at %s with theatric delay of %s ms, CTS combo %s' % (message_version, message_timestamp, theatric_delay_ms, cts_combo))
+        elif 't_aft' in request.json:
+            logger.debug('Received a start_challenge request for DOCK station')
+            t_aft = request.json['t_aft']
+            t_coast = request.json['t_coast']
+            t_fore = request.json['t_fore']
+            a_aft = request.json['a_aft']
+            a_fore = request.json['a_fore']
+            r_fuel = request.json['r_fuel']
+            q_fuel = request.json['q_fuel']
+            dist = request.json['dist']
+            v_min = request.json['v_min']
+            v_max = request.json['v_max']
+            t_sim = request.json['t_sim']
+            self._callback.args = [t_aft, t_coast, t_fore, a_aft, a_fore, r_fuel, q_fuel, dist, v_min, v_max, t_sim]
+            logger.debug('Master server requesting station start_challenge with args: ' + repr(self._callback.args))
         else:
             logger.critical('Received a start_challenge request for unrecognized station')
 
