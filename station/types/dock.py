@@ -122,6 +122,7 @@ class Station(IStation):
 #         self._pushButtonMonitor.setOnTickCallback(self.onTick)
 
         self._flightSim = FlightProfileApp()
+        self._flightSim.fullscreen = True
 
     # --------------------------------------------------------------------------
     @property
@@ -150,27 +151,26 @@ class Station(IStation):
     def onReady(self):
         """ Put the application in its initial starting state """
         logger.info('DOCK transitioned to Ready state.')
-#         self.enterState(self.IDLE_STATE)
+        self._flightSim.showReadyScreen()
 
     # --------------------------------------------------------------------------
     def onProcessing(self, args):
         """ Accept parameters to run the dock simulation, and start the sim. """
-        logger.info('DOCK transitioned to Processing state with args [%s].' % (args))
+        logger.info('DOCK transitioned to Processing state with args [{}].'.format(str(args)))
 
-        flightProfile = FlightProfileApp.FlightParams(tAft=args.tAft,
-                                                      tCoast=args.tCoast,
-                                                      tFore=args.tFore,
-                                                      aAft=args.aAft,
-                                                      aFore=args.aFore,
-                                                      rFuel=args.rFuel,
-                                                      qFuel=args.qFuel,
-                                                      dist=args.dist,
-                                                      vMin=args.vMin,
-                                                      vMax=args.vMax,
-                                                      vInit=args.vInit,
-                                                      tSim=args.tSim,
+        flightProfile = FlightProfileApp.FlightParams(tAft=float(args.t_aft),
+                                                      tCoast=float(args.t_coast),
+                                                      tFore=float(args.t_fore),
+                                                      aAft=float(args.a_aft),
+                                                      aFore=float(args.a_fore),
+                                                      rFuel=float(args.r_fuel),
+                                                      qFuel=float(args.q_fuel),
+                                                      dist=float(args.dist),
+                                                      vMin=float(args.v_min),
+                                                      vMax=float(args.v_max),
+                                                      vInit=float(args.v_init),
+                                                      tSim=int(args.t_sim),
                                                      )
-        self._flightSim.fullscreen = args.fullscreen
         self._flightSim.run(flightProfile)
 
     # --------------------------------------------------------------------------
@@ -250,7 +250,8 @@ class Station(IStation):
 # Module Initialization
 # ------------------------------------------------------------------------------
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+#logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 handler = logging.handlers.SysLogHandler(address = '/dev/log')
 logger.addHandler(handler)
 

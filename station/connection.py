@@ -41,6 +41,7 @@ from station.state import HttpMethod
 from station.state import State
 from station.util import get_ip_address
 
+from collections import namedtuple
 
 # ------------------------------------------------------------------------------
 class ConnectionManager(IConnectionManager):
@@ -632,15 +633,16 @@ class ConnectionManager(IConnectionManager):
         """
 
         logger.debug('Received startChallenge message from MS with json %s' % (json.dumps(request.json)))
+
         # TODO...
         #if not request.json or not 'title' in request.json:
         if not request.json:
             #TODO abort(httplib.BAD_REQUEST
             logger.debug('return BAD_REQUEST?')
 
-        message_version = request.json['message_version']
-        message_timestamp = request.json['message_timestamp']
-        theatric_delay_ms = request.json['theatric_delay_ms']
+        message_version   = request.json['message_version'] if 'message_version' in request.json else ""
+        message_timestamp = request.json['message_timestamp'] if 'message_timestamp' in request.json else ""
+        theatric_delay_ms = request.json['theatric_delay_ms'] if 'theatric_delay_ms' in request.json else ""
 
         if 'hmb_vibration_pattern_ms' in request.json:
             logger.debug('Received a start_challenge request for HMB station')
@@ -664,18 +666,9 @@ class ConnectionManager(IConnectionManager):
             logger.debug('Master server requesting station start_challenge (ver %s) at %s with theatric delay of %s ms, CTS combo %s' % (message_version, message_timestamp, theatric_delay_ms, cts_combo))
         elif 't_aft' in request.json:
             logger.debug('Received a start_challenge request for DOCK station')
-            t_aft = request.json['t_aft']
-            t_coast = request.json['t_coast']
-            t_fore = request.json['t_fore']
-            a_aft = request.json['a_aft']
-            a_fore = request.json['a_fore']
-            r_fuel = request.json['r_fuel']
-            q_fuel = request.json['q_fuel']
-            dist = request.json['dist']
-            v_min = request.json['v_min']
-            v_max = request.json['v_max']
-            t_sim = request.json['t_sim']
-            self._callback.args = [t_aft, t_coast, t_fore, a_aft, a_fore, r_fuel, q_fuel, dist, v_min, v_max, t_sim]
+            Args = namedtuple("Args", "t_aft, t_coast, t_fore, a_aft, a_fore, r_fuel, q_fuel, dist, v_min, v_max, v_init, t_sim")
+            args = Args._make([request.json[f] for f in Args._fields])
+            self._callback.args = args
             logger.debug('Master server requesting station start_challenge with args: ' + repr(self._callback.args))
         else:
             logger.critical('Received a start_challenge request for unrecognized station')

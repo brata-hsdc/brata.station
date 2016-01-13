@@ -437,13 +437,15 @@ class FlightProfileApp(object):
         self.station = ImgObj(os.path.join(scriptDir, self.STATION_IMG), alpha=True, pivot=self.STATION_PIVOT)
         self.station.moveTo(self.STATION_POS)
         
-        self.movingGroup.add((self.station, self.capsule))
+        #self.movingGroup.add((self.station, self.capsule))
+        self.staticGroup.add((self.station), layer=self.SHIP_LAYER)
+        self.movingGroup.add(self.capsule)
         
     def setupDisplay(self):
         """ Create the display window and the components within it """
         # Create the window
         if self.fullscreen:
-            self.canvas = pygame.display.set_mode((0,1080), pygame.FULLSCREEN | pygame.DOUBLEBUF | pygame.HWSURFACE)# | pygame.OPENGL)
+           self.canvas = pygame.display.set_mode((0,1080), pygame.FULLSCREEN | pygame.DOUBLEBUF | pygame.HWSURFACE)# | pygame.OPENGL)
         else:
             self.canvas = pygame.display.set_mode((0,1080), pygame.DOUBLEBUF | pygame.HWSURFACE)# | pygame.OPENGL)
 
@@ -623,6 +625,13 @@ class FlightProfileApp(object):
             self.draw()
             lastFrameMs = self.frameClock.tick(self.frameRate)
 
+    def initializeDisplay(self):
+        pass
+        
+    def showReadyScreen(self):
+        """ Display an initial greeting screen """
+        pass
+    
     def run(self, flightProfile):
         self.setFlightProfile(flightProfile)
         self.initPygame()
