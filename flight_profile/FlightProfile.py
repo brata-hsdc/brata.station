@@ -18,7 +18,7 @@ import pygame.image
 import pygame.font
 import pygame.time
 
-from DockSim import DockSim
+from DockSim import DockSim, FlightParams
 
 #----------------------------------------------------------------------------
 class Colors(object):
@@ -316,20 +316,6 @@ class FlightProfileApp(object):
     FLAME_DOWN_PIVOT  = (11, 16)
     FLAME_DOWN_OFFSET = (-24, 21)
     
-    # An object to hold the flight profile parameters
-    #   tAft    is the duration of the acceleration burn, in seconds
-    #   tCoast  is the duration of the coast phase, in seconds
-    #   tFore   is the duration of the deceleration burn, in seconds
-    #   aAft    is the force of acceleration, in m/sec^2
-    #   aFore   is the force of deceleration, in m/sec^2
-    #   rFuel   is the rate of fuel consumption in kg/sec
-    #   qFuel   is the initial amount of fuel, in kg
-    #   dist    is the initial distance to the dock, in m
-    #   vMin    is the minimum sucessful docking velocity, in m/s
-    #   vMax    is the maximum sucessful docking velocity, in m/s
-    #   vInit   is the ship's initial velocity, in m/s
-    FlightParams = namedtuple('FlightParams', 'tAft tCoast tFore aAft aFore rFuel qFuel dist vMin vMax vInit tSim')
-    
     def __init__(self):
         self.canvas = None
         self.timer = None
@@ -445,7 +431,7 @@ class FlightProfileApp(object):
         """ Create the display window and the components within it """
         # Create the window
         if self.fullscreen:
-           self.canvas = pygame.display.set_mode((0,1080), pygame.FULLSCREEN | pygame.DOUBLEBUF | pygame.HWSURFACE)# | pygame.OPENGL)
+            self.canvas = pygame.display.set_mode((0,1080), pygame.FULLSCREEN | pygame.DOUBLEBUF | pygame.HWSURFACE)# | pygame.OPENGL)
         else:
             self.canvas = pygame.display.set_mode((0,1080), pygame.DOUBLEBUF | pygame.HWSURFACE)# | pygame.OPENGL)
 
@@ -467,19 +453,19 @@ class FlightProfileApp(object):
             self.profile = flightParams
         else:
             # Set to some default params for testing
-            self.profile = self.FlightParams(
-                                             tAft=8.2,#8.4#8.3
-                                             tCoast=1, #0
-                                             tFore=13.1,
-                                             aAft=0.15,
-                                             aFore=0.09,
-                                             rFuel=0.7,
-                                             qFuel=20,
-                                             dist=15.0,
-                                             vMin=0.01,
-                                             vMax=0.1,
-                                             tSim=self.MAX_SIM_DURATION_S,
-                                            )
+            self.profile = FlightParams(tAft=8.2,#8.4#8.3
+                                        tCoast=1, #0
+                                        tFore=13.1,
+                                        aAft=0.15,
+                                        aFore=0.09,
+                                        rFuel=0.7,
+                                        qFuel=20,
+                                        dist=15.0,
+                                        vMin=0.01,
+                                        vMax=0.1,
+                                        vInit=0.0,
+                                        tSim=self.MAX_SIM_DURATION_S,
+                                       )
         
         # Create a simulation object initialized with the flight profile
         self.dockSim = DockSim(self.profile)
@@ -547,7 +533,10 @@ class FlightProfileApp(object):
         
         self.maxVelocity = max(self.maxVelocity, state.currVelocity)
         self.distance.setValue("{:0.2f} m".format(self.profile.dist - state.distTraveled))
-        self.velocity.setValue("{:0.2f} m/sec".format(state.currVelocity), color=Colors.GREEN if self.dockSim.safeDockingVelocity(state.currVelocity) else Colors.RED)
+        if state.currVelocity >= 0.01:
+            self.velocity.setValue("{:0.2f} m/sec".format(state.currVelocity), color=Colors.GREEN if self.dockSim.safeDockingVelocity(state.currVelocity) else Colors.RED)
+        else:  # show more decimal places
+            self.velocity.setValue("{:0.6f} m/sec".format(state.currVelocity), color=Colors.GREEN if self.dockSim.safeDockingVelocity(state.currVelocity) else Colors.RED)
         self.vmax.setValue("{:0.2f} m/sec".format(self.maxVelocity))
         self.acceleration.setValue("{:0.2f} m/sec^2".format((0.0,
                                                              self.profile.aAft if not self.outOfFuel else 0.0,
@@ -571,6 +560,8 @@ class FlightProfileApp(object):
             self.simPhase = state.phase
             changeDetected = True
         
+        # If a phase change was detected or the ship ran out of fuel,
+        # update the ship graphics to reflect the new state
         if changeDetected:
             if state.phase == DockSim.ACCEL_PHASE:
                 self.animGroup.empty()
@@ -587,9 +578,12 @@ class FlightProfileApp(object):
             else:
                 self.animGroup.empty()
         
+        # Compute the fraction of the total trip distance that has been traversed,
+        # and place the ship at that location
         frac = state.distTraveled/self.profile.dist
         self.capsule.moveBetween(self.FLIGHT_PATH_START, self.FLIGHT_PATH_END, frac)
         
+        # Update any text objects that might be animated
         for sp in self.blinkingTextGroup.sprites():
             sp.update()
         
@@ -658,19 +652,19 @@ if __name__ == "__main__":
     parser.add_argument("--tSim",   type=int,   default=FlightProfileApp.MAX_SIM_DURATION_S, help="max simulation time, in sec")
     args = parser.parse_args()
 
-    flightProfile = FlightProfileApp.FlightParams(tAft=args.tAft,
-                                                  tCoast=args.tCoast,
-                                                  tFore=args.tFore,
-                                                  aAft=args.aAft,
-                                                  aFore=args.aFore,
-                                                  rFuel=args.rFuel,
-                                                  qFuel=args.qFuel,
-                                                  dist=args.dist,
-                                                  vMin=args.vMin,
-                                                  vMax=args.vMax,
-                                                  vInit=args.vInit,
-                                                  tSim=args.tSim,
-                                                 )
+    flightProfile = FlightParams(tAft=args.tAft,
+                                 tCoast=args.tCoast,
+                                 tFore=args.tFore,
+                                 aAft=args.aAft,
+                                 aFore=args.aFore,
+                                 rFuel=args.rFuel,
+                                 qFuel=args.qFuel,
+                                 dist=args.dist,
+                                 vMin=args.vMin,
+                                 vMax=args.vMax,
+                                 vInit=args.vInit,
+                                 tSim=args.tSim,
+                                )
     app = FlightProfileApp()
     app.fullscreen = args.fullscreen
     app.run(flightProfile)

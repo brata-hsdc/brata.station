@@ -23,6 +23,7 @@ import time
 
 from station.interfaces import IStation
 from flight_profile.FlightProfile import FlightProfileApp
+from flight_profile.DockSim import FlightParams
 
 
 # ------------------------------------------------------------------------------
@@ -158,19 +159,19 @@ class Station(IStation):
         """ Accept parameters to run the dock simulation, and start the sim. """
         logger.info('DOCK transitioned to Processing state with args [{}].'.format(str(args)))
 
-        flightProfile = FlightProfileApp.FlightParams(tAft=float(args.t_aft),
-                                                      tCoast=float(args.t_coast),
-                                                      tFore=float(args.t_fore),
-                                                      aAft=float(args.a_aft),
-                                                      aFore=float(args.a_fore),
-                                                      rFuel=float(args.r_fuel),
-                                                      qFuel=float(args.q_fuel),
-                                                      dist=float(args.dist),
-                                                      vMin=float(args.v_min),
-                                                      vMax=float(args.v_max),
-                                                      vInit=float(args.v_init),
-                                                      tSim=int(args.t_sim),
-                                                     )
+        flightProfile = FlightParams(tAft=float(args.t_aft),
+                                     tCoast=float(args.t_coast),
+                                     tFore=float(args.t_fore),
+                                     aAft=float(args.a_aft),
+                                     aFore=float(args.a_fore),
+                                     rFuel=float(args.r_fuel),
+                                     qFuel=float(args.q_fuel),
+                                     dist=float(args.dist),
+                                     vMin=float(args.v_min),
+                                     vMax=float(args.v_max),
+                                     vInit=float(args.v_init),
+                                     tSim=int(args.t_sim),
+                                    )
         self._flightSim.run(flightProfile)
 
     # --------------------------------------------------------------------------

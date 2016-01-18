@@ -43,6 +43,8 @@ from station.util import get_ip_address
 
 from collections import namedtuple
 
+from pi_serial import PiSerial
+
 # ------------------------------------------------------------------------------
 class ConnectionManager(IConnectionManager):
     """
@@ -88,7 +90,8 @@ class ConnectionManager(IConnectionManager):
         logger.debug('Flask logger? %s' % (self._app.config['LOGGER_NAME']))
         logger.debug('Flask server? %s' % (self._app.config['SERVER_NAME']))
         # TODO make configurable
-        self._ifName = "wlan0"
+#         self._ifName = "wlan0"
+        self._ifName = config.NetInterface
         self._ipAddr = get_ip_address(self._ifName)
         self._listenPort = 5000
 
@@ -351,13 +354,14 @@ class ConnectionManager(IConnectionManager):
 
         """
         # TODO check if args present - might be null/empty
-        args['message_timestamp'] = self.timestamp()
+        #args['message_timestamp'] = self.timestamp()
         logger.debug('Calling service with HTTP method %s, endpoint URL %s, and args %s' % (httpMethod, endpointUrl, args))
-        headers = { 'content-type': 'application/json' }
+        headers = { 'Content-type': 'application/json', "Accept" : "application/json" }
         data = json.dumps(args)
         response = requests.post(endpointUrl, data=data, headers=headers)
 
-        logger.debug('Service returned %s with for HTTP method %s, endpoint URL %s, and args %s with headers %s, response %s, JSON response %s, and message %s' % (response.status_code, httpMethod, endpointUrl, args, response.headers, response, response.json, json.dumps(response.json)))
+#         logger.debug('Service returned %s with for HTTP method %s, endpoint URL %s, and args %s with headers %s, response %s, JSON response %s, and message %s' % (response.status_code, httpMethod, endpointUrl, args, response.headers, response, response.json, json.dumps(response.json)))
+        logger.debug('Service returned %s with for HTTP method %s, endpoint URL %s, and args %s with headers %s, response %s, JSON response %s' % (response.status_code, httpMethod, endpointUrl, args, response.headers, response, response.json))
         #logger.debug('Force json %s' % (json.dumps(response.data)))
         
         try:
@@ -396,16 +400,17 @@ class ConnectionManager(IConnectionManager):
         """
         logger.debug('Station requesting join with master server')
 
-        url = self._joinUrl + "/" + self._stationId
+#         url = self._joinUrl + "/" + self._stationId
+        url = self._joinUrl
         stationUrl = 'http://%s:%s/rpi' % (self._ipAddr, self._listenPort)
 
         (status, response) = self.callService(
             HttpMethod.POST, url,
             {
-                'message_version'  : 0,
-                'message_timestamp': self.timestamp(),
-                'station_type'     : self._stationType,
-                'station_url'      : stationUrl
+                'station_id'     : self._stationId,
+                'station_type'   : self._stationType,
+                'station_serial' : "1234",#PiSerial.serialNumber(), #DEBUG
+                'station_url'    : stationUrl,
             })
 
         if status == httplib.ACCEPTED:
@@ -437,8 +442,11 @@ class ConnectionManager(IConnectionManager):
 
         """
         logger.debug('Station requesting leave from master server')
-        url = "{}/{}".format(self._leaveUrl, self._stationId)
-        (status, response) = self.callService(HttpMethod.POST, url, {})
+        url = "{}".format(self._leaveUrl)
+        (status, response) = self.callService(HttpMethod.POST, url,
+                                             {
+                                                'station_id' : self._stationId,
+                                             })
 
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (url))
@@ -471,8 +479,11 @@ class ConnectionManager(IConnectionManager):
         theatric_delay_ms = 0
         candidate_answer = 0
 
-        url = "{}/{}".format(self._timeExpiredUrl, self._stationId)
-        (status, response) = self.callService(HttpMethod.POST, url, {})
+        url = "{}".format(self._timeExpiredUrl)
+        (status, response) = self.callService(HttpMethod.POST, url,
+                                              {
+                                                'station_id' : self._stationId,
+                                              })
 
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (url))
@@ -505,10 +516,11 @@ class ConnectionManager(IConnectionManager):
         """
         logger.debug('Station submitting answer to master server')
 
-        url = self._submitUrl + "/" + self._stationId
+        url = self._submitUrl
         (status, response) = self.callService(
             HttpMethod.POST, url,
             {
+                'station_id'        : self._stationId,
                 'message_version'   : 0,
                 'message_timestamp' : self.timestamp(),
                 'candidate_answer'  : combo,
@@ -551,16 +563,17 @@ class ConnectionManager(IConnectionManager):
         """
         logger.debug('Station submitting answer to master server')
         challengeComplete = 'Unknown'
-        url = self._submitUrl + '/' + self._stationId
+        url = self._submitUrl
 
         (status, response) = self.callService(
             HttpMethod.POST, url,
             {
-                'message_version'            : 0,
-                'message_timestamp'          : self.timestamp(),
-                'candidate_answer'           : hitDetected,
-                'is_correct'                 : isCorrect,
-                'fail_message'               : failMessage
+                'station_id'        : self._stationId,
+                'message_version'   : 0,
+                'message_timestamp' : self.timestamp(),
+                'candidate_answer'  : hitDetected,
+                'is_correct'        : isCorrect,
+                'fail_message'      : failMessage
             })
 
         if status == httplib.OK:

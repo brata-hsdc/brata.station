@@ -70,11 +70,14 @@ class FlightTestApp(object):
         Label(frame, text="Max Docking Velocity (m/s):").grid(row=1, column=0, sticky="E")
         self.vDockMax = Spinbox(frame, from_=0, to=1000, width=6, increment=1, justify=RIGHT)
         self.vDockMax.grid(row=1, column=1, sticky="WE")
-        Label(frame, text="Max Simulation Duration (s):").grid(row=2, column=0, sticky="E")
+        Label(frame, text="Initial Velocity (m/s):").grid(row=2, column=0, sticky="E")
+        self.vInit = Spinbox(frame, from_=-1000.0, to=1000.0, width=6, increment=1, justify=RIGHT)
+        self.vInit.grid(row=2, column=1, sticky="WE")
+        Label(frame, text="Max Simulation Duration (s):").grid(row=3, column=0, sticky="E")
         self.simTime = Spinbox(frame, from_=0, to=1000, width=6, increment=1, justify=RIGHT)
-        self.simTime.grid(row=2, column=1, sticky="WE")
+        self.simTime.grid(row=3, column=1, sticky="WE")
         self.fullscreen = IntVar()
-        Checkbutton(frame, text="Fullscreen (1920 x 1080)", variable=self.fullscreen).grid(row=3, column=0, columnspan=2)
+        Checkbutton(frame, text="Fullscreen (1920 x 1080)", variable=self.fullscreen).grid(row=4, column=0, columnspan=2)
 
         Button(self.root, text=" Run Simulation ", command=self.runSim).grid(row=9, column=0, columnspan=2, sticky="WE", padx=5, pady=5)
         
@@ -90,6 +93,7 @@ class FlightTestApp(object):
         self.setValue(self.dist, 15.0)
         self.setValue(self.vDockMin, 0.01)
         self.setValue(self.vDockMax, 0.1)
+        self.setValue(self.vInit, 0.0)
         self.setValue(self.simTime, 45)
         self.fullscreen.set(True)
 
@@ -113,6 +117,7 @@ class FlightTestApp(object):
         cmd.append("--dist={}".format(self.dist.get()))
         cmd.append("--vMin={}".format(self.vDockMin.get()))
         cmd.append("--vMax={}".format(self.vDockMax.get()))
+        cmd.append("--vInit={}".format(self.vInit.get()))
         cmd.append("--tSim={}".format(self.simTime.get()))
         
         print("\nCmd: ", " ".join(cmd))

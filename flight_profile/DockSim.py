@@ -11,6 +11,21 @@ from collections import namedtuple
 from math import sqrt
 
 
+# An object to hold the flight profile parameters
+#   tAft    is the duration of the acceleration burn, in seconds
+#   tCoast  is the duration of the coast phase, in seconds
+#   tFore   is the duration of the deceleration burn, in seconds
+#   aAft    is the force of acceleration, in m/sec^2
+#   aFore   is the force of deceleration, in m/sec^2
+#   rFuel   is the rate of fuel consumption in kg/sec
+#   qFuel   is the initial amount of fuel, in kg
+#   dist    is the initial distance to the dock, in m
+#   vMin    is the minimum sucessful docking velocity, in m/s
+#   vMax    is the maximum sucessful docking velocity, in m/s
+#   vInit   is the ship's initial velocity, in m/s
+#   tSim    is the maximum duration of the simulation in seconds (an int)
+FlightParams = namedtuple('FlightParams', 'tAft tCoast tFore aAft aFore rFuel qFuel dist vMin vMax vInit tSim')
+
 StateVec = namedtuple('StateVec', 'phase distTraveled currVelocity fuelRemaining tEnd')
 
 #----------------------------------------------------------------------------
@@ -52,7 +67,7 @@ class DockSim(object):
     
     def __init__(self, fp):
         """ Store the simulation parameters.
-            fp is a FlightProfile.FlightParams namedtuple.
+            fp is a FlightParams namedtuple.
             Raises ValueError if any of the flight characteristics are out of
             range, but allows the user-supplied time values to be anything.
         """
@@ -268,34 +283,43 @@ class DockSim(object):
         if v0 < 0.0:
             raise ValueError("v0 must be >= 0.0")
         
-        # If there is no acceleration, do a simpler computation
+        # If there is no acceleration or deceleration, do a simpler
+        # constant velocity computation
         if a == 0.0:
             return self.computeNoThrustTravelInterval(dt, v0, distToDest, qFuel)
         
         # Compute how long the engines can fire before fuel runs out
         tFuel = self.timeUntilFuelRunsOut(qFuel)
         
+        # If the craft is decelerating, it could stop or reverse before reaching the
+        # destination. If so, determine the time until v crosses 0 (how long the engines
+        # can fire before the ship stops making progress toward the destination).
+        # Otherwise, set tStop to a really big number.
         if a < 0.0:
-            # The craft is slowing, and could stop or reverse before reaching the
-            # destination, so determine when v crosses 0 (how long the engines
-            # can fire before the ship stops making progress toward the destination).
             tStop = self.timeToStop(v0, a)
         else:
             tStop = self.MAX_FLIGHT_DURATION_S
 
-        tAccel = min(tFuel, tStop)  # time under acceleration
+        # The time under acceleration is the shorter of the time until the ship
+        # stops due to deceleration, or the time until the fuel runs out
+        tAccel = min(tFuel, tStop)
         
-        # Compute the distance traveled under acceleration
+        # Compute the distance traveled during the time under acceleration
         distTraveled = self.distanceTraveled(tAccel, v0, a)
         
-        # Is dest reached with engines firing?
+        # Is dest reached while under acceleration (with engines firing), which
+        # is True if the distTraveled under acceleration would be greater than the
+        # distance to the destination.  If so, shorten the time under acceleration
+        # to the time until the destination is reached, and set the distance traveled
+        # to be the distance to the dest.
         if distTraveled >= distToDest:
-            # Yes:  compute how long that takes
             tAccel = self.timeToTravel(distToDest, v0, a)
+            distTraveled = distToDest
 
-        # Does end of time interval occur before dest reached or fuel runs out?
+        # Does the end of the time interval occur before dest reached or fuel runs out
+        # i.e., while the ship is still accelerating?  If so, it is straightforward to
+        # calculate the state values using dt.
         if dt < tAccel:
-            # Time interval used up
             return (self.distanceTraveled(dt, v0, a),  # dist traveled during interval
                     self.velocity(dt, v0, a),  # velocity at end of interval
                     qFuel - self.fuelConsumed(dt),  # fuel remaining 
@@ -303,27 +327,31 @@ class DockSim(object):
                     self.INTERVAL_END  # dest not reached yet
                    )
         
-        # Did ship stop or reverse, or run out of fuel first?
+        # If this code is reached, the ship either ran out of fuel, or the velocity
+        # went to zero or negative.  If the time under acceleration is the same as
+        # the time until v = 0, then the velocity went to zero before fuel ran out.
+        # The destination will never be reached, so compute values for the time
+        # interval up to where v goes to zero.
         if tAccel == tStop:
             # Flight will never reach destination
-            return (self.distanceTraveled(tAccel, v0, a),  # forward progress made
+            return (self.distanceTraveled(tStop, v0, a),  # forward progress made
                     0.0,  # ship stopped
-                    0.0,  # no fuel remaining
+                    qFuel - self.fuelConsumed(tStop),  # fuel remaining
                     dt - tStop,  # time remaining after ship stopped
                     self.INTERVAL_DNF  # dest will not be reached
                    )
-        
-        # Fuel runs out, continue at constant velocity
-        constVelocityInterval = self.computeNoThrustTravelInterval(dt - tAccel,  # time remaining after acceleration
+            
+        # Either dest reached (tAccel < tFuel) or fuel runs out, continue at constant velocity
+        cDist,cVel,cFuel,cTime,cState = self.computeNoThrustTravelInterval(dt - tAccel,  # time remaining after acceleration
                                                                    self.velocity(tAccel, v0, a),  # velocity after acceleration
                                                                    distToDest - self.distanceTraveled(tAccel, v0, a),  # dist remaining after acceleration
-                                                                   0.0 # all fuel was used up
+                                                                   0.0 if tFuel < tAccel else qFuel - self.fuelConsumed(tAccel) # fuel remaining
                                                                   )
-        return (self.distanceTraveled(tAccel, v0, a) + constVelocityInterval[0],  # total dist after both phases
-                constVelocityInterval[1],  # final velocity is passed through
-                constVelocityInterval[2],  # final fuel quantity is passed through (0.0)
-                constVelocityInterval[3],  # whatever is left after constV phase
-                constVelocityInterval[4]   # final state is state at end of constV phase
+        return (self.distanceTraveled(tAccel, v0, a) + cDist,  # total dist after both phases
+                cVel,   # final velocity is passed through
+                cFuel,  # final fuel quantity is passed through (0.0)
+                cTime,  # whatever is left after constV phase
+                cState  # final state is state at end of constV phase
                )
         
     def currPhase(self, t):
@@ -400,7 +428,10 @@ class DockSim(object):
                             fuelRemaining=self.qFuel,
                             tEnd=0.0)
 
+        # Create an array containing the ending time of each flight phase (accel, coast, decel)
         phaseTimes = [self.tAft, self.tAft + self.tCoast, self.tAft + self.tCoast + self.tFore]
+        
+        # Sequentially calculate the flight phases until the simulation state reaches END_PHASE
         while stateVec.phase != self.END_PHASE:
             if phaseTimes and t > phaseTimes[0]:
                 stateVec = self.computePhase(phaseTimes[0], stateVec)
@@ -428,11 +459,26 @@ if __name__ == "__main__":
 #     
 #     unittest.main()  # run the unit tests
 
-    ds = DockSim(tAft=8.2, tCoast=0, tFore=13.1, aAft=0.15, aFore=0.09, rFuel=0.7, qFuel=20, dist=15.0)
+    fp = FlightParams(tAft=9.2,#8.4#8.3
+                      tCoast=1, #0
+                      tFore=13.1,
+                      aAft=0.15,
+                      aFore=0.09,
+                      rFuel=0.7,
+                      qFuel=20,
+                      dist=15.0,
+                      vMin=0.01,
+                      vMax=0.1,
+                      vInit=0.0,
+                      tSim=45,
+                     )
+    ds = DockSim(fp)
 #     ds = DockSim(tAft=2, tCoast=2, tFore=13.1, aAft=0.15, aFore=0.09, rFuel=0.7, qFuel=20, dist=15.0)
     t = 0.0
 #    s = ds.shipState(11.0)
     while True:
+        if t == 17.0:
+            pass
         s = ds.shipState(t)
         print("{}: {}".format(t, s))
         if s.phase == DockSim.END_PHASE:
