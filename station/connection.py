@@ -89,10 +89,9 @@ class ConnectionManager(IConnectionManager):
         logger.debug('Flask testing? %s' % (self._app.config['TESTING']))
         logger.debug('Flask logger? %s' % (self._app.config['LOGGER_NAME']))
         logger.debug('Flask server? %s' % (self._app.config['SERVER_NAME']))
-        # TODO make configurable
-#         self._ifName = "wlan0"
-        self._ifName = config.NetInterface
-        self._ipAddr = get_ip_address(self._ifName)
+
+        self._ifName = config.NetInterface  # interface name to check first
+        self._ipAddr = self.getIp()  # get IP address of active interface
         self._listenPort = 5000
 
         self._joinUrl = config.JoinUrl
@@ -135,6 +134,23 @@ class ConnectionManager(IConnectionManager):
         self._thread.daemon = True
         self._thread.start()
 
+    # --------------------------------------------------------------------------
+    def getIp(self):
+        """ Determine the IP address that other hosts can use to communicate with
+            this one.  Check the interface self._ifName, "eth0", "wlan0", and return
+            the first address found.  If none are found, return "127.0.0.1" (localhost).
+            
+            Returns an IP address as a string
+        """
+        ipAddr = "127.0.0.1"
+        for interfaceName in (self._ifName, "eth0", "wlan0"):
+            try:
+                ipAddr = get_ip_address(interfaceName)
+                break
+            except:
+                logger.info("Failed to get IP address from {}".format(interfaceName))
+        return ipAddr
+    
     # --------------------------------------------------------------------------
     @property
     def _connected(self):
