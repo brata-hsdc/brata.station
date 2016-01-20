@@ -353,21 +353,19 @@ class ConnectionManager(IConnectionManager):
                     httpMethod,
                     endpointUrl,
                     args):
-        """TODO strictly one-line summary
+        """ Send an HTTP message to a remote host and receive the response.
 
-        TODO Detailed multi-line description if
-        necessary.
+        Send a message using HTTP to a remote host.  The transaction type (GET, POST, etc.)
+        is specified by httpMethod.  The message body is assumed to be JSON, and the
+        response is also assumed to be JSON.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            httpMethod   (str): the transaction type (HttpMethod.GET, HttpMethod.POST, ...)
+            endpointnUrl (str): the message destination URL (http://server:port)
+            args        (dict): the named fields for the msg body
         Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+            (response_status, response_data) where response_status is the status code (200, 404, ...)
+            and response data is a JSON object.
         """
         # TODO check if args present - might be null/empty
         #args['message_timestamp'] = self.timestamp()
@@ -392,27 +390,18 @@ class ConnectionManager(IConnectionManager):
             logger.debug('json failed')
         return (response.status_code, 'None')
 
+
     # ===
     # Messages from Station to MS
     # ===
-
     # --------------------------------------------------------------------------
     def join(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+        """ Send the station JOIN msg to the MS.
+        
+        Send the station JOIN msg to the MS to tell the MS that the station has
+        come online.  This message provides identifying information to the MS,
+        and also provides the address (in URL form) of this station, so the
+        MS can send messages to it.
         """
         logger.debug('Station requesting join with master server')
 
@@ -425,11 +414,11 @@ class ConnectionManager(IConnectionManager):
             {
                 'station_id'     : self._stationId,
                 'station_type'   : self._stationType,
-                'station_serial' : "1234",#PiSerial.serialNumber(), #DEBUG
+                'station_serial' : PiSerial.serialNumber(),
                 'station_url'    : stationUrl,
             })
 
-        if status == httplib.ACCEPTED:
+        if status in (httplib.OK, httplib.ACCEPTED):
             logger.debug('Service %s returned OK' % (url))
         elif status == httplib.BAD_REQUEST:
             logger.critical('Service %s returned BAD_REQUEST' % (url))
@@ -441,21 +430,11 @@ class ConnectionManager(IConnectionManager):
 
     # --------------------------------------------------------------------------
     def leave(self):
-        """TODO strictly one-line summary
+        """ Send the station LEAVE msg to the MS.
 
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+        Send the station LEAVE message to the MS to tell the MS that the station
+        is going offline.  If this could be done reliably, there would be no
+        need for a heartbeat message.
         """
         logger.debug('Station requesting leave from master server')
         url = "{}".format(self._leaveUrl)
@@ -607,16 +586,16 @@ class ConnectionManager(IConnectionManager):
 
         return challengeComplete
 
+
     # ===
     # Messages from MS to Station
     # ===
-
     # --------------------------------------------------------------------------
     def reset(self,
               pin):
         """Transitions the station to the Ready state.
 
-        Transiitions the station to the Ready state if the correct PIN is
+        Transitions the station to the Ready state if the correct PIN is
         provided; otherwise, the reset request is ignored.
 
         Args:

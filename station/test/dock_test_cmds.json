@@ -13,7 +13,7 @@
   }, 
   {
    "button": "Send Stop", 
-   "cmd": "", 
+   "cmd": "http --json GET http://localhost:5000/rpi/reset/31415 Content-type:text/html", 
    "tooltip": "Send Stop"
   }, 
   {

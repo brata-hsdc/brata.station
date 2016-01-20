@@ -15,11 +15,14 @@
 """
 Provides the definitions needed for the Dock station type.
 """
+from __future__ import print_function, division
 
-import operator
-import logging
+#import operator
+#import logging
 import logging.handlers
-import time
+#import time
+from multiprocessing import Process, Queue
+from collections import namedtuple
 
 from station.interfaces import IStation
 from flight_profile.FlightProfile import FlightProfileApp
@@ -46,84 +49,13 @@ class Station(IStation):
             hwModule:  python module object that defines hardware interfaces
         """
         logger.debug('Constructing DOCK')
-
-##        displayClassName = config.DisplayClassName
-##        pushButtonMonitorClassName = config.PushButtonMonitorClassName
-##
-##        displayClass = getattr(hwModule, displayClassName)
-##        pushButtonMonitorClass = getattr(hwModule, pushButtonMonitorClassName)
-##
-##        self._display = displayClass(config.Display)
-        
-#         self._display.setText("Initializing...")
-# 
-#         logger.info('Initializing pushButtonMonitor')
-#         self._pushButtonMonitor = pushButtonMonitorClass()
-#         self._pushButtonMonitor.setDevice(self._display._lcd)
-# 
-#         for i in config.PushButtons:
-#             logger.info('  Setting button {}'.format(i))
-#             self._pushButtonMonitor.registerPushButton(i.Name,
-#                                                        self.buttonPressed,
-#                                                        i)
-# 
-#         self._centerOffset = 0  # amount of space to left of displayed combination
         self.ConnectionManager = None
-        
-#         self._combo = None  # will hold a Combo object
-#         self._timedMsg = None  # generator
-#         self._timedMsgNextState = self.IDLE_STATE
-#         self._colorToggle = None  # generator
-#         
-#         self._preInputDuration   =  6.0  # seconds to display msg
-#         self._passedDuration     =  7.5  # seconds to display msg
-#         self._failedDuration     =  5.0  # seconds to display msg
-#         self._preIdleDuration    =  5.0  # seconds to display msg
-#         self._prePassedDuration  =  5.0  # seconds to display msg
-#         self._preFailedDuration  =  5.0  # seconds to display msg
-#         self._submittedDuration  =  2.0  # seconds to display msg
-#         self._sendFinishDuration = 15.0  # seconds to display msg
-#         
-#         
-#         # Background cycle states: ([list of colors], rate_in_sec)
-#         # TODO: These constants could be moved to runstation.conf
-#         self._preIdleBg    = (["CYAN"], 1.0)
-#         self._prePassedBg  = (["YELLOW", "WHITE"], 0.1)
-#         self._preFailedBg  = (["YELLOW", "WHITE"], 0.1)
-#         self._idleBg       = (["WHITE", "BLUE", "YELLOW", "GREEN", "RED", "CYAN", "MAGENTA"], 0.75)
-#         self._preInputBg   = (["YELLOW", "YELLOW", "YELLOW", "YELLOW", "RED"], 0.15)
-#         self._inputBg      = (["CYAN"], 1.0)
-#         self._submit1Bg    = (["RED", "WHITE"], 0.15)
-#         self._submit2Bg    = (["WHITE"], 1.0)
-#         self._passedBg     = (["GREEN", "CYAN"], 1.0)
-#         #self._failedBg    = (["RED"], 1.0)
-#         self._failedBg     = (["RED", "RED", "RED", "RED", "RED", "RED", "RED", "RED", "RED", "WHITE"], 0.1)
-#         self._sendFinishBg = (["YELLOW", "YELLOW", "YELLOW", "YELLOW", "RED"], 0.15)
-#         self._shutdownBg   = (["BLUE"], 1.0)
-#         self._errorBg      = (["RED", "RED", "RED", "RED", "RED", "WHITE"], 0.15)
-#         
-#         # Display text for different states
-#         # TODO: These constants could be moved to runstation.conf
-#         self._preIdleText         = "  Resetting...\n"
-#         self._prePassedText       = "- Trying Your -\n- Combination -"
-#         self._preFailedText       = "- Trying Your -\n- Combination -"
-#         self._idleText            = "==== CRACK =====\n== THE = SAFE =="
-#         self._preInputText        = "      HEY!!\n  Scan QR Code"
-#         self._enterLine1Text      = "Enter Code:"
-#         self._submittingLine1Text = "2nd ENTER Sends"
-#         self._submittedLine1Text  = "=Code Submitted="
-#         self._passedText          = "  The Safe Is\n    UNLOCKED"
-#         self._failedText          = "  The Safe Is\n  STILL LOCKED"
-#         self._sendFinishText      = "     Submit\n   Your  Data"
-#         self._shutdownText        = "Shutting down..."
-#         self._errorText           = "  Malfunction!\n"
-# 
-#         # Station current operating state
-#         self._ctsState = self.START_STATE
-#         self._pushButtonMonitor.setOnTickCallback(self.onTick)
 
         self._flightSim = FlightProfileApp()
         self._flightSim.fullscreen = True
+        
+        self._simProcess = None  # sim graphics will run as a separate process
+        self._simQueue   = None  # main process will pass data to sim process through this queue
 
     # --------------------------------------------------------------------------
     @property
@@ -140,112 +72,73 @@ class Station(IStation):
         """ Start the station Dock application """
         logger.info('Starting DOCK.')
 
-        # Nothing more to do.
+        # Spawn sim process
+        if self._simQueue:
+            self._simQueue.put("READY")
 
     # --------------------------------------------------------------------------
     def stop(self, signal):
         """ Stop the station Dock application """
         logger.info('Received signal "%s". Stopping DOCK.', signal)
-#         self.enterState(self.SHUTDOWN_STATE)
+
+        # Shutdown sim process
+        if self._simQueue:
+            self._simQueue.put("QUIT")
+            self._simProcess.join()
+            self._simProcess = None
+            self._simQueue = None
 
     # --------------------------------------------------------------------------
     def onReady(self):
         """ Put the application in its initial starting state """
         logger.info('DOCK transitioned to Ready state.')
-        self._flightSim.showReadyScreen()
+        if self._simQueue is None:
+            self._simQueue = Queue()
+            self._simProcess = Process(target=self._flightSim.runFromQueue, args=(self._simQueue,))
+            self._simProcess.start()
+        self.start()
 
     # --------------------------------------------------------------------------
     def onProcessing(self, args):
         """ Accept parameters to run the dock simulation, and start the sim. """
         logger.info('DOCK transitioned to Processing state with args [{}].'.format(str(args)))
 
-        flightProfile = FlightParams(tAft=float(args.t_aft),
-                                     tCoast=float(args.t_coast),
-                                     tFore=float(args.t_fore),
-                                     aAft=float(args.a_aft),
-                                     aFore=float(args.a_fore),
-                                     rFuel=float(args.r_fuel),
-                                     qFuel=float(args.q_fuel),
-                                     dist=float(args.dist),
-                                     vMin=float(args.v_min),
-                                     vMax=float(args.v_max),
-                                     vInit=float(args.v_init),
-                                     tSim=int(args.t_sim),
-                                    )
-        self._flightSim.run(flightProfile)
+        if self._simQueue:
+            flightProfile = FlightParams(tAft=float(args.t_aft),
+                                         tCoast=float(args.t_coast),
+                                         tFore=float(args.t_fore),
+                                         aAft=float(args.a_aft),
+                                         aFore=float(args.a_fore),
+                                         rFuel=float(args.r_fuel),
+                                         qFuel=float(args.q_fuel),
+                                         dist=float(args.dist),
+                                         vMin=float(args.v_min),
+                                         vMax=float(args.v_max),
+                                         vInit=float(args.v_init),
+                                         tSim=int(args.t_sim),
+                                        )
+            self._simQueue.put(flightProfile)
 
     # --------------------------------------------------------------------------
     def onFailed(self,
                  args):
         """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
         """
         logger.info('DOCK transitioned to Failed state with args [%s].' % (args))
         theatric_delay, is_correct, challenge_complete = args
-#         if challenge_complete.lower() == "true":
-#             self.enterState(self.PRE_FAILED_STATE)
-#         else:
-#             self.enterState(self.PRE_FAILED_RETRY_STATE)
-# 
-#         self._pushButtonMonitor.stopListening()
 
     # --------------------------------------------------------------------------
     def onPassed(self,
                  args):
         """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
         """
         logger.info('DOCK transitioned to Passed state with args [%s].' % (args))
-#         self.enterState(self.PRE_PASSED_STATE)
-# 
-#         self._pushButtonMonitor.stopListening()
 
     # --------------------------------------------------------------------------
     def onUnexpectedState(self, value):
         """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
         """
         logger.critical('DOCK transitioned to Unexpected state %s', value)
-#         self.enterState(self.ERROR_STATE)
 
 # ------------------------------------------------------------------------------
 # Module Initialization

@@ -17,6 +17,7 @@ import pygame.sprite
 import pygame.image
 import pygame.font
 import pygame.time
+import Queue
 
 from DockSim import DockSim, FlightParams
 
@@ -46,8 +47,9 @@ class Text(pygame.sprite.DirtySprite):
     DEFAULT_FONT = 'freesansbold.ttf'
     DEFAULT_FONT_SIZE = 100
     
-    def __init__(self, pt, value="", size=DEFAULT_FONT_SIZE, font=DEFAULT_FONT, justify=LEFT|BOTTOM, color=Colors.WHITE, intervalsMs=(1000,0)):
-        """ intervalMs is a list of (off, on, off, on, ...) time intervals used to toggle the text visibility """
+    def __init__(self, pt, value="", size=DEFAULT_FONT_SIZE, font=DEFAULT_FONT,
+                       justify=LEFT|BOTTOM, color=Colors.WHITE, intervalsMs=(1000,0)):
+        """ intervalMs is a list of (on, off, on, off, ...) time intervals used to toggle the text visibility """
         super(Text, self).__init__()
         
         self.pos = pt
@@ -66,9 +68,11 @@ class Text(pygame.sprite.DirtySprite):
         self.update()
         
     def value(self):
+        """ Return the text string """
         return self._value
     
     def setValue(self, value, color=None):
+        """ Set the text string value, and optionally set the color """
         self._value = value
         if color:
             self.color = color
@@ -343,6 +347,8 @@ class FlightProfileApp(object):
         self.blinkingTextGroup = pygame.sprite.LayeredDirty()
         self.movingGroup = pygame.sprite.OrderedUpdates()
         self.animGroup   = AnimGroup()
+        
+        self.workQueue = None  # work queue for multiprocess mode
 
     def initPygame(self):
         """ Initialize the pygame modules that we need """
@@ -351,7 +357,10 @@ class FlightProfileApp(object):
         pygame.font.init()
         self.frameClock = pygame.time.Clock()
         
-    def setupBackgroundDisplay(self):
+        self.timer = Timer()
+        self.timer.start()
+    
+    def loadImageObjects(self):
         scriptDir = os.path.dirname(__file__)
         self.stars = ImgObj(os.path.join(scriptDir, self.STARS_BG_IMG), alpha=False)
         self.stars.moveTo(self.STARS_BG_POS)
@@ -359,6 +368,18 @@ class FlightProfileApp(object):
         self.earth = ImgObj(os.path.join(scriptDir, self.EARTH_BG_IMG), alpha=True)
         self.earth.moveTo(self.EARTH_BG_POS)
         
+        # Load animated flames
+        self.capsule = ImgObj(os.path.join(scriptDir, self.CAPSULE_IMG), alpha=True, pivot=self.CAPSULE_PIVOT)
+        self.capsule.moveTo(self.CAPSULE_POS)
+        
+        self.rearFlame = [TetheredImgObj(os.path.join(scriptDir, f), alpha=True, pivot=self.FLAME_PIVOT, parent=self.capsule, offset=self.FLAME_OFFSET) for f in self.FLAME_IMG]
+        self.frontFlameUp = [TetheredImgObj(os.path.join(scriptDir, f), alpha=True, pivot=self.FLAME_UP_PIVOT, parent=self.capsule, offset=self.FLAME_UP_OFFSET) for f in self.FLAME_UP_IMG]
+        self.frontFlameDown = [TetheredImgObj(os.path.join(scriptDir, f), alpha=True, pivot=self.FLAME_DOWN_PIVOT, parent=self.capsule, offset=self.FLAME_DOWN_OFFSET) for f in self.FLAME_DOWN_IMG]
+        
+        self.station = ImgObj(os.path.join(scriptDir, self.STATION_IMG), alpha=True, pivot=self.STATION_PIVOT)
+        self.station.moveTo(self.STATION_POS)
+        
+    def setupBackgroundDisplay(self):
         self.staticGroup.add((self.stars, self.earth), layer=self.BG_LAYER)
     
     def setupMissionTimeDisplay(self):
@@ -410,25 +431,12 @@ class FlightProfileApp(object):
         self.statsGroup.add((self.distance, self.velocity, self.vmax, self.acceleration, self.fuelRemaining, self.phase))
         
     def setupSpaceshipDisplay(self):
-        scriptDir = os.path.dirname(__file__)
-        
-        # Load animated flames
-        self.capsule = ImgObj(os.path.join(scriptDir, self.CAPSULE_IMG), alpha=True, pivot=self.CAPSULE_PIVOT)
-        self.capsule.moveTo(self.CAPSULE_POS)
-        
-        self.rearFlame = [TetheredImgObj(os.path.join(scriptDir, f), alpha=True, pivot=self.FLAME_PIVOT, parent=self.capsule, offset=self.FLAME_OFFSET) for f in self.FLAME_IMG]
-        self.frontFlameUp = [TetheredImgObj(os.path.join(scriptDir, f), alpha=True, pivot=self.FLAME_UP_PIVOT, parent=self.capsule, offset=self.FLAME_UP_OFFSET) for f in self.FLAME_UP_IMG]
-        self.frontFlameDown = [TetheredImgObj(os.path.join(scriptDir, f), alpha=True, pivot=self.FLAME_DOWN_PIVOT, parent=self.capsule, offset=self.FLAME_DOWN_OFFSET) for f in self.FLAME_DOWN_IMG]
-        
-        self.station = ImgObj(os.path.join(scriptDir, self.STATION_IMG), alpha=True, pivot=self.STATION_PIVOT)
-        self.station.moveTo(self.STATION_POS)
-        
         #self.movingGroup.add((self.station, self.capsule))
         self.staticGroup.add((self.station), layer=self.SHIP_LAYER)
         self.movingGroup.add(self.capsule)
-        
-    def setupDisplay(self):
-        """ Create the display window and the components within it """
+    
+    def initScreen(self):
+        """ Initialize the drawing surface """
         # Create the window
         if self.fullscreen:
             self.canvas = pygame.display.set_mode((0,1080), pygame.FULLSCREEN | pygame.DOUBLEBUF | pygame.HWSURFACE)# | pygame.OPENGL)
@@ -438,14 +446,13 @@ class FlightProfileApp(object):
         # Set the window title (not visible in fullscreen mode)
         pygame.display.set_caption(self.WINDOW_TITLE)
         
+    def setupDisplay(self):
+        """ Create the display window and the components within it """
         # Set up parts of the display
         self.setupBackgroundDisplay()
         self.setupMissionTimeDisplay()
         self.setupStatsDisplay()
         self.setupSpaceshipDisplay()
-        
-        self.timer = Timer()
-        self.timer.start()
         
     def setFlightProfile(self, flightParams=None):
         # Get flight profile parameters
@@ -490,6 +497,16 @@ class FlightProfileApp(object):
         self.simPhase = DockSim.START_PHASE  # set phase to initial simulation phase
         self.outOfFuel = False
     
+    def createReadyText(self):
+        GIANT_TEXT = 300
+        text = Text(self.SCREEN_CENTER,
+                    value="READY",
+                    size=GIANT_TEXT,
+                    color=Colors.ORANGE,
+                    justify=Text.CENTER|Text.MIDDLE,
+                    intervalsMs=(1000,0))
+        self.blinkingTextGroup.add(text)
+        
     def createPassFailText(self, passed=True):
         GIANT_TEXT = 300
         text = Text(self.SCREEN_CENTER,
@@ -619,18 +636,124 @@ class FlightProfileApp(object):
             self.draw()
             lastFrameMs = self.frameClock.tick(self.frameRate)
 
-    def initializeDisplay(self):
-        pass
+    def processLoop(self):
+        """ Update the display """
+        # Refresh the display
+        self.update()
+        self.draw()
+        lastFrameMs = self.frameClock.tick(self.frameRate)
+
+    def clearDisplay(self):
+        """ Clear out all the sprite groups """
+        self.animGroup.empty()
+        self.blinkingTextGroup.empty()
+        self.movingGroup.empty()
+        self.statsGroup.empty()
+        self.staticGroup.empty()
+        
+        # Draw the whole background once
+        self.setupBackgroundDisplay()
+        self.staticGroup.draw(self.canvas)
+        pygame.display.update()
+    
+    def clearBackground(self):
+        self.staticGroup.empty()
+        
+    def takeDownDisplay(self):
+        pygame.quit()
         
     def showReadyScreen(self):
         """ Display an initial greeting screen """
         pass
     
+    def countDown(self):
+        """ Display a 3...2...1 countdown """
+        GIANT_TEXT = 900
+        text3 = Text(self.SCREEN_CENTER,
+                    value="3",
+                    size=GIANT_TEXT,
+                    color=Colors.ORANGE,
+                    justify=Text.CENTER|Text.MIDDLE,
+                    intervalsMs=(0,1000, 1000,5000))
+        text2 = Text(self.SCREEN_CENTER,
+                    value="2",
+                    size=GIANT_TEXT,
+                    color=Colors.YELLOW,
+                    justify=Text.CENTER|Text.MIDDLE,
+                    intervalsMs=(0,2000, 1000,5000))
+        text1 = Text(self.SCREEN_CENTER,
+                    value="1",
+                    size=GIANT_TEXT,
+                    color=Colors.WHITE,
+                    justify=Text.CENTER|Text.MIDDLE,
+                    intervalsMs=(0,3000, 1000,5000))
+        self.blinkingTextGroup.add((text3, text2, text1))
+        self.timer.start()
+        while self.timer.elapsedSec() < 4.0:
+            self.updateBlinkingText()
+            self.draw()
+            self.frameClock.tick(self.frameRate)
+        
     def run(self, flightProfile):
         self.setFlightProfile(flightProfile)
         self.initPygame()
+        self.initScreen()
+        self.loadImageObjects()
         self.setupDisplay()
         self.mainLoop()
+    
+    def updateBlinkingText(self):
+        for sp in self.blinkingTextGroup.sprites():
+            sp.update()
+            
+    def runFromQueue(self, queue):
+        """ This method is called to start the sim as a separate process.
+            Work will be passed to the process in the queue.  When "QUIT"
+            is received, the process will shut down.
+        """
+        self.workQueue = queue
+        self.initPygame()
+        self.initScreen()
+        self.loadImageObjects()
+        self.setupBackgroundDisplay()
+        self.createReadyText()
+
+        updateProc = self.updateBlinkingText
+        
+        done = False
+        while not done:
+            job = None
+            while job is None:
+                try:
+                    job = self.workQueue.get_nowait()
+                except Queue.Empty:
+                    pass
+                updateProc()
+                self.draw()
+                self.frameClock.tick(self.frameRate)
+            
+            if isinstance(job, tuple):
+                self.clearDisplay()
+                self.countDown()
+                self.clearDisplay()
+                self.setFlightProfile(job)
+                self.setupMissionTimeDisplay()
+                self.setupStatsDisplay()
+                self.setupSpaceshipDisplay()
+                self.timer.start()
+                updateProc = self.update
+                #self.processLoop()  # stay in processLoop() until sim is complete
+            elif isinstance(job, (str, unicode)):
+                if str(job) == "READY":
+                    self.clearDisplay()
+                    self.createReadyText()
+                    updateProc = self.updateBlinkingText
+                elif str(job) == "QUIT":
+                    self.clearDisplay()
+                    self.clearBackground()
+                    self.takeDownDisplay()
+                    done = True
+        
         
 #============================================================================
 if __name__ == "__main__":

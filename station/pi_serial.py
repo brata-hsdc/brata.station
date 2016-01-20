@@ -15,6 +15,7 @@
 """
 Extract the Raspberry Pi serial number, which should uniquely identify a station
 """
+from __future__ import print_function
 
 #----------------------------------------------------------------------------
 class PiSerial(object):
@@ -23,7 +24,7 @@ class PiSerial(object):
     """
     cachedSerialNumber = None
     
-    @classmethod
+    @staticmethod
     def serialNumber():
         """ Read /proc/cpuinfo.  Find and return the serial number.
         
@@ -35,6 +36,12 @@ class PiSerial(object):
             with open("/proc/cpuinfo", "r") as cpuInfo:
                 for line in cpuInfo:
                     line = line.strip().split()
-                    if line[0] == "Serial" and line[1] == ":":
+                    if len(line) > 2 and line[0] == "Serial" and line[1] == ":":
                         PiSerial.cachedSerialNumber = line[2]
         return PiSerial.cachedSerialNumber
+
+#----------------------------------------------------------------------------
+if __name__ == "__main__":
+    serial = PiSerial.serialNumber()
+    print("Serial number: {}".format(serial))
+    
