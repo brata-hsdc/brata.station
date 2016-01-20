@@ -500,7 +500,7 @@ TODO            traceback (??): ??
                 'message_timestamp' : self.timestamp(),
                 'candidate_answer'  : candidateAnswer,
                 'is_correct'        : isCorrect,
-                'fail_message'      : "" if isCorrect.lower() == "true" else failMessage
+                'fail_message'      : "" if str(isCorrect).lower() == "true" else failMessage
             })
 
         if status == httplib.OK:
@@ -554,23 +554,13 @@ TODO            traceback (??): ??
 
     # --------------------------------------------------------------------------
     def startChallenge(self):
-        """TODO strictly one-line summary
+        """ Receive a start_challenge message from the MS
 
-        TODO Detailed multi-line description if
-        necessary.
+        Changes the station state to onProcessing
 
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
         Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+            An HTTP response with the response code set, and an empty JSON body
         """
-
         logger.debug('Received startChallenge message from MS with json %s' % (json.dumps(request.json)))
 
         # TODO...
@@ -594,11 +584,11 @@ TODO            traceback (??): ??
             return_guidance_pattern = request.json['return_guidance_Pattern']
             self._callback.args = return_guidance_pattern
             logger.debug('Master server requesting station start_challenge (ver %s) at %s, RETURN Guidance pattern %s' % (message_version, message_timestamp, return_guidance_pattern))
-        elif 't_aft' in request.json:
+        elif 'team_name' in request.json:
             logger.debug('Received a start_challenge request for DOCK station')
-            Args = namedtuple("Args", "t_aft, t_coast, t_fore, a_aft, a_fore, r_fuel, q_fuel, dist, v_min, v_max, v_init, t_sim")
-            args = Args._make([request.json[f] for f in Args._fields])
-            self._callback.args = args
+#             Args = namedtuple("Args", "t_aft, t_coast, t_fore, a_aft, a_fore, r_fuel, q_fuel, dist, v_min, v_max, v_init, t_sim")
+#             args = Args._make([request.json[f] for f in Args._fields])
+            self._callback.args = (request.json["team_name"],)
             logger.debug('Master server requesting station start_challenge with args: ' + repr(self._callback.args))
         else:
             logger.critical('Received a start_challenge request for unrecognized station')
@@ -634,11 +624,11 @@ TODO            traceback (??): ??
             #TODO abort(httplib.BAD_REQUEST
             logger.debug('return BAD_REQUEST?')
 
-        message_version = request.json['message_version']
-        message_timestamp = request.json['message_timestamp']
+        message_version = request.json['message_version'] if "message_version" in request.json else ""
+        message_timestamp = request.json['message_timestamp'] if "message_timestamp" in request.json else ""
 
         if 'secure_pulse_Pattern' in request.json:
-            logger.debug('Received a POST request for SECURE station')
+            logger.debug('Received a post_challenge request for SECURE station')
             secure_pulse_pattern = request.json['secure_pulse_Pattern']
             secure_max_pulse_width = request.json['secure_max_pulse_width']
             secure_max_gap = request.json['secure_max_gap']
@@ -646,6 +636,12 @@ TODO            traceback (??): ??
 
             self._callback.args = [secure_pulse_pattern, secure_max_pulse_width, secure_max_gap, secure_min_gap] # The Pulse pattern is not required, since it is in the tone pattern
             logger.debug('Master server requesting station post_challenge (ver %s) at %s, SECURE Code pattern %s, Max pulse width %s, Max pulse gap %s, Min pulse gap %s' % (message_version, message_timestamp, secure_pulse_pattern, secure_max_pulse_width, secure_max_gap, secure_min_gap))
+        elif 't_aft' in request.json:
+            logger.debug('Received a post_challenge request for DOCK station')
+            Args = namedtuple("Args", "t_aft, t_coast, t_fore, a_aft, a_fore, r_fuel, q_fuel, dist, v_min, v_max, v_init, t_sim")
+            args = Args._make([request.json[f] for f in Args._fields])
+            self._callback.args = args
+            logger.debug('Master server requesting station start_challenge with args: ' + repr(self._callback.args))
         else:
             logger.critical('Received a post_challenge request for unrecognized station')
 
