@@ -87,7 +87,7 @@ class ConnectionManager(IConnectionManager):
         logger.debug('Flask logger? %s' % (self._app.config['LOGGER_NAME']))
         logger.debug('Flask server? %s' % (self._app.config['SERVER_NAME']))
         # TODO make configurable
-        self._ifName = "eth0" # "wlan0"
+        self._ifName = "eth0" # use "wlan0" for wireless
         self._ipAddr = get_ip_address(self._ifName)
         self._listenPort = 5000
 
