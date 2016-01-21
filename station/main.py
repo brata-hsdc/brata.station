@@ -155,6 +155,8 @@ class StationLoader(object):
             self._station.onReady()
         elif value == State.PROCESSING:
             self._station.onProcessing(self.args)
+        elif value == State.PROCESSING2:
+            self._station.onProcessing2(self.args)
         elif value == State.FAILED:
             self._station.onFailed(self.args)
         elif value == State.PASSED:
@@ -171,7 +173,6 @@ class StationLoader(object):
 # Module Initialization
 # ------------------------------------------------------------------------------
 logger = logging.getLogger(__name__)
-##logger.setLevel(logging.INFO)
 logger.setLevel(logging.DEBUG)
 handler = logging.handlers.SysLogHandler(address = '/dev/log')
 logger.addHandler(handler)

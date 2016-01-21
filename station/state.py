@@ -28,7 +28,7 @@ class State:
     with a failed or passed indicator.
     """
 
-    READY, PROCESSING, FAILED, PASSED = range(4)
+    READY, PROCESSING, PROCESSING2, FAILED, PASSED = range(5)
 
 
 # ------------------------------------------------------------------------------
