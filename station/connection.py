@@ -66,11 +66,6 @@ class ConnectionManager(IConnectionManager):
             station (Station): station class
             stationTypeId (type): ID for station
             config (Config): Configuration parameters
-        Returns:
-            N/A
-        Raises:
-            N/A
-
         """
 
         # TODO?
@@ -103,9 +98,29 @@ class ConnectionManager(IConnectionManager):
         self._listening = False
         self._timeToExit = False
 
+        # _callback is actually an instance of StationLoader.
+        # StationLoader is defined in main.py.
+        # StationLoader has a member called _station that contains
+        # a reference to the Station object (which is a Station
+        # object instantiated in main.py from dock.py, secure.py,
+        # return.py, etc.).
+        #
+        # The StationLoader is called _callback here because it
+        # is used to callback to methods in the Station object
+        # by changing the State property.  Values are passed to
+        # the callback by setting the StationLoader.args property
+        # prior to changing the state, like this:
+        #
+        #    stationLdr._callback.args = (cbValue1, cbValue2,)
+        #    stationLdr._callback.State = State.PROCESSING
+        #
         self._callback = station
         #TODO? self._handler = todoHandler
 
+        # Each HTTP message that will be received by the station
+        # needs to have a rule defined for it here.  The rule
+        # specifies the URL, the HTTP method (GET, POST), and
+        # the method to call to handle the incoming message.
         self._app.add_url_rule(config.ResetUrlRule,
                                'reset',
                                self.reset,
@@ -126,9 +141,14 @@ class ConnectionManager(IConnectionManager):
                              self.shutdown,
                              methods=['GET'])
 
+        # The ConnectionManager (this class) runs in a separate
+        # thread, so it can listen for incoming HTTP requests.
+        # The thread will first send a Join request to the
+        # MasterServer, then upon a successful Join, will
+        # start an HTTPServer to handle the incoming requests.
         self._thread = Thread(target = self.run)
         self._thread.daemon = True
-        self._thread.start()
+        self._thread.start()  # creates the thread, which calls the target method (self.run)
 
     # --------------------------------------------------------------------------
     def getIp(self):
@@ -150,55 +170,30 @@ class ConnectionManager(IConnectionManager):
     # --------------------------------------------------------------------------
     @property
     def _connected(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            N/A
-        Returns:
-            N/A
-        Raises:
-            N/A
-
-        """
+        """ Flag to control part of the listener loop in run() """
         return self._connectedValue
 
     @_connected.setter
-    def _connected(self,
-                  value):
+    def _connected(self, value):
+        """ Flag to control part of the listener loop in run() """
         self._connectedValue = value
         logger.info('Is connection manager connected? %s' % (value))
 
     # --------------------------------------------------------------------------
     def __enter__(self):
-        """TODO strictly one-line summary
+        """ Allows object to be used in a Python "with" statement
 
-        Args:
-            N/A
         Returns:
-            N/A
-        Raises:
-            N/A
-
+            self
         """
         logger.debug('Entering connection manager')
         return self
 
     # --------------------------------------------------------------------------
     def __exit__(self, type, value, traceback):
-        """TODO strictly one-line summary
+        """ Allows object to be used in a Python "with" statement
 
-        Args:
-TODO            type (type): ??
-TODO            value (??): ??
-TODO            traceback (??): ??
-        Returns:
-            N/A
-        Raises:
-            N/A
-
+        Stops the listener loop and terminates the listener thread.
         """
         logger.debug('Exiting connection manager')
         self.stopListening()
@@ -265,43 +260,19 @@ TODO            traceback (??): ??
 
     # --------------------------------------------------------------------------
     def startListening(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+        """ Set self._listening to True
+        
+        Causes the connection to go live, join the MS, and listen for incoming
+        requests.
         """
         logger.debug('Starting listening for connection manager')
-        # TODO
         self._listening = True
 
     # --------------------------------------------------------------------------
     def stopListening(self):
-        """TODO strictly one-line summary
+        """ Set self._listening and self._connected to False
 
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+        Stops the connection from listening and handling incoming requests.
         """
         logger.debug('Stopping listening for connection manager')
         self._listening = False
@@ -310,21 +281,10 @@ TODO            traceback (??): ??
 
     # --------------------------------------------------------------------------
     def timestamp(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+        """ Format the current time and return it as a string.
+        
         Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+            The current time as a string of the form "YYYY-MM-DD HH:MM:SS"
         """
         ts = time()
         st = datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
@@ -436,22 +396,7 @@ TODO            traceback (??): ??
 
     # --------------------------------------------------------------------------
     def timeExpired(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
-        """
+        """ Send time_expired message to MasterServer """
         logger.debug('Station informing master server that time for challenge has expired')
 
         theatric_delay_ms = 0
@@ -475,7 +420,7 @@ TODO            traceback (??): ??
     def submit(self,
                            candidateAnswer,
                            isCorrect, failMessage):
-        """Submit candidate answer to Master Server
+        """ Submit candidate answer to Master Server
 
         Args:
             candidateAnswer (list): list of 4 values 0-7 for SECURE,
@@ -483,11 +428,6 @@ TODO            traceback (??): ??
             isCorrect (string): "True" or "False"
             failMessage (string): For SECURE, "True" if isCorrect, else
                                   a message indicating failure
-        Returns:
-            N/A
-        Raises:
-            N/A
-
         """
         logger.debug('Station submitting answer to master server, Answer=%s, isCorrect=%s, failMessage=%s' % (candidateAnswer, isCorrect, failMessage))
         
@@ -533,9 +473,6 @@ TODO            traceback (??): ??
             pin (int): This must be 31415 in order to reset the station.
         Returns:
             Empty JSON response with OK status code on success.
-        Raises:
-            N/A.
-
         """
 
         logger.debug('Received reset message from MS with json %s' % (json.dumps(request.json)))
@@ -609,13 +546,8 @@ TODO            traceback (??): ??
     def postChallenge(self):
         """Start the second part of the challenge 
 
-        Args:
-            N/A
         Returns:
-            N/A
-        Raises:
-            N/A
-
+            An HTTP response with an empty JSON body
         """
 
         logger.debug('Received POST message from MS with json %s' % (json.dumps(request.json)))
@@ -652,6 +584,7 @@ TODO            traceback (??): ??
         return resp
 
 ##    # --------------------------------------------------------------------------
+######### Leaving this in for now for reference
 ##    def handleSubmission(self):
 ##        """TODO strictly one-line summary
 ##
@@ -691,27 +624,16 @@ TODO            traceback (??): ??
 ##        resp = jsonify({})
 ##        resp.status_code = httplib.OK
 ##        return resp
-##
-##
-##    # --------------------------------------------------------------------------
+
+
+    # --------------------------------------------------------------------------
     def handleSubmissionResp(self,
                              is_correct,
                              challenge_complete):
-        """TODO strictly one-line summary
+        """ This is called when the response comes back after sending a Submit to the MS
 
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+        This causes the station state to transition to either PASSED or FAILED, which
+        will result in the station's onPassed() or onFailed() method getting called.
         """
 
         logger.debug('Handling submission response: is correct? %s. Challenge complete? %s' % ( is_correct, challenge_complete))
