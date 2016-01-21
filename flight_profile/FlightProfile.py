@@ -9,7 +9,7 @@ Display the flight profile of a team's docking attempt.
 """
 from __future__ import print_function, division
 
-from collections import namedtuple
+#from collections import namedtuple
 import sys
 import os.path
 import itertools
@@ -18,6 +18,8 @@ import pygame.image
 import pygame.font
 import pygame.time
 import Queue
+
+from station.state import State  # TODO: get rid of this dependency!!
 
 from DockSim import DockSim, FlightParams
 
@@ -349,6 +351,7 @@ class FlightProfileApp(object):
         self.animGroup   = AnimGroup()
         
         self.workQueue = None  # work queue for multiprocess mode
+        self.stationCallbackObj = None
 
     def initPygame(self):
         """ Initialize the pygame modules that we need """
@@ -591,7 +594,9 @@ class FlightProfileApp(object):
                     self.animGroup.add(self.frontFlameDown)
             elif state.phase == DockSim.END_PHASE:
                 self.animGroup.empty()
-                self.createPassFailText(passed=self.dockSim.dockIsSuccessful())
+                passed = self.dockSim.dockIsSuccessful()
+                self.createPassFailText(passed=passed)
+                self.reportPassFail(passed, state.tEnd)
             else:
                 self.animGroup.empty()
         
@@ -665,6 +670,14 @@ class FlightProfileApp(object):
     def showReadyScreen(self):
         """ Display an initial greeting screen """
         pass
+    
+    def reportPassFail(self, passed, simTime):
+        """ Report back to the station framework that the sim is finished
+            and pass it the pass/fail status and the simulation elapsed time.
+        """
+        self.stationCallbackObj.args = (passed, simTime, "TODO: Replace this Generic Fail Message")
+        self.stationCallbackObj.State = State.PROCESSING_COMPLETED
+        
     
     def countDown(self):
         """ Display a 3...2...1 countdown """
