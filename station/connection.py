@@ -103,9 +103,29 @@ class ConnectionManager(IConnectionManager):
         self._listening = False
         self._timeToExit = False
 
+        # _callback is actually an instance of StationLoader.
+        # StationLoader is defined in main.py.
+        # StationLoader has a member called _station that contains
+        # a reference to the Station object (which is a Station
+        # object instantiated in main.py from dock.py, secure.py,
+        # return.py, etc.).
+        #
+        # The StationLoader is called _callback here because it
+        # is used to callback to methods in the Station object
+        # by changing the State property.  Values are passed to
+        # the callback by setting the StationLoader.args property
+        # prior to changing the state, like this:
+        #
+        #    stationLdr._callback.args = (cbValue1, cbValue2,)
+        #    stationLdr._callback.State = State.PROCESSING
+        #
         self._callback = station
         #TODO? self._handler = todoHandler
 
+        # Each HTTP message that will be received by the station
+        # needs to have a rule defined for it here.  The rule
+        # specifies the URL, the HTTP method (GET, POST), and
+        # the method to call to handle the incoming message.
         self._app.add_url_rule(config.ResetUrlRule,
                                'reset',
                                self.reset,
