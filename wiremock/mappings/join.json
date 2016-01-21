@@ -1,13 +1,16 @@
 {
    "request": {
       "method": "POST",
-      "url": "/m/rpi/join/cts01"
+      "url": "/piservice/join",
+      "bodyPatterns" : [
+         { "equalToJson" : "{ \"station_type\": \"DOCK\", \"station_serial\": \"1234\", \"station_id\": \"dock01\", \"station_url\": \"http://192.168.9.206:5000/rpi\" }", "jsonCompareMode": "LENIENT" }
+      ]
    },
    "response": {
-      "status": 202,
+      "status": 200,
       "headers": {
          "Content-Type": "application/json"
       },
-      "body": "{}"
+      "body": "{ \"station_id\": \"dock01\" }"
    }
 }

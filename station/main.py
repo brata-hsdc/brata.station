@@ -57,8 +57,15 @@ class StationLoader(object):
         stationModuleName = config.StationType
         stationClassName = config.StationClassName
 
+        logger.info("connectionModuleName: " + connectionModuleName)
+        logger.info("hwModuleName: " + hwModuleName)
+        logger.info("stationModuleName: " + stationModuleName)
+
         connectionModule = import_module(connectionModuleName)
-        hwModule = import_module(hwModuleName)
+        if hwModuleName:
+            hwModule = import_module(hwModuleName)
+        else:
+            hwModule = None
         stationModule = import_module(stationModuleName)
 
         connectionManagerClass = getattr(connectionModule,
@@ -148,6 +155,8 @@ class StationLoader(object):
             self._station.onReady()
         elif value == State.PROCESSING:
             self._station.onProcessing(self.args)
+        elif value == State.PROCESSING2:
+            self._station.onProcessing2(self.args)
         elif value == State.FAILED:
             self._station.onFailed(self.args)
         elif value == State.PASSED:
@@ -164,7 +173,7 @@ class StationLoader(object):
 # Module Initialization
 # ------------------------------------------------------------------------------
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 handler = logging.handlers.SysLogHandler(address = '/dev/log')
 logger.addHandler(handler)
 

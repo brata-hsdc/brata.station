@@ -1,13 +1,13 @@
 {
    "request": {
       "method": "POST",
-      "url": "/m/rpi/submit/cts01"
+      "url": "/m/rpi/submit/secure01"
    },
    "response": {
       "status": 200,
       "headers": {
          "Content-Type": "application/json"
       },
-      "body": "{\"message_version\": 0, \"message_timestamp\": \"2014-09-15 14:08:59\", \"theatric_delay_ms\": 3000, \"challenge_complete\": \"False\"}"
+      "body": "{\"message_version\": 0, \"message_timestamp\": \"2014-09-15 14:08:59\", \"challenge_complete\": \"False\"}"
    }
 }

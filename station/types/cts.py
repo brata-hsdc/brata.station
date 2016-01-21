@@ -125,7 +125,7 @@ class Station(IStation):
         self._preIdleText         = "  Resetting...\n"
         self._prePassedText       = "- Trying Your -\n- Combination -"
         self._preFailedText       = "- Trying Your -\n- Combination -"
-        self._idleText            = "==== CRACK =====\n== THE = SAFE =="
+        self._idleText            = "==== RETURN ====\n== TO = EARTH =="
         self._preInputText        = "      HEY!!\n  Scan QR Code"
         self._enterLine1Text      = "Enter Code:"
         self._submittingLine1Text = "2nd ENTER Sends"
