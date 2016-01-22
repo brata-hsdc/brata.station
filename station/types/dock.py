@@ -153,6 +153,7 @@ class Station(IStation):
         self.ConnectionManager.submit(candidateAnswer=elapsedTimeSec,
                                       isCorrect=isCorrect,
                                       failMessage=failMsg)
+        logger.debug('Submitted')
 
     # --------------------------------------------------------------------------
     def onFailed(self,

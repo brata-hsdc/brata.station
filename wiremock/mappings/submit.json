@@ -1,7 +1,10 @@
 {
    "request": {
       "method": "POST",
-      "url": "/m/rpi/submit/secure01"
+      "url": "/piservice/submit/",
+      "bodyPatterns" : [
+         { "equalToJson" : "{ \"is_correct\": \"True\", \"fail_message\": \"\", \"station_id\": \"dock01\", \"candidate_answer\": \"28.5\", \"message_version\": \"0\", \"message_timestamp\": \"1233456\" }", "jsonCompareMode": "LENIENT" }
+      ]
    },
    "response": {
       "status": 200,

@@ -34,6 +34,7 @@ class Colors(object):
     CYAN    = (  0, 255, 255)
     MAGENTA = (255,   0, 255)
     ORANGE  = (255, 128,   0)
+    LIGHT_ORANGE = (255, 180,  52)
 
 #----------------------------------------------------------------------------
 class Text(pygame.sprite.DirtySprite):
@@ -518,16 +519,16 @@ class FlightProfileApp(object):
         
     def createWelcomeText(self, name):
         GIANT_TEXT = 300
-        text = Text(self.SCREEN_CENTER,
+        text = Text((self.SCREEN_CENTER[0], 300),
                     value="Welcome",
                     size=GIANT_TEXT,
                     color=Colors.ORANGE,
-                    justify=Text.CENTER|Text.BOTTOM)
+                    justify=Text.CENTER|Text.TOP)
         nameText = Text(self.SCREEN_CENTER,
                     value=str(name),
-                    size=GIANT_TEXT,
+                    size=int(GIANT_TEXT * 0.6),
                     color=Colors.WHITE,
-                    justify=Text.CENTER|Text.TOP)
+                    justify=Text.CENTER|Text.MIDDLE)
         self.blinkingTextGroup.add((text, nameText))
         
     def createPassFailText(self, passed=True):
@@ -711,7 +712,7 @@ class FlightProfileApp(object):
         text2 = Text(self.SCREEN_CENTER,
                     value="2",
                     size=GIANT_TEXT,
-                    color=Colors.YELLOW,
+                    color=Colors.LIGHT_ORANGE,
                     justify=Text.CENTER|Text.MIDDLE,
                     intervalsMs=(0,2000, 1000,5000))
         text1 = Text(self.SCREEN_CENTER,
@@ -755,10 +756,11 @@ class FlightProfileApp(object):
         
         done = False
         while not done:
-            job = None
-            while job is None:
+            cmd = None
+            while cmd is None:
                 try:
                     cmd,args = self.workQueue.get_nowait()
+                    print("Got work ({},{})".format(repr(cmd), repr(args)))
                 except Queue.Empty:
                     pass
                 updateProc()
@@ -766,6 +768,7 @@ class FlightProfileApp(object):
                 self.frameClock.tick(self.frameRate)
             
             if cmd == self.RUN_CMD:
+                print("RUN_CMD")
                 self.clearDisplay()
                 self.countDown()
                 self.clearDisplay()
@@ -777,14 +780,17 @@ class FlightProfileApp(object):
                 updateProc = self.update
                 #self.processLoop()  # stay in processLoop() until sim is complete
             elif cmd == self.READY_CMD:
+                print("READY_CMD")
                 self.clearDisplay()
                 self.createReadyText()
                 updateProc = self.updateBlinkingText
             elif cmd == self.WELCOME_CMD:
+                print("WELCOME_CMD")
                 self.clearDisplay()
-                self.createWelcomeText(name=args)
+                self.createWelcomeText(name=args[0])
                 updateProc = self.updateBlinkingText
             elif cmd == self.QUIT_CMD:
+                print("QUIT_CMD")
                 self.clearDisplay()
                 self.clearBackground()
                 self.takeDownDisplay()
