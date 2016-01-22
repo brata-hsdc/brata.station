@@ -88,20 +88,13 @@ class StationLoader(object):
         """Starts the station instance.
 
         Starts the station instance in the Ready state, initiates a connection
-        with the MS, and begins listening for messages from the MS.
-
-        Args:
-            N/A.
-        Returns:
-            N/A.
-        Raises:
-            N/A.
-
+        with the MS, and begins listening for messages from the MS.  This method
+        never returns.  The thread must be stopped by the calling thread.
         """
         logger.info('Starting StationLoader.')
 
-        self.State = State.READY
-        self._station.start()
+        self._station.start()  # initialize the station
+        self.State = State.READY  # transition the station to READY state
         self._connectionManager.startListening()
 
         while True:
@@ -115,12 +108,6 @@ class StationLoader(object):
 
         Args:
             signal (int): The number of the signal being handled.
-            N/A.
-        Returns:
-            N/A.
-        Raises:
-            N/A.
-
         """
         logger.info('Received signal "%s". Stopping StationLoader.', signal)
 
