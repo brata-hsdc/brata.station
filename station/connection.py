@@ -218,7 +218,8 @@ class ConnectionManager(IConnectionManager):
         """
         logger.info('Starting TODO thread for connection manager')
 
-        sleep_time = 5 #TODO load this from runstation.conf file
+#         sleep_time = 5 #TODO load this from runstation.conf file
+        sleep_time = 1 # make it more responsive #TODO load this from runstation.conf file
 
         while not self._timeToExit:
             try:
@@ -442,20 +443,25 @@ class ConnectionManager(IConnectionManager):
                 'is_correct'        : isCorrect,
                 'fail_message'      : "" if str(isCorrect).lower() == "true" else failMessage
             })
-
+        
+        try:
+            challenge_complete = response["challenge_complete"]
+        except:
+             challenge_complete = None
+        
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (url))
             # Note: the str() casts normalize string and bool inputs, but return a str
             self.handleSubmissionResp(str(isCorrect),
-                                      str(response['challenge_complete']))
+                                      str(challenge_complete))
         elif status == httplib.NOT_FOUND:
             logger.critical('Service %s returned NOT_FOUND' % (url))
         else:
             logger.critical('Unexpected HTTP response %s received from service %s' % (status, url))
 
         logger.debug('SUBMIT')
-        logger.debug('Submit response: %s' % (response['challenge_complete']))
-        return response['challenge_complete']
+        logger.debug('Submit response: %s' % (challenge_complete))
+        return challenge_complete
 
 
     # ===
