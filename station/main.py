@@ -88,20 +88,13 @@ class StationLoader(object):
         """Starts the station instance.
 
         Starts the station instance in the Ready state, initiates a connection
-        with the MS, and begins listening for messages from the MS.
-
-        Args:
-            N/A.
-        Returns:
-            N/A.
-        Raises:
-            N/A.
-
+        with the MS, and begins listening for messages from the MS.  This method
+        never returns.  The thread must be stopped by the calling thread.
         """
         logger.info('Starting StationLoader.')
 
-        self.State = State.READY
-        self._station.start()
+        self._station.start()  # initialize the station
+        self.State = State.READY  # transition the station to READY state
         self._connectionManager.startListening()
 
         while True:
@@ -115,12 +108,6 @@ class StationLoader(object):
 
         Args:
             signal (int): The number of the signal being handled.
-            N/A.
-        Returns:
-            N/A.
-        Raises:
-            N/A.
-
         """
         logger.info('Received signal "%s". Stopping StationLoader.', signal)
 
@@ -155,6 +142,10 @@ class StationLoader(object):
             self._station.onReady()
         elif value == State.PROCESSING:
             self._station.onProcessing(self.args)
+        elif value == State.PROCESSING2:
+            self._station.onProcessing2(self.args)
+        elif value == State.PROCESSING_COMPLETED:
+            self._station.onProcessingCompleted(self.args)
         elif value == State.FAILED:
             self._station.onFailed(self.args)
         elif value == State.PASSED:
@@ -171,7 +162,6 @@ class StationLoader(object):
 # Module Initialization
 # ------------------------------------------------------------------------------
 logger = logging.getLogger(__name__)
-##logger.setLevel(logging.INFO)
 logger.setLevel(logging.DEBUG)
 handler = logging.handlers.SysLogHandler(address = '/dev/log')
 logger.addHandler(handler)

@@ -420,6 +420,43 @@ class IStation:
         """
         pass
 
+
+    # --------------------------------------------------------------------------
+    @abstractmethod
+    def onProcessing2(self,
+                     args):
+        """Begins running the second part of the challenge.
+
+        This is called when the MS informs the station that it is time to begin
+        the second part of the challenge. It follows the user scanning the QR code next to the
+        station.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        pass
+
+    # --------------------------------------------------------------------------
+    @abstractmethod
+    def onProcessingCompleted(self,
+                     args):
+        """ This state is entered when the challenge is completed, to submit the results.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        pass
+
     # --------------------------------------------------------------------------
     @abstractmethod
     def onFailed(self,

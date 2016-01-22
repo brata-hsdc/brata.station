@@ -27,20 +27,20 @@ optional arguments:
                         Master Server address (hostname or IP address)
                         optionally followed by ":" and port number (default:
                         localhost:8080)
-  -t {hmb,cpa,cts}, --stationType {hmb,cpa,cts}
-                        one of "cts", "cpa", "hmb". If not specified, the
+  -t {dock,secure,return,hmb,cpa,cts}, --stationType {dock,secure,return}
+                        one of "dock", "secure", "return", "hmb", "cpa", "cts". If not specified, the
                         stationName will be used to determine stationType.
   -n STATIONNAME, --stationName STATIONNAME
                         usually a stationType followed by 2 digits.
   -c CONFIGFILE, --configFile CONFIGFILE
                         specify an alternate config file (default: /opt/design
-                        challenge2015/brata.station/bin/runstation.conf)
+                        challenge2016/brata.station/bin/runstation.conf)
   --console             emulate the station hardware interface using terminal
                         I/O
 
 Examples:
     python runstation -t cts
-    python runstation --masterServer localhost:80 -stationName hmb03
+    python runstation --masterServer localhost:80 -stationName secure01
 """
 
 import logging
@@ -115,7 +115,7 @@ def parseCmdLine():
     parser.add_argument('-m', '--masterServer', default=MS_DEFAULT_ADDR,
                         help='Master Server address (hostname or IP address) optionally followed by ":" and port number (default: {})'.format(MS_DEFAULT_ADDR))
     parser.add_argument('-t', '--stationType', choices=STATION_TYPES,
-                        help='one of "cts", "cpa", "hmb", "dock", "secure", "return".  If not specified, the stationName will be used to determine stationType.')
+                        help='one of "dock", "secure", "return", "cts", "cpa", "hmb".  If not specified, the stationName will be used to determine stationType.')
     parser.add_argument('-n', '--stationName',
                         help='usually a stationType followed by 2 digits.')
     parser.add_argument('-i', '--netInterface', default=NET_INTERFACE_DEFAULT,
@@ -130,9 +130,10 @@ def parseCmdLine():
     
     if args.stationName is not None:
         if args.stationType is None:
+            # FIXME this doesn't work with station names longer than 3 letters (or does it?)
             # stationName is set and stationType is not set, so try to set the type from the name
             if len(args.stationName) >= 3:
-                sType = args.stationName[0:3].lower()
+                sType = args.stationName[0:-2].lower()
                 if sType in STATION_TYPES:
                     args.stationType = sType
     

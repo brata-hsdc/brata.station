@@ -9,7 +9,7 @@ Display the flight profile of a team's docking attempt.
 """
 from __future__ import print_function, division
 
-from collections import namedtuple
+#from collections import namedtuple
 import sys
 import os.path
 import itertools
@@ -18,6 +18,8 @@ import pygame.image
 import pygame.font
 import pygame.time
 import Queue
+
+from station.state import State  # TODO: get rid of this dependency!!
 
 from DockSim import DockSim, FlightParams
 
@@ -32,6 +34,7 @@ class Colors(object):
     CYAN    = (  0, 255, 255)
     MAGENTA = (255,   0, 255)
     ORANGE  = (255, 128,   0)
+    LIGHT_ORANGE = (255, 180,  52)
 
 #----------------------------------------------------------------------------
 class Text(pygame.sprite.DirtySprite):
@@ -320,6 +323,12 @@ class FlightProfileApp(object):
     FLAME_DOWN_PIVOT  = (11, 16)
     FLAME_DOWN_OFFSET = (-24, 21)
     
+    READY_CMD   = "READY"
+    WELCOME_CMD = "WELCOME"
+    RUN_CMD     = "RUN"
+    QUIT_CMD    = "QUIT"
+    
+    
     def __init__(self):
         self.canvas = None
         self.timer = None
@@ -349,10 +358,11 @@ class FlightProfileApp(object):
         self.animGroup   = AnimGroup()
         
         self.workQueue = None  # work queue for multiprocess mode
+        self.stationCallbackObj = None
 
     def initPygame(self):
         """ Initialize the pygame modules that we need """
-#         pygame.init()
+        # pygame.init()  # initialize all modules
         pygame.display.init()
         pygame.font.init()
         self.frameClock = pygame.time.Clock()
@@ -507,6 +517,20 @@ class FlightProfileApp(object):
                     intervalsMs=(1000,0))
         self.blinkingTextGroup.add(text)
         
+    def createWelcomeText(self, name):
+        GIANT_TEXT = 300
+        text = Text((self.SCREEN_CENTER[0], 300),
+                    value="Welcome",
+                    size=GIANT_TEXT,
+                    color=Colors.ORANGE,
+                    justify=Text.CENTER|Text.TOP)
+        nameText = Text(self.SCREEN_CENTER,
+                    value=str(name),
+                    size=int(GIANT_TEXT * 0.6),
+                    color=Colors.WHITE,
+                    justify=Text.CENTER|Text.MIDDLE)
+        self.blinkingTextGroup.add((text, nameText))
+        
     def createPassFailText(self, passed=True):
         GIANT_TEXT = 300
         text = Text(self.SCREEN_CENTER,
@@ -591,7 +615,9 @@ class FlightProfileApp(object):
                     self.animGroup.add(self.frontFlameDown)
             elif state.phase == DockSim.END_PHASE:
                 self.animGroup.empty()
-                self.createPassFailText(passed=self.dockSim.dockIsSuccessful())
+                passed = self.dockSim.dockIsSuccessful()
+                self.createPassFailText(passed=passed)
+                self.reportPassFail(passed, state.tEnd)
             else:
                 self.animGroup.empty()
         
@@ -666,6 +692,14 @@ class FlightProfileApp(object):
         """ Display an initial greeting screen """
         pass
     
+    def reportPassFail(self, passed, simTime):
+        """ Report back to the station framework that the sim is finished
+            and pass it the pass/fail status and the simulation elapsed time.
+        """
+        self.stationCallbackObj.args = (passed, simTime, "TODO: Replace this Generic Fail Message")
+        self.stationCallbackObj.State = State.PROCESSING_COMPLETED
+        
+    
     def countDown(self):
         """ Display a 3...2...1 countdown """
         GIANT_TEXT = 900
@@ -678,7 +712,7 @@ class FlightProfileApp(object):
         text2 = Text(self.SCREEN_CENTER,
                     value="2",
                     size=GIANT_TEXT,
-                    color=Colors.YELLOW,
+                    color=Colors.LIGHT_ORANGE,
                     justify=Text.CENTER|Text.MIDDLE,
                     intervalsMs=(0,2000, 1000,5000))
         text1 = Text(self.SCREEN_CENTER,
@@ -722,37 +756,45 @@ class FlightProfileApp(object):
         
         done = False
         while not done:
-            job = None
-            while job is None:
+            cmd = None
+            while cmd is None:
                 try:
-                    job = self.workQueue.get_nowait()
+                    cmd,args = self.workQueue.get_nowait()
+                    print("Got work ({},{})".format(repr(cmd), repr(args)))
                 except Queue.Empty:
                     pass
                 updateProc()
                 self.draw()
                 self.frameClock.tick(self.frameRate)
             
-            if isinstance(job, tuple):
+            if cmd == self.RUN_CMD:
+                print("RUN_CMD")
                 self.clearDisplay()
                 self.countDown()
                 self.clearDisplay()
-                self.setFlightProfile(job)
+                self.setFlightProfile(args)
                 self.setupMissionTimeDisplay()
                 self.setupStatsDisplay()
                 self.setupSpaceshipDisplay()
                 self.timer.start()
                 updateProc = self.update
                 #self.processLoop()  # stay in processLoop() until sim is complete
-            elif isinstance(job, (str, unicode)):
-                if str(job) == "READY":
-                    self.clearDisplay()
-                    self.createReadyText()
-                    updateProc = self.updateBlinkingText
-                elif str(job) == "QUIT":
-                    self.clearDisplay()
-                    self.clearBackground()
-                    self.takeDownDisplay()
-                    done = True
+            elif cmd == self.READY_CMD:
+                print("READY_CMD")
+                self.clearDisplay()
+                self.createReadyText()
+                updateProc = self.updateBlinkingText
+            elif cmd == self.WELCOME_CMD:
+                print("WELCOME_CMD")
+                self.clearDisplay()
+                self.createWelcomeText(name=args[0])
+                updateProc = self.updateBlinkingText
+            elif cmd == self.QUIT_CMD:
+                print("QUIT_CMD")
+                self.clearDisplay()
+                self.clearBackground()
+                self.takeDownDisplay()
+                done = True
         
         
 #============================================================================

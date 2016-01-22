@@ -1,13 +1,16 @@
 {
    "request": {
       "method": "POST",
-      "url": "/m/rpi/submit/cts01"
+      "url": "/piservice/submit/",
+      "bodyPatterns" : [
+         { "equalToJson" : "{ \"is_correct\": \"True\", \"fail_message\": \"\", \"station_id\": \"dock01\", \"candidate_answer\": \"28.5\", \"message_version\": \"0\", \"message_timestamp\": \"1233456\" }", "jsonCompareMode": "LENIENT" }
+      ]
    },
    "response": {
       "status": 200,
       "headers": {
          "Content-Type": "application/json"
       },
-      "body": "{\"message_version\": 0, \"message_timestamp\": \"2014-09-15 14:08:59\", \"theatric_delay_ms\": 3000, \"challenge_complete\": \"False\"}"
+      "body": "{\"message_version\": 0, \"message_timestamp\": \"2014-09-15 14:08:59\", \"challenge_complete\": \"False\"}"
    }
 }
