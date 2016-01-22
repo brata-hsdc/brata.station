@@ -322,6 +322,12 @@ class FlightProfileApp(object):
     FLAME_DOWN_PIVOT  = (11, 16)
     FLAME_DOWN_OFFSET = (-24, 21)
     
+    READY_CMD   = "READY"
+    WELCOME_CMD = "WELCOME"
+    RUN_CMD     = "RUN"
+    QUIT_CMD    = "QUIT"
+    
+    
     def __init__(self):
         self.canvas = None
         self.timer = None
@@ -355,7 +361,7 @@ class FlightProfileApp(object):
 
     def initPygame(self):
         """ Initialize the pygame modules that we need """
-#         pygame.init()
+        # pygame.init()  # initialize all modules
         pygame.display.init()
         pygame.font.init()
         self.frameClock = pygame.time.Clock()
@@ -509,6 +515,20 @@ class FlightProfileApp(object):
                     justify=Text.CENTER|Text.MIDDLE,
                     intervalsMs=(1000,0))
         self.blinkingTextGroup.add(text)
+        
+    def createWelcomeText(self, name):
+        GIANT_TEXT = 300
+        text = Text(self.SCREEN_CENTER,
+                    value="Welcome",
+                    size=GIANT_TEXT,
+                    color=Colors.ORANGE,
+                    justify=Text.CENTER|Text.BOTTOM)
+        nameText = Text(self.SCREEN_CENTER,
+                    value=str(name),
+                    size=GIANT_TEXT,
+                    color=Colors.WHITE,
+                    justify=Text.CENTER|Text.TOP)
+        self.blinkingTextGroup.add((text, nameText))
         
     def createPassFailText(self, passed=True):
         GIANT_TEXT = 300
@@ -738,34 +758,37 @@ class FlightProfileApp(object):
             job = None
             while job is None:
                 try:
-                    job = self.workQueue.get_nowait()
+                    cmd,args = self.workQueue.get_nowait()
                 except Queue.Empty:
                     pass
                 updateProc()
                 self.draw()
                 self.frameClock.tick(self.frameRate)
             
-            if isinstance(job, tuple):
+            if cmd == self.RUN_CMD:
                 self.clearDisplay()
                 self.countDown()
                 self.clearDisplay()
-                self.setFlightProfile(job)
+                self.setFlightProfile(args)
                 self.setupMissionTimeDisplay()
                 self.setupStatsDisplay()
                 self.setupSpaceshipDisplay()
                 self.timer.start()
                 updateProc = self.update
                 #self.processLoop()  # stay in processLoop() until sim is complete
-            elif isinstance(job, (str, unicode)):
-                if str(job) == "READY":
-                    self.clearDisplay()
-                    self.createReadyText()
-                    updateProc = self.updateBlinkingText
-                elif str(job) == "QUIT":
-                    self.clearDisplay()
-                    self.clearBackground()
-                    self.takeDownDisplay()
-                    done = True
+            elif cmd == self.READY_CMD:
+                self.clearDisplay()
+                self.createReadyText()
+                updateProc = self.updateBlinkingText
+            elif cmd == self.WELCOME_CMD:
+                self.clearDisplay()
+                self.createWelcomeText(name=args)
+                updateProc = self.updateBlinkingText
+            elif cmd == self.QUIT_CMD:
+                self.clearDisplay()
+                self.clearBackground()
+                self.takeDownDisplay()
+                done = True
         
         
 #============================================================================

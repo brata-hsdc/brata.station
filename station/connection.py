@@ -218,7 +218,8 @@ class ConnectionManager(IConnectionManager):
         """
         logger.info('Starting TODO thread for connection manager')
 
-        sleep_time = 5 #TODO load this from runstation.conf file
+#         sleep_time = 5 #TODO load this from runstation.conf file
+        sleep_time = 1 # make it more responsive #TODO load this from runstation.conf file
 
         while not self._timeToExit:
             try:

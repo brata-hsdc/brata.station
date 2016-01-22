@@ -74,8 +74,13 @@ class Station(IStation):
         logger.info('Starting DOCK.')
 
         # Spawn sim process
-        if self._simQueue:
-            self._simQueue.put("READY")
+        logger.info("ConnectionManager._callback is {}".format(repr(self.ConnectionManager._callback)))
+        self._flightSim.stationCallbackObj = self.ConnectionManager._callback
+
+        if self._simQueue is None:
+            self._simQueue = Queue()
+            self._simProcess = Process(target=self._flightSim.runFromQueue, args=(self._simQueue,))
+            self._simProcess.start()
 
     # --------------------------------------------------------------------------
     def stop(self, signal):
@@ -84,7 +89,7 @@ class Station(IStation):
 
         # Shutdown sim process
         if self._simQueue:
-            self._simQueue.put("QUIT")
+            self._simQueue.put((FlightProfileApp.QUIT_CMD, ""))
             self._simProcess.join()
             self._simProcess = None
             self._simQueue = None
@@ -93,19 +98,15 @@ class Station(IStation):
     def onReady(self):
         """ Put the application in its initial starting state """
         logger.info('DOCK transitioned to Ready state.')
-        logger.info("ConnectionManager._callback is {}".format(repr(self.ConnectionManager._callback)))
-        self._flightSim.stationCallbackObj = self.ConnectionManager._callback
-
-        if self._simQueue is None:
-            self._simQueue = Queue()
-            self._simProcess = Process(target=self._flightSim.runFromQueue, args=(self._simQueue,))
-            self._simProcess.start()
-        self.start()
+        if self._simQueue:
+            self._simQueue.put((FlightProfileApp.READY_CMD, ""))
 
     # --------------------------------------------------------------------------
     def onProcessing(self, args):
         """ Accept parameters to run the dock simulation, and start the sim. """
         logger.info('DOCK transitioned to Processing state with args {}.'.format(repr(args)))
+        if self._simQueue:
+            self._simQueue.put((FlightProfileApp.WELCOME_CMD, args))
 
     # --------------------------------------------------------------------------
     def onProcessing2(self, args):
@@ -131,29 +132,7 @@ class Station(IStation):
                                          vInit=float(args.v_init),
                                          tSim=int(args.t_sim),
                                         )
-            self._simQueue.put(flightProfile)
-#         self.tonegen.stop()
-#         pibrella.button.clear_events
-#         self._leds['red'].turnOff()
-#         self._leds['yellow'].turnOff()
-#         self._leds['green'].turnOn()
-# 
-#         rc = ReadCode(self._secure_tone_pattern, self._display)
-# 
-#         # wait for a code to be read
-#         self._display.display_message("      ", "TRANSMIT")        
-#         code, error, error_msg = rc.run()
-#         self._error_msg = error_msg
-# 
-#         # check the error
-#         if (error>0):
-#             isCorrect = "False"
-#         else:
-#             isCorrect = "True"
-#                 
-# 
-#         logger.info('Submitting code: {} , match = {}, {}'.format(repr(code), isCorrect, error_msg))
-#         self.ConnectionManager.submit(code, isCorrect, error_msg)            
+            self._simQueue.put((FlightProfileApp.RUN_CMD, flightProfile))
      
     # --------------------------------------------------------------------------
     def onProcessingCompleted(self, args):
@@ -174,7 +153,6 @@ class Station(IStation):
         self.ConnectionManager.submit(candidateAnswer=elapsedTimeSec,
                                       isCorrect=isCorrect,
                                       failMessage=failMsg)
-    
 
     # --------------------------------------------------------------------------
     def onFailed(self,
