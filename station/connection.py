@@ -672,6 +672,11 @@ class ConnectionManager(IConnectionManager):
             cts_combo = request.json['cts_combo']
             self._callback.args = cts_combo
             logger.debug('Master server requesting station start_challenge (ver %s) at %s with theatric delay of %s ms, CTS combo %s' % (message_version, message_timestamp, theatric_delay_ms, cts_combo))
+        elif 'return_guidance_pattern' in request.json:
+            logger.debug('Received a start_challenge request for RETURN station')
+            return_pat = request.json['return_guidance_pattern']
+            self._callback.args = return_pat
+            logger.debug('Master server requesting station start_challenge (ver %s) at %s with theatric delay of %s ms, RETURN guidance pattern %s' % (message_version, message_timestamp, theatric_delay_ms, return_pat))
         elif 't_aft' in request.json:
             logger.debug('Received a start_challenge request for DOCK station')
             Args = namedtuple("Args", "t_aft, t_coast, t_fore, a_aft, a_fore, r_fuel, q_fuel, dist, v_min, v_max, v_init, t_sim")
