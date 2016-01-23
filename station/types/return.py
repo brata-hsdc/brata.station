@@ -130,10 +130,11 @@ class Station(IStation):
         self._preInputText        = "      HEY!!     \n  Scan QR Code  "
         self._enterLine1Text      = "Enter Code:"
         self._submittingText      = "2nd ENTER Sends\n  Arrows to edit"
-        self._submittedText       = "\n=Data Submitted="
-        self._passedText          = "Landing is\nA SUCCESS"
-        self._failedText          = "You suffered a\nFIREY DEATH"
-        self._sendFinishText      = "     Submit\n   Your  Data"
+        self._submittedText       = "Sending to\nGuidance..."
+        self._passedText          = "Landing is\nA SUCCESS!"
+        self._failedText          = "You suffered a\nFIERY DEATH!"
+#        self._sendFinishText      = "     Submit\n   Your  Data"
+        self._sendFinishText      = "Design Challenge\n    Complete    "
         self._shutdownText        = "Shutting down..."
         self._errorText           = "  Malfunction!\n"
 
@@ -369,7 +370,7 @@ class Station(IStation):
     # --------------------------------------------------------------------------
     def onFailed(self, args):
         logger.info('RETURN transitioned to Failed state with args [%s].' % (args))
-        theatric_delay, is_correct, challenge_complete = args
+        is_correct, challenge_complete = args
         if challenge_complete.lower() == "true":
             self.enterState(self.PRE_FAILED_STATE)
         else:
@@ -527,16 +528,14 @@ class Angle:
                  theta4, theta5, theta6):
         """ Initialize resulting angles to 12 digits, 2 in each value
 
-        TODO Detailed multi-line description if
-        necessary.
-
         Args:
-            value1: int 00-99
-            value2: int 00-99
-            value3: int 00-99
+            theta1: int 00-99
+            theta2: int 00-99
+            theta3: int 00-99
+            theta4: int 00-99
+            theta5: int 00-99
+            theta6: int 00-99
         """
-        logger.debug('Constructing angle')
-
         alphas = [theta1 // 9, theta2 // 9,
                   theta3 // 9, theta4 // 9,
                   theta5 // 9, theta6 // 9]
@@ -547,7 +546,7 @@ class Angle:
                   3 * alphas[5] + 1 * alphas[1] + 2 * alphas[2] + 2 * alphas[4] + 1 * alphas[3],
                   1 * alphas[0] + 4 * alphas[2] + 1 * alphas[4] + 1 * alphas[1] + 1 * alphas[5] + 1 * alphas[3]]
 
-        print "Betas: {}".format(betas)
+        logger.info("Expected beta values: {}".format(betas))
 
         self._wrap = True  # wrap the cursor around
         self._position = 0
@@ -562,25 +561,26 @@ class Angle:
             self._targetDigits[2*index+0] = betas[index] / 10 % 10
             self._targetDigits[2*index+1] = betas[index] /  1 % 10
 
-        # TODO -- remove this!!!
-        self._digits = self._targetDigits
+            # TODO -- remove this!!!
+            # self._digits[2*index+0] = self._targetDigits[2*index+0]
+            # self._digits[2*index+1] = self._targetDigits[2*index+1]
 
     # --------------------------------------------------------------------------
     def __enter__(self):
         logger.debug('Entering angle %s', self.Name)
-        # TODO
         return self
 
     # --------------------------------------------------------------------------
     def __exit__(self, type, value, traceback):
         logger.debug('Exiting angle')
-        # TODO
 
     # --------------------------------------------------------------------------
     def isMatch(self):
         """ Returns:  True if _digits == _targetDigits.
         """
-        return reduce(operator.and_, map(operator.eq, self._digits, self._targetDigits))
+        return reduce(operator.and_, map(operator.eq, 
+                                         self._digits, 
+                                         self._targetDigits))
 
     # --------------------------------------------------------------------------
     def position(self):
