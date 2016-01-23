@@ -323,6 +323,14 @@ class FlightProfileApp(object):
     FLAME_DOWN_PIVOT  = (11, 16)
     FLAME_DOWN_OFFSET = (-24, 21)
     
+    OUTCOMES = {
+        DockSim.OUTCOME_DNF     : "Destination not reached due to negative forward velocity",
+        DockSim.OUTCOME_NO_FUEL : "Ran out of fuel before achieving proper docking velocity",
+        DockSim.OUTCOME_TOO_SLOW: "Latch failure due to insufficient forward velocity",
+        DockSim.OUTCOME_TOO_FAST: "Latch failure caused by excessive forward velocity",
+        DockSim.OUTCOME_SUCCESS : "Docked successfully.  Nice job!",
+    }
+
     READY_CMD   = "READY"
     WELCOME_CMD = "WELCOME"
     RUN_CMD     = "RUN"
@@ -531,7 +539,7 @@ class FlightProfileApp(object):
                     justify=Text.CENTER|Text.MIDDLE)
         self.blinkingTextGroup.add((text, nameText))
         
-    def createPassFailText(self, passed=True):
+    def createPassFailText(self, passed=True, msg=None):
         GIANT_TEXT = 300
         text = Text(self.SCREEN_CENTER,
                     value="SUCCESS!" if passed else "FAIL!",
@@ -540,6 +548,31 @@ class FlightProfileApp(object):
                     justify=Text.CENTER|Text.MIDDLE,
                     intervalsMs=(1000,250))
         self.blinkingTextGroup.add(text)
+        
+        if msg:
+            if len(msg) < 50:
+                msgText = Text((self.SCREEN_CENTER[0], 750),
+                               value=msg,
+                               size=int(GIANT_TEXT * 0.3),
+                               color=Colors.GREEN if passed else Colors.RED,
+                               justify=Text.CENTER|Text.MIDDLE)
+                self.blinkingTextGroup.add(msgText)
+            else: # divide the text into two lines
+                words = msg.split()
+                nWords = len(words)
+                line1 = " ".join(words[:nWords//2])
+                line2 = " ".join(words[nWords//2:])
+                msgText1 = Text((self.SCREEN_CENTER[0], 750),
+                                value=line1,
+                                size=int(GIANT_TEXT * 0.3),
+                                color=Colors.GREEN if passed else Colors.RED,
+                                justify=Text.CENTER|Text.MIDDLE)
+                msgText2 = Text((self.SCREEN_CENTER[0], 850),
+                                value=line2,
+                                size=int(GIANT_TEXT * 0.3),
+                                color=Colors.GREEN if passed else Colors.RED,
+                                justify=Text.CENTER|Text.MIDDLE)
+                self.blinkingTextGroup.add((msgText1, msgText2))
         
     def drawCharts(self):
         pass
@@ -616,8 +649,9 @@ class FlightProfileApp(object):
             elif state.phase == DockSim.END_PHASE:
                 self.animGroup.empty()
                 passed = self.dockSim.dockIsSuccessful()
-                self.createPassFailText(passed=passed)
-                self.reportPassFail(passed, state.tEnd)
+                msg = self.outcomeMessage(state)
+                self.createPassFailText(passed=passed, msg=msg)
+                self.reportPassFail(passed, state.tEnd, msg)
             else:
                 self.animGroup.empty()
         
@@ -692,13 +726,20 @@ class FlightProfileApp(object):
         """ Display an initial greeting screen """
         pass
     
-    def reportPassFail(self, passed, simTime):
+    def outcomeMessage(self, state):
+        result = self.dockSim.outcome(state)
+        return self.OUTCOMES[self.dockSim.outcome(state)]  # get failure (or success) message
+    
+    def reportPassFail(self, passed, simTime, msg):
         """ Report back to the station framework that the sim is finished
             and pass it the pass/fail status and the simulation elapsed time.
+            
+            Returns:
+                A string stating success or the reason for failure
         """
-        self.stationCallbackObj.args = (passed, simTime, "TODO: Replace this Generic Fail Message")
+        self.stationCallbackObj.args = (passed, simTime, msg)
         self.stationCallbackObj.State = State.PROCESSING_COMPLETED
-        
+        return msg
     
     def countDown(self):
         """ Display a 3...2...1 countdown """
