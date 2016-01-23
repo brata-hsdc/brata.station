@@ -41,6 +41,9 @@ from station.state import HttpMethod
 from station.state import State
 from station.util import get_ip_address
 
+from collections import namedtuple
+
+from pi_serial import PiSerial
 
 # ------------------------------------------------------------------------------
 class ConnectionManager(IConnectionManager):
@@ -63,11 +66,6 @@ class ConnectionManager(IConnectionManager):
             station (Station): station class
             stationTypeId (type): ID for station
             config (Config): Configuration parameters
-        Returns:
-            N/A
-        Raises:
-            N/A
-
         """
 
         # TODO?
@@ -82,10 +80,9 @@ class ConnectionManager(IConnectionManager):
         logger.debug('Flask testing? %s' % (self._app.config['TESTING']))
         logger.debug('Flask logger? %s' % (self._app.config['LOGGER_NAME']))
         logger.debug('Flask server? %s' % (self._app.config['SERVER_NAME']))
-        # TODO make configurable
-##        self._ifName = "wlan0"
-        self._ifName = "eth0"
-        self._ipAddr = get_ip_address(self._ifName)
+
+        self._ifName = config.NetInterface  # interface name to check first
+        self._ipAddr = self.getIp()  # get IP address of active interface
         self._listenPort = 5000
 
         self._joinUrl = config.JoinUrl
@@ -101,9 +98,29 @@ class ConnectionManager(IConnectionManager):
         self._listening = False
         self._timeToExit = False
 
+        # _callback is actually an instance of StationLoader.
+        # StationLoader is defined in main.py.
+        # StationLoader has a member called _station that contains
+        # a reference to the Station object (which is a Station
+        # object instantiated in main.py from dock.py, secure.py,
+        # return.py, etc.).
+        #
+        # The StationLoader is called _callback here because it
+        # is used to callback to methods in the Station object
+        # by changing the State property.  Values are passed to
+        # the callback by setting the StationLoader.args property
+        # prior to changing the state, like this:
+        #
+        #    stationLdr._callback.args = (cbValue1, cbValue2,)
+        #    stationLdr._callback.State = State.PROCESSING
+        #
         self._callback = station
         #TODO? self._handler = todoHandler
 
+        # Each HTTP message that will be received by the station
+        # needs to have a rule defined for it here.  The rule
+        # specifies the URL, the HTTP method (GET, POST), and
+        # the method to call to handle the incoming message.
         self._app.add_url_rule(config.ResetUrlRule,
                                'reset',
                                self.reset,
@@ -124,62 +141,59 @@ class ConnectionManager(IConnectionManager):
                              self.shutdown,
                              methods=['GET'])
 
+        # The ConnectionManager (this class) runs in a separate
+        # thread, so it can listen for incoming HTTP requests.
+        # The thread will first send a Join request to the
+        # MasterServer, then upon a successful Join, will
+        # start an HTTPServer to handle the incoming requests.
         self._thread = Thread(target = self.run)
         self._thread.daemon = True
-        self._thread.start()
+        self._thread.start()  # creates the thread, which calls the target method (self.run)
 
+    # --------------------------------------------------------------------------
+    def getIp(self):
+        """ Determine the IP address that other hosts can use to communicate with
+            this one.  Check the interface self._ifName, "eth0", "wlan0", and return
+            the first address found.  If none are found, return "127.0.0.1" (localhost).
+            
+            Returns an IP address as a string
+        """
+        ipAddr = "127.0.0.1"
+        for interfaceName in (self._ifName, "eth0", "wlan0"):
+            try:
+                ipAddr = get_ip_address(interfaceName)
+                break
+            except:
+                logger.info("Failed to get IP address from {}".format(interfaceName))
+        return ipAddr
+    
     # --------------------------------------------------------------------------
     @property
     def _connected(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            N/A
-        Returns:
-            N/A
-        Raises:
-            N/A
-
-        """
+        """ Flag to control part of the listener loop in run() """
         return self._connectedValue
 
     @_connected.setter
-    def _connected(self,
-                  value):
+    def _connected(self, value):
+        """ Flag to control part of the listener loop in run() """
         self._connectedValue = value
         logger.info('Is connection manager connected? %s' % (value))
 
     # --------------------------------------------------------------------------
     def __enter__(self):
-        """TODO strictly one-line summary
+        """ Allows object to be used in a Python "with" statement
 
-        Args:
-            N/A
         Returns:
-            N/A
-        Raises:
-            N/A
-
+            self
         """
         logger.debug('Entering connection manager')
         return self
 
     # --------------------------------------------------------------------------
     def __exit__(self, type, value, traceback):
-        """TODO strictly one-line summary
+        """ Allows object to be used in a Python "with" statement
 
-        Args:
-TODO            type (type): ??
-TODO            value (??): ??
-TODO            traceback (??): ??
-        Returns:
-            N/A
-        Raises:
-            N/A
-
+        Stops the listener loop and terminates the listener thread.
         """
         logger.debug('Exiting connection manager')
         self.stopListening()
@@ -204,7 +218,8 @@ TODO            traceback (??): ??
         """
         logger.info('Starting TODO thread for connection manager')
 
-        sleep_time = 5 #TODO load this from runstation.conf file
+#         sleep_time = 5 #TODO load this from runstation.conf file
+        sleep_time = 1 # make it more responsive #TODO load this from runstation.conf file
 
         while not self._timeToExit:
             try:
@@ -246,43 +261,19 @@ TODO            traceback (??): ??
 
     # --------------------------------------------------------------------------
     def startListening(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+        """ Set self._listening to True
+        
+        Causes the connection to go live, join the MS, and listen for incoming
+        requests.
         """
         logger.debug('Starting listening for connection manager')
-        # TODO
         self._listening = True
 
     # --------------------------------------------------------------------------
     def stopListening(self):
-        """TODO strictly one-line summary
+        """ Set self._listening and self._connected to False
 
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+        Stops the connection from listening and handling incoming requests.
         """
         logger.debug('Stopping listening for connection manager')
         self._listening = False
@@ -291,21 +282,10 @@ TODO            traceback (??): ??
 
     # --------------------------------------------------------------------------
     def timestamp(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+        """ Format the current time and return it as a string.
+        
         Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+            The current time as a string of the form "YYYY-MM-DD HH:MM:SS"
         """
         ts = time()
         st = datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
@@ -317,30 +297,29 @@ TODO            traceback (??): ??
                     httpMethod,
                     endpointUrl,
                     args):
-        """TODO strictly one-line summary
+        """ Send an HTTP message to a remote host and receive the response.
 
-        TODO Detailed multi-line description if
-        necessary.
+        Send a message using HTTP to a remote host.  The transaction type (GET, POST, etc.)
+        is specified by httpMethod.  The message body is assumed to be JSON, and the
+        response is also assumed to be JSON.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
+            httpMethod   (str): the transaction type (HttpMethod.GET, HttpMethod.POST, ...)
+            endpointnUrl (str): the message destination URL (http://server:port)
+            args        (dict): the named fields for the msg body
         Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+            (response_status, response_data) where response_status is the status code (200, 404, ...)
+            and response data is a JSON object.
         """
         # TODO check if args present - might be null/empty
-        args['message_timestamp'] = self.timestamp()
+        #args['message_timestamp'] = self.timestamp()
         logger.debug('Calling service with HTTP method %s, endpoint URL %s, and args %s' % (httpMethod, endpointUrl, args))
-        headers = { 'content-type': 'application/json' }
+        headers = { 'Content-type': 'application/json', "Accept" : "application/json" }
         data = json.dumps(args)
         response = requests.post(endpointUrl, data=data, headers=headers)
 
-        logger.debug('Service returned %s with for HTTP method %s, endpoint URL %s, and args %s with headers %s, response %s, JSON response %s, and message %s' % (response.status_code, httpMethod, endpointUrl, args, response.headers, response, response.json, json.dumps(response.json)))
+#         logger.debug('Service returned %s with for HTTP method %s, endpoint URL %s, and args %s with headers %s, response %s, JSON response %s, and message %s' % (response.status_code, httpMethod, endpointUrl, args, response.headers, response, response.json, json.dumps(response.json)))
+        logger.debug('Service returned %s with for HTTP method %s, endpoint URL %s, and args %s with headers %s, response %s, JSON response %s' % (response.status_code, httpMethod, endpointUrl, args, response.headers, response, response.json))
         #logger.debug('Force json %s' % (json.dumps(response.data)))
         
         try:
@@ -355,43 +334,35 @@ TODO            traceback (??): ??
             logger.debug('json failed')
         return (response.status_code, 'None')
 
+
     # ===
     # Messages from Station to MS
     # ===
-
     # --------------------------------------------------------------------------
     def join(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+        """ Send the station JOIN msg to the MS.
+        
+        Send the station JOIN msg to the MS to tell the MS that the station has
+        come online.  This message provides identifying information to the MS,
+        and also provides the address (in URL form) of this station, so the
+        MS can send messages to it.
         """
         logger.debug('Station requesting join with master server')
 
-        url = self._joinUrl + "/" + self._stationId
+#         url = self._joinUrl + "/" + self._stationId
+        url = self._joinUrl
         stationUrl = 'http://%s:%s/rpi' % (self._ipAddr, self._listenPort)
 
         (status, response) = self.callService(
             HttpMethod.POST, url,
             {
-                'message_version'  : 0,
-                'message_timestamp': self.timestamp(),
-                'station_type'     : self._stationType,
-                'station_url'      : stationUrl
+                'station_id'     : self._stationId,
+                'station_type'   : self._stationType,
+                'station_serial' : PiSerial.serialNumber(),
+                'station_url'    : stationUrl,
             })
 
-        if status == httplib.ACCEPTED:
+        if status in (httplib.OK, httplib.ACCEPTED):
             logger.debug('Service %s returned OK' % (url))
         elif status == httplib.BAD_REQUEST:
             logger.critical('Service %s returned BAD_REQUEST' % (url))
@@ -403,25 +374,18 @@ TODO            traceback (??): ??
 
     # --------------------------------------------------------------------------
     def leave(self):
-        """TODO strictly one-line summary
+        """ Send the station LEAVE msg to the MS.
 
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+        Send the station LEAVE message to the MS to tell the MS that the station
+        is going offline.  If this could be done reliably, there would be no
+        need for a heartbeat message.
         """
         logger.debug('Station requesting leave from master server')
-        url = "{}/{}".format(self._leaveUrl, self._stationId)
-        (status, response) = self.callService(HttpMethod.POST, url, {})
+        url = "{}".format(self._leaveUrl)
+        (status, response) = self.callService(HttpMethod.POST, url,
+                                             {
+                                                'station_id' : self._stationId,
+                                             })
 
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (url))
@@ -433,29 +397,17 @@ TODO            traceback (??): ??
 
     # --------------------------------------------------------------------------
     def timeExpired(self):
-        """TODO strictly one-line summary
-
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
-        """
+        """ Send time_expired message to MasterServer """
         logger.debug('Station informing master server that time for challenge has expired')
 
         theatric_delay_ms = 0
         candidate_answer = 0
 
-        url = "{}/{}".format(self._timeExpiredUrl, self._stationId)
-        (status, response) = self.callService(HttpMethod.POST, url, {})
+        url = "{}".format(self._timeExpiredUrl)
+        (status, response) = self.callService(HttpMethod.POST, url,
+                                              {
+                                                'station_id' : self._stationId,
+                                              })
 
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (url))
@@ -469,7 +421,7 @@ TODO            traceback (??): ??
     def submit(self,
                            candidateAnswer,
                            isCorrect, failMessage):
-        """Submit candidate answer to Master Server
+        """ Submit candidate answer to Master Server
 
         Args:
             candidateAnswer (list): list of 4 values 0-7 for SECURE,
@@ -477,58 +429,56 @@ TODO            traceback (??): ??
             isCorrect (string): "True" or "False"
             failMessage (string): For SECURE, "True" if isCorrect, else
                                   a message indicating failure
-        Returns:
-            N/A
-        Raises:
-            N/A
-
         """
         logger.debug('Station submitting answer to master server, Answer=%s, isCorrect=%s, failMessage=%s' % (candidateAnswer, isCorrect, failMessage))
         
-        url = self._submitUrl + "/" + self._stationId
+        url = self._submitUrl
         (status, response) = self.callService(
             HttpMethod.POST, url,
             {
+                'station_id'        : self._stationId,
                 'message_version'   : 0,
                 'message_timestamp' : self.timestamp(),
                 'candidate_answer'  : candidateAnswer,
                 'is_correct'        : isCorrect,
-                'fail_message'      : "" if isCorrect.lower() == "true" else failMessage
+                'fail_message'      : "" if str(isCorrect).lower() == "true" else failMessage
             })
-
+        
+        try:
+            challenge_complete = response["challenge_complete"]
+        except:
+             challenge_complete = None
+        
         if status == httplib.OK:
             logger.debug('Service %s returned OK' % (url))
             # Note: the str() casts normalize string and bool inputs, but return a str
             self.handleSubmissionResp(str(isCorrect),
-                                      str(response['challenge_complete']))
+                                      str(challenge_complete))
         elif status == httplib.NOT_FOUND:
             logger.critical('Service %s returned NOT_FOUND' % (url))
         else:
             logger.critical('Unexpected HTTP response %s received from service %s' % (status, url))
 
         logger.debug('SUBMIT')
-        logger.debug('Submit response: %s' % (response['challenge_complete']))
-        return response['challenge_complete']
+        logger.debug('Submit response: %s' % (challenge_complete))
+        return challenge_complete
+
 
     # ===
     # Messages from MS to Station
     # ===
-
     # --------------------------------------------------------------------------
     def reset(self,
               pin):
         """Transitions the station to the Ready state.
 
-        Transiitions the station to the Ready state if the correct PIN is
+        Transitions the station to the Ready state if the correct PIN is
         provided; otherwise, the reset request is ignored.
 
         Args:
             pin (int): This must be 31415 in order to reset the station.
         Returns:
             Empty JSON response with OK status code on success.
-        Raises:
-            N/A.
-
         """
 
         logger.debug('Received reset message from MS with json %s' % (json.dumps(request.json)))
@@ -547,33 +497,24 @@ TODO            traceback (??): ??
 
     # --------------------------------------------------------------------------
     def startChallenge(self):
-        """TODO strictly one-line summary
+        """ Receive a start_challenge message from the MS
 
-        TODO Detailed multi-line description if
-        necessary.
+        Changes the station state to onProcessing
 
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
         Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+            An HTTP response with the response code set, and an empty JSON body
         """
-
         logger.debug('Received startChallenge message from MS with json %s' % (json.dumps(request.json)))
+
         # TODO...
         #if not request.json or not 'title' in request.json:
         if not request.json:
             #TODO abort(httplib.BAD_REQUEST
             logger.debug('return BAD_REQUEST?')
 
-        message_version = request.json['message_version']
-        message_timestamp = request.json['message_timestamp']
-#        theatric_delay_ms = request.json['theatric_delay_ms']
+        message_version   = request.json['message_version'] if 'message_version' in request.json else ""
+        message_timestamp = request.json['message_timestamp'] if 'message_timestamp' in request.json else ""
+        theatric_delay_ms = request.json['theatric_delay_ms'] if 'theatric_delay_ms' in request.json else ""
 
         if 'secure_tone_Pattern' in request.json:
             logger.debug('Received a start_challenge request for SECURE station')
@@ -586,6 +527,12 @@ TODO            traceback (??): ??
             return_guidance_pattern = request.json['return_guidance_Pattern']
             self._callback.args = return_guidance_pattern
             logger.debug('Master server requesting station start_challenge (ver %s) at %s, RETURN Guidance pattern %s' % (message_version, message_timestamp, return_guidance_pattern))
+        elif 'team_name' in request.json:
+            logger.debug('Received a start_challenge request for DOCK station')
+#             Args = namedtuple("Args", "t_aft, t_coast, t_fore, a_aft, a_fore, r_fuel, q_fuel, dist, v_min, v_max, v_init, t_sim")
+#             args = Args._make([request.json[f] for f in Args._fields])
+            self._callback.args = (request.json["team_name"],)
+            logger.debug('Master server requesting station start_challenge with args: ' + repr(self._callback.args))
         else:
             logger.critical('Received a start_challenge request for unrecognized station')
 
@@ -605,13 +552,8 @@ TODO            traceback (??): ??
     def postChallenge(self):
         """Start the second part of the challenge 
 
-        Args:
-            N/A
         Returns:
-            N/A
-        Raises:
-            N/A
-
+            An HTTP response with an empty JSON body
         """
 
         logger.debug('Received POST message from MS with json %s' % (json.dumps(request.json)))
@@ -620,11 +562,11 @@ TODO            traceback (??): ??
             #TODO abort(httplib.BAD_REQUEST
             logger.debug('return BAD_REQUEST?')
 
-        message_version = request.json['message_version']
-        message_timestamp = request.json['message_timestamp']
+        message_version = request.json['message_version'] if "message_version" in request.json else ""
+        message_timestamp = request.json['message_timestamp'] if "message_timestamp" in request.json else ""
 
         if 'secure_pulse_Pattern' in request.json:
-            logger.debug('Received a POST request for SECURE station')
+            logger.debug('Received a post_challenge request for SECURE station')
             secure_pulse_pattern = request.json['secure_pulse_Pattern']
             secure_max_pulse_width = request.json['secure_max_pulse_width']
             secure_max_gap = request.json['secure_max_gap']
@@ -632,6 +574,12 @@ TODO            traceback (??): ??
 
             self._callback.args = [secure_pulse_pattern, secure_max_pulse_width, secure_max_gap, secure_min_gap] # The Pulse pattern is not required, since it is in the tone pattern
             logger.debug('Master server requesting station post_challenge (ver %s) at %s, SECURE Code pattern %s, Max pulse width %s, Max pulse gap %s, Min pulse gap %s' % (message_version, message_timestamp, secure_pulse_pattern, secure_max_pulse_width, secure_max_gap, secure_min_gap))
+        elif 't_aft' in request.json:
+            logger.debug('Received a post_challenge request for DOCK station')
+            Args = namedtuple("Args", "t_aft, t_coast, t_fore, a_aft, a_fore, r_fuel, q_fuel, dist, v_min, v_max, v_init, t_sim")
+            args = Args._make([request.json[f] for f in Args._fields])
+            self._callback.args = args
+            logger.debug('Master server requesting station start_challenge with args: ' + repr(self._callback.args))
         else:
             logger.critical('Received a post_challenge request for unrecognized station')
 
@@ -642,6 +590,7 @@ TODO            traceback (??): ??
         return resp
 
 ##    # --------------------------------------------------------------------------
+######### Leaving this in for now for reference
 ##    def handleSubmission(self):
 ##        """TODO strictly one-line summary
 ##
@@ -681,27 +630,16 @@ TODO            traceback (??): ??
 ##        resp = jsonify({})
 ##        resp.status_code = httplib.OK
 ##        return resp
-##
-##
-##    # --------------------------------------------------------------------------
+
+
+    # --------------------------------------------------------------------------
     def handleSubmissionResp(self,
                              is_correct,
                              challenge_complete):
-        """TODO strictly one-line summary
+        """ This is called when the response comes back after sending a Submit to the MS
 
-        TODO Detailed multi-line description if
-        necessary.
-
-        Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+        This causes the station state to transition to either PASSED or FAILED, which
+        will result in the station's onPassed() or onFailed() method getting called.
         """
 
         logger.debug('Handling submission response: is correct? %s. Challenge complete? %s' % ( is_correct, challenge_complete))

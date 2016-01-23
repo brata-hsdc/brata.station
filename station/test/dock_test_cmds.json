@@ -1,0 +1,41 @@
+{
+ "width": 0, 
+ "cmds": [
+  {
+   "button": "Launch Dock App", 
+   "cmd": "lxterminal --command DISPLAY=:0.0 python /opt/designchallenge2016/brata.station/bin/runstation -n dock01 &", 
+   "tooltip": "Cmd"
+  }, 
+  {
+   "button": "Send post_challenge", 
+   "cmd": "http --json POST http://localhost:5000/rpi/post_challenge Content-type:application/json Accept:application/json t_aft='8.2' t_coast='1' t_fore='13.1' a_aft='.15' a_fore='0.09' r_fuel='0.7' q_fuel='20' dist='15.0' v_min='0.01' v_max='0.1' v_init='0.0' t_sim='5'", 
+   "tooltip": "Send Start"
+  }, 
+  {
+   "button": "Send reset", 
+   "cmd": "http --json GET http://localhost:5000/rpi/reset/31415 Content-type:text/html", 
+   "tooltip": "Send Stop"
+  }, 
+  {
+   "button": "Launch wiremock", 
+   "cmd": "lxterminal --command java -jar /opt/wiremock/wiremock-1.48-standalone.jar --root-dir /opt/designchallenge2016/brata.station/wiremock --no-request-journal &", 
+   "tooltip": "Launch wiremock"
+  }, 
+  {
+   "button": "Launch syslog monitor", 
+   "cmd": "lxterminal --command tail -F /var/log/syslog &", 
+   "tooltip": "Launch syslog monitor"
+  }, 
+  {
+   "button": "Send start_challenge", 
+   "cmd": "http --json POST http://localhost:5000/rpi/start_challenge Content-type:application/json Accept:application/json team_name=\"Space Team\"", 
+   "tooltip": "Send post_challenge"
+  }, 
+  {
+   "button": "Send latch", 
+   "cmd": "http --json POST http://localhost:5000/rpi/latch Content-type:application/json Accept:application/json", 
+   "tooltip": "Send latch"
+  }
+ ], 
+ "title": "Runner"
+}

@@ -443,6 +443,22 @@ class IStation:
 
     # --------------------------------------------------------------------------
     @abstractmethod
+    def onProcessingCompleted(self,
+                     args):
+        """ This state is entered when the challenge is completed, to submit the results.
+
+        Args:
+            arg1 (type1): TODO describe arg, valid values, etc.
+        Returns:
+            N/A.
+        Raises:
+            N/A.
+
+        """
+        pass
+
+    # --------------------------------------------------------------------------
+    @abstractmethod
     def onFailed(self,
                  args):
         """Completes the challenge with a failed indication.

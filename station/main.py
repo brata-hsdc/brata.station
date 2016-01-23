@@ -57,8 +57,15 @@ class StationLoader(object):
         stationModuleName = config.StationType
         stationClassName = config.StationClassName
 
+        logger.info("connectionModuleName: " + connectionModuleName)
+        logger.info("hwModuleName: " + hwModuleName)
+        logger.info("stationModuleName: " + stationModuleName)
+
         connectionModule = import_module(connectionModuleName)
-        hwModule = import_module(hwModuleName)
+        if hwModuleName:
+            hwModule = import_module(hwModuleName)
+        else:
+            hwModule = None
         stationModule = import_module(stationModuleName)
 
         connectionManagerClass = getattr(connectionModule,
@@ -81,20 +88,13 @@ class StationLoader(object):
         """Starts the station instance.
 
         Starts the station instance in the Ready state, initiates a connection
-        with the MS, and begins listening for messages from the MS.
-
-        Args:
-            N/A.
-        Returns:
-            N/A.
-        Raises:
-            N/A.
-
+        with the MS, and begins listening for messages from the MS.  This method
+        never returns.  The thread must be stopped by the calling thread.
         """
         logger.info('Starting StationLoader.')
 
-        self.State = State.READY
-        self._station.start()
+        self._station.start()  # initialize the station
+        self.State = State.READY  # transition the station to READY state
         self._connectionManager.startListening()
 
         while True:
@@ -108,12 +108,6 @@ class StationLoader(object):
 
         Args:
             signal (int): The number of the signal being handled.
-            N/A.
-        Returns:
-            N/A.
-        Raises:
-            N/A.
-
         """
         logger.info('Received signal "%s". Stopping StationLoader.', signal)
 
@@ -150,6 +144,8 @@ class StationLoader(object):
             self._station.onProcessing(self.args)
         elif value == State.PROCESSING2:
             self._station.onProcessing2(self.args)
+        elif value == State.PROCESSING_COMPLETED:
+            self._station.onProcessingCompleted(self.args)
         elif value == State.FAILED:
             self._station.onFailed(self.args)
         elif value == State.PASSED:
