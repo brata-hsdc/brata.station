@@ -124,7 +124,7 @@ class ConnectionManager(IConnectionManager):
         self._app.add_url_rule(config.ResetUrlRule,
                                'reset',
                                self.reset,
-                               methods=['GET'])
+                               methods=['GET','POST'])
 
         self._app.add_url_rule(config.StartChallengeUrlRule,
                                'start_challenge',
@@ -139,7 +139,7 @@ class ConnectionManager(IConnectionManager):
         self._app.add_url_rule(config.ShutdownUrlRule,
                              'shutdown',
                              self.shutdown,
-                             methods=['GET'])
+                             methods=['GET','POST'])
 
         # The ConnectionManager (this class) runs in a separate
         # thread, so it can listen for incoming HTTP requests.
@@ -579,7 +579,7 @@ class ConnectionManager(IConnectionManager):
             Args = namedtuple("Args", "t_aft, t_coast, t_fore, a_aft, a_fore, r_fuel, q_fuel, dist, v_min, v_max, v_init, t_sim")
             args = Args._make([request.json[f] for f in Args._fields])
             self._callback.args = args
-            logger.debug('Master server requesting station start_challenge with args: ' + repr(self._callback.args))
+            logger.debug('Master server requesting station post_challenge with args: ' + repr(self._callback.args))
         else:
             logger.critical('Received a post_challenge request for unrecognized station')
 

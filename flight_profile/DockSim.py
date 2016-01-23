@@ -65,6 +65,13 @@ class DockSim(object):
     INTERVAL_DEST = 1  # Dest reached
     INTERVAL_END  = 2  # End of time interval reached
     
+    # Final simulation result conditions
+    OUTCOME_DNF = 1
+    OUTCOME_NO_FUEL = 2
+    OUTCOME_TOO_SLOW = 3
+    OUTCOME_TOO_FAST = 4
+    OUTCOME_SUCCESS = 5
+    
     def __init__(self, fp):
         """ Store the simulation parameters.
             fp is a FlightParams namedtuple.
@@ -98,6 +105,21 @@ class DockSim(object):
         if self.aAft <= 0.0:
             raise ValueError("Aft thruster (rear engine) acceleration must be greater than 0")
     
+    def outcome(self, state):
+        """ Determine the nature of the failure from the final state """
+        status = self.OUTCOME_SUCCESS
+
+        if state.currVelocity <= 0.0:
+            status = self.OUTCOME_DNF
+        elif state.fuelRemaining <= 0.0:
+            status = self.OUTCOME_NO_FUEL
+        elif state.currVelocity < self.vMin:
+            status = self.OUTCOME_TOO_SLOW
+        elif state.currVelocity > self.vMax:
+            status = self.OUTCOME_TOO_FAST
+
+        return status
+        
     def accelVelocity(self):
         """ Return the velocity at the end of the acceleration phase """
         return self.shipState(self.tAft).currVelocity
