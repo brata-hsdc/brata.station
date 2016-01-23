@@ -392,7 +392,8 @@ class ToneGenerator:
         self._tone        = 0        # start out in tone 0 (off)
 
         # frequencies of tones
-        self._f = [44100, 276, 308, 340, 372, 404, 436, 468, 500]
+        #self._f = [44100, 276, 308, 340, 372, 404, 436, 468, 500]
+        self._f = [44100, 300, 400, 500, 600, 700, 800, 900, 1000]
 
         # challenge tone IDs from MS
         self._tone_ID = tone_IDs[0]
