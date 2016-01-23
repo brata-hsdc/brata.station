@@ -524,7 +524,7 @@ class ConnectionManager(IConnectionManager):
             logger.debug('Master server requesting station start_challenge (ver %s) at %s, SECURE Tone pattern %s, SECURE State %s' % (message_version, message_timestamp, secure_tone_pattern, secure_state))
         elif 'return_guidance_pattern' in request.json:
             logger.debug('Received a start_challenge request for RETURN station')
-            return_guidance_pattern = request.json['return_guidance_Pattern']
+            return_guidance_pattern = request.json['return_guidance_pattern']
             self._callback.args = return_guidance_pattern
             logger.debug('Master server requesting station start_challenge (ver %s) at %s, RETURN Guidance pattern %s' % (message_version, message_timestamp, return_guidance_pattern))
         elif 'team_name' in request.json:
