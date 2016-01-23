@@ -3,7 +3,7 @@
       "method": "POST",
       "url": "/piservice/submit/",
       "bodyPatterns" : [
-         { "equalToJson" : "{ \"is_correct\": \"True\", \"fail_message\": \"\", \"station_id\": \"dock01\", \"candidate_answer\": \"28.5\", \"message_version\": \"0\", \"message_timestamp\": \"1233456\" }", "jsonCompareMode": "LENIENT" }
+         { "equalToJson" : "{ \"is_correct\": \"False\", \"fail_message\": \"abcdef\", \"station_id\": \"secure01\", \"candidate_answer\": \"[]\", \"message_version\": \"0\", \"message_timestamp\": \"1233456\"}", "jsonCompareMode": "LENIENT" }
       ]
    },
    "response": {
@@ -11,6 +11,6 @@
       "headers": {
          "Content-Type": "application/json"
       },
-      "body": "{\"message_version\": 0, \"message_timestamp\": \"2014-09-15 14:08:59\", \"challenge_complete\": \"False\"}"
+      "body": "{\"message_version\": 0, \"message_timestamp\": \"2014-09-15 14:08:59\", \"challenge_complete\": \"False\", \"theatric_delay_ms\": \"3000\"}"
    }
 }

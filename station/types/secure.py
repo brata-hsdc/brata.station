@@ -114,7 +114,11 @@ class Station(IStation):
         self._leds['red'].turnOn()
         self._leds['green'].turnOff()
         self._leds['yellow'].turnOff()
-        # Nothing more to do.
+        # Turn on the display and blank the display
+        self._display = LCDdisplay()
+
+        logger.info('SECURE LCD Display Configured.')
+        
 
     # --------------------------------------------------------------------------
     def stop(self, signal):
@@ -151,12 +155,12 @@ class Station(IStation):
 
         """
         logger.info('SECURE transitioned to Ready state.')
-        # Turn on the display and blank the display
-        self._display = LCDdisplay()
+        self._leds['red'].turnOn()
+        self._leds['green'].turnOff()
+        self._leds['yellow'].turnOff()
+        # Blank the display
+        self._display.display_message("      ", "READY")        
 
-        logger.info('SECURE LCD Display Configured.')
-
-        # nothing to do assuming shutdown was correct.
 
     # --------------------------------------------------------------------------
     def onProcessing(self,
@@ -217,6 +221,28 @@ class Station(IStation):
 
         logger.info('Submitting code: {} , match = {}, {}'.format(repr(code), isCorrect, error_msg))
         self.ConnectionManager.submit(code, isCorrect, error_msg)            
+
+    # --------------------------------------------------------------------------
+    def onProcessingCompleted(self, args):
+        """Transition station to the ProcessingCompleted state
+
+        This state will be entered when the graphics thread sets the state
+        to ProcessingCompleted.
+
+        Args:
+            isCorrect
+            elapsedTimeSec
+            failMsg
+        """
+        logger.info('DOCK transitioned to ProcessingCompleted state.' )
+        logger.info('TODO implement method body.' )
+        isCorrect,elapsedTimeSec,failMsg = args
+        logger.info('Submitting isCorrect: {} , simTimeSec: {}, failMsg: {}'.format(isCorrect, elapsedTimeSec, failMsg))
+        self.ConnectionManager.submit(candidateAnswer=elapsedTimeSec,
+                                      isCorrect=isCorrect,
+                                      failMessage=failMsg)
+        logger.debug('Submitted')
+
      
 
     # --------------------------------------------------------------------------
@@ -392,7 +418,8 @@ class ToneGenerator:
         self._tone        = 0        # start out in tone 0 (off)
 
         # frequencies of tones
-        self._f = [44100, 276, 308, 340, 372, 404, 436, 468, 500]
+        #self._f = [44100, 276, 308, 340, 372, 404, 436, 468, 500]
+        self._f = [44100, 300, 400, 500, 600, 700, 800, 900, 1000]
 
         # challenge tone IDs from MS
         self._tone_ID = tone_IDs[0]
