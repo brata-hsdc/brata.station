@@ -173,13 +173,15 @@ class Station(IStation):
 
     # --------------------------------------------------------------------------
     def onProcessing2(self, args):
+        """ This method just implements an interface method to do nothing.
+        """
         logger.info('RETURN transitioned to Processing2 state with args [%s].' % (args))
-        #TODO
 
     # --------------------------------------------------------------------------
     def onProcessingCompleted(self, args):
+        """ This method just implements an interface method to do nothing.
+        """
         logger.info('RETURN transitioned to ProcessingCompleted state with args [%s].' % (args))
-        #TODO
 
     # --------------------------------------------------------------------------
     def refreshDisplayedAngle(self):
@@ -265,7 +267,7 @@ class Station(IStation):
                 
             elif newState == self.SEND_RESULT_STATE:
                 # Submit angle to MS
-                self.submitCombination()
+                self.submitAngles()
                 
             elif newState == self.PRE_PASSED_STATE:
                 self._timedMsg = self.displayTimedMsg(self._prePassedText, 
@@ -325,7 +327,7 @@ class Station(IStation):
         
     # --------------------------------------------------------------------------
     def buttonPressed(self, pushButtonName):
-        """ Handle combination input pushbutton events.
+        """ Handle angle input pushbutton events.
 
         Only recognizes the push event, not the release.  Buttons update the
         displayed angle, and may change the operating state.
@@ -499,19 +501,19 @@ class Station(IStation):
                 self.enterState(self._timedMsgNextState)
         
     # --------------------------------------------------------------------------
-    def submitCombination(self):
-        """ Send the combination to the Master Server.
+    def submitAngles(self):
+        """ Send the angles to the Master Server.
         
         This method is called when the user presses the SELECT (Enter) button
-        twice in succession.  The current value of the combination in the
+        twice in succession.  The current value of the angles in the
         display (self._angle.toList()) is transmitted to the Master Server.
         """
         angle = self._angle.toList()  # get angles as a list of three integers
         isCorrect = self._angle.isMatch()
         
         logger.info('Submitting angle: {} , match = {}'.format(repr(angle), isCorrect))
-        self.ConnectionManager.submitReturnAngleToMS(angle, isCorrect)
-    
+        self.ConnectionManager.submit(angle, isCorrect, self._failedText)
+
 
 # ------------------------------------------------------------------------------
 class Angle:
@@ -559,6 +561,9 @@ class Angle:
         for index in range(len(betas)):
             self._targetDigits[2*index+0] = betas[index] / 10 % 10
             self._targetDigits[2*index+1] = betas[index] /  1 % 10
+
+        # TODO -- remove this!!!
+        self._digits = self._targetDigits
 
     # --------------------------------------------------------------------------
     def __enter__(self):
