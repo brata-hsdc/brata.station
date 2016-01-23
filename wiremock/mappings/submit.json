@@ -1,13 +1,16 @@
 {
    "request": {
       "method": "POST",
-      "url": "/m/rpi/submit/secure01"
+      "url": "/piservice/submit/",
+      "bodyPatterns" : [
+         { "equalToJson" : "{ \"is_correct\": \"False\", \"fail_message\": \"abcdef\", \"station_id\": \"secure01\", \"candidate_answer\": \"[]\", \"message_version\": \"0\", \"message_timestamp\": \"1233456\"}", "jsonCompareMode": "LENIENT" }
+      ]
    },
    "response": {
       "status": 200,
       "headers": {
          "Content-Type": "application/json"
       },
-      "body": "{\"message_version\": 0, \"message_timestamp\": \"2014-09-15 14:08:59\", \"challenge_complete\": \"False\"}"
+      "body": "{\"message_version\": 0, \"message_timestamp\": \"2014-09-15 14:08:59\", \"challenge_complete\": \"False\", \"theatric_delay_ms\": \"3000\"}"
    }
 }
