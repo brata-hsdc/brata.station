@@ -13,7 +13,7 @@
 #  limitations under the License.
 # ------------------------------------------------------------------------------
 """
-Provides the definitions needed for the CTS station type.
+Provides the definitions needed for the RETURN station type.
 """
 
 import operator
@@ -87,7 +87,6 @@ class Station(IStation):
                                                        self.buttonPressed,
                                                        i)
 
-        self._centerOffset = 0  # amount of space to left of displayed combination
         self.ConnectionManager = None
         
         self._angle = None  # will hold a Angle object
@@ -119,27 +118,27 @@ class Station(IStation):
         #self._failedBg    = (["RED"], 1.0)
         self._failedBg     = (["RED", "RED", "RED", "RED", "RED", "RED", "RED", "RED", "RED", "WHITE"], 0.1)
         self._sendFinishBg = (["YELLOW", "YELLOW", "YELLOW", "YELLOW", "RED"], 0.15)
-        self._shutdownBg   = (["BLUE"], 1.0)
+        self._shutdownBg   = (["BLACK"], 1.0)
         self._errorBg      = (["RED", "RED", "RED", "RED", "RED", "WHITE"], 0.15)
         
         # Display text for different states
         # TODO: These constants could be moved to runstation.conf
         self._preIdleText         = "  Resetting...\n"
-        self._prePassedText       = "- Trying Your -\n- Combination -"
-        self._preFailedText       = "- Trying Your -\n- Combination -"
-        self._idleText            = "==== RETURN ====\n== 2 == EARTH =="
-        self._preInputText        = "      HEY!!\n  Scan QR Code"
+        self._prePassedText       = "- Trying Your  -\n-    Angles    -"
+        self._preFailedText       = "- Trying Your  -\n-    Angles    -"
+        self._idleText            = "==== RETURN ====\n== TO = EARTH =="
+        self._preInputText        = "      HEY!!     \n  Scan QR Code  "
         self._enterLine1Text      = "Enter Code:"
-        self._submittingLine1Text = "2nd ENTER Sends"
-        self._submittedLine1Text  = "=Code Submitted="
-        self._passedText          = "  The Safe Is\n    UNLOCKED"
-        self._failedText          = "  The Safe Is\n  STILL LOCKED"
+        self._submittingText      = "2nd ENTER Sends\n  Arrows to edit"
+        self._submittedText       = "\n=Data Submitted="
+        self._passedText          = "Landing is\nA SUCCESS"
+        self._failedText          = "You suffered a\nFIREY DEATH"
         self._sendFinishText      = "     Submit\n   Your  Data"
         self._shutdownText        = "Shutting down..."
         self._errorText           = "  Malfunction!\n"
 
         # Station current operating state
-        self._ctsState = self.START_STATE
+        self._returnState = self.START_STATE
         self._pushButtonMonitor.setOnTickCallback(self.onTick)
         self.enterState(self.IDLE_STATE)
 
@@ -150,35 +149,53 @@ class Station(IStation):
 
     # --------------------------------------------------------------------------
     def start(self):
-        logger.info('Starting CTS.')
+        logger.info('Starting RETURN.')
 
         # Nothing more to do.
 
     # --------------------------------------------------------------------------
     def stop(self, signal):
-        logger.info('Received signal "%s". Stopping CTS.', signal)
+        logger.info('Received signal "%s". Stopping RETURN.', signal)
         self.enterState(self.SHUTDOWN_STATE)
 
     # --------------------------------------------------------------------------
     def onReady(self):
-        logger.info('CTS transitioned to Ready state.')
+        logger.info('RETURN transitioned to Ready state.')
         self.enterState(self.IDLE_STATE)
 
     # --------------------------------------------------------------------------
     def onProcessing(self, args):
-        logger.info('CTS transitioned to Processing state with args [%s].' % (args))
+        logger.info('RETURN transitioned to Processing state with args [%s].' % (args))
 
         self._angle = Angle(*args)
         self.refreshDisplayedAngle()
         self.enterState(self.INPUT_STATE)
 
     # --------------------------------------------------------------------------
+    def onProcessing2(self, args):
+        logger.info('RETURN transitioned to Processing2 state with args [%s].' % (args))
+        #TODO
+
+    # --------------------------------------------------------------------------
+    def onProcessingCompleted(self, args):
+        logger.info('RETURN transitioned to ProcessingCompleted state with args [%s].' % (args))
+        #TODO
+
+    # --------------------------------------------------------------------------
     def refreshDisplayedAngle(self):
-        s = self._angle.toString()
-        self._centerOffset = (self._display.lineWidth() - len(s)) // 2  # amount of space before s
-        s = "{0:>{width}}".format(s, width=len(s) + self._centerOffset)
-        self._display.setLine2Text(s)
-        self._display.setCursor(1, self._angle.formattedPosition() + self._centerOffset)
+        lines = self._angle.toString().splitlines()
+        centerOffset = [0, 0]
+        for index in range(0,2):
+            centerOffset[index] = (self._display.lineWidth() - len(lines[index])) // 2 
+            lines[index] = "{0:>{width}}".format(lines[index], 
+                                                 width=len(lines[index]) + centerOffset[index])
+
+        self._display.setLine1Text(lines[0])
+        self._display.setLine2Text(lines[1])
+
+        curLine = self._angle.positionLine()
+        self._display.setCursor(curLine,
+                                self._angle.formattedPosition() + centerOffset[curLine])
 
     # --------------------------------------------------------------------------
     def enterState(self, newState):
@@ -190,26 +207,29 @@ class Station(IStation):
         Returns:
             The state prior to being called
         """
-        oldState = self._ctsState
+        oldState = self._returnState
         
-#         if newState != self._ctsState:
-        while newState != self._ctsState:
+#         if newState != self._returnState:
+        while newState != self._returnState:
             
-            if self._ctsState in (self.PRE_INPUT_STATE,
-                                  self.PRE_IDLE_STATE,
-                                  self.PRE_PASSED_STATE,
-                                  self.PRE_FAILED_STATE,
-                                  self.PRE_FAILED_RETRY_STATE,
-                                  self.FAILED_RETRY_STATE,
-                                  self.PASSED_STATE,
-                                  self.FAILED_STATE,
-                                  self.SUBMITTED_STATE,
-                                  self.SEND_FINISH_STATE,
-                                  ):  # leaving this state
+            if self._returnState in (self.PRE_INPUT_STATE,
+                                     self.PRE_IDLE_STATE,
+                                     self.PRE_PASSED_STATE,
+                                     self.PRE_FAILED_STATE,
+                                     self.PRE_FAILED_RETRY_STATE,
+                                     self.FAILED_RETRY_STATE,
+                                     self.PASSED_STATE,
+                                     self.FAILED_STATE,
+                                     self.SUBMITTED_STATE,
+                                     self.SEND_FINISH_STATE,
+                                    ):  # leaving this state
                 self._timedMsg = None
             
             if newState == self.PRE_IDLE_STATE:
-                self._timedMsg = self.displayTimedMsg(self._preIdleText, self._preIdleDuration, self._preIdleBg, self.IDLE_STATE)
+                self._timedMsg = self.displayTimedMsg(self._preIdleText, 
+                                                      self._preIdleDuration, 
+                                                      self._preIdleBg, 
+                                                      self.IDLE_STATE)
 
             elif newState == self.IDLE_STATE:
                 self._display.setText(self._idleText)
@@ -217,24 +237,30 @@ class Station(IStation):
                 self._pushButtonMonitor.startListening()
                 
             elif newState == self.PRE_INPUT_STATE:
-                self._timedMsg = self.displayTimedMsg(self._preInputText, self._preInputDuration, self._preInputBg, self.IDLE_STATE)
+                self._timedMsg = self.displayTimedMsg(self._preInputText,
+                                                      self._preInputDuration, 
+                                                      self._preInputBg,
+                                                      self.IDLE_STATE)
                 self._pushButtonMonitor.stopListening()
                 
             elif newState == self.INPUT_STATE:
-                self._display.setLine1Text(self._enterLine1Text)
+#                self._display.setLine1Text(self._enterLine1Text)
                 self.setToggleColors(*self._inputBg)
                 self.refreshDisplayedAngle()
                 self._pushButtonMonitor.startListening()
                 
             elif newState == self.SUBMITTING_STATE:
-                self._display.setLine1Text(self._submittingLine1Text)
+                self._display.setText(self._submittingText)
                 self.setToggleColors(*self._submit1Bg)
                 
             elif newState == self.SUBMITTED_STATE:
 #                 self._display.setLine1Text(self._submittedLine1Text)
 #                 self.setToggleColors(*self._submit2Bg)
                 logger.debug("initializing SUBMITTED_STATE")
-                self._timedMsg = self.displayTimedMsg(self._submittedLine1Text, self._submittedDuration, self._submit2Bg, self.SEND_RESULT_STATE)
+                self._timedMsg = self.displayTimedMsg(self._submittedText,
+                                                      self._submittedDuration, 
+                                                      self._submit2Bg,
+                                                      self.SEND_RESULT_STATE)
                 self._pushButtonMonitor.stopListening()
                 
             elif newState == self.SEND_RESULT_STATE:
@@ -242,25 +268,46 @@ class Station(IStation):
                 self.submitCombination()
                 
             elif newState == self.PRE_PASSED_STATE:
-                self._timedMsg = self.displayTimedMsg(self._prePassedText, self._prePassedDuration, self._prePassedBg, self.PASSED_STATE)
+                self._timedMsg = self.displayTimedMsg(self._prePassedText, 
+                                                      self._prePassedDuration,
+                                                      self._prePassedBg,
+                                                      self.PASSED_STATE)
 
             elif newState == self.PASSED_STATE:
-                self._timedMsg = self.displayTimedMsg(self._passedText, self._passedDuration, self._passedBg, self.SEND_FINISH_STATE)
+                self._timedMsg = self.displayTimedMsg(self._passedText, 
+                                                      self._passedDuration, 
+                                                      self._passedBg,
+                                                      self.SEND_FINISH_STATE)
                 
             elif newState == self.PRE_FAILED_RETRY_STATE:
-                self._timedMsg = self.displayTimedMsg(self._preFailedText, self._preFailedDuration, self._preFailedBg, self.FAILED_RETRY_STATE)
+                self._timedMsg = self.displayTimedMsg(self._preFailedText, 
+                                                      self._preFailedDuration, 
+                                                      self._preFailedBg,
+                                                      self.FAILED_RETRY_STATE)
                 
             elif newState == self.FAILED_RETRY_STATE:
-                self._timedMsg = self.displayTimedMsg(self._failedText, self._failedDuration, self._failedBg, self.INPUT_STATE)
+                self._timedMsg = self.displayTimedMsg(self._failedText, 
+                                                      self._failedDuration,
+                                                      self._failedBg,
+                                                      self.INPUT_STATE)
                 
             elif newState == self.PRE_FAILED_STATE:
-                self._timedMsg = self.displayTimedMsg(self._preFailedText, self._preFailedDuration, self._preFailedBg, self.FAILED_STATE)
+                self._timedMsg = self.displayTimedMsg(self._preFailedText, 
+                                                      self._preFailedDuration,
+                                                      self._preFailedBg, 
+                                                      self.FAILED_STATE)
                 
             elif newState == self.FAILED_STATE:
-                self._timedMsg = self.displayTimedMsg(self._failedText, self._failedDuration, self._failedBg, self.SEND_FINISH_STATE)
+                self._timedMsg = self.displayTimedMsg(self._failedText, 
+                                                      self._failedDuration,
+                                                      self._failedBg, 
+                                                      self.SEND_FINISH_STATE)
                 
             elif newState == self.SEND_FINISH_STATE:
-                self._timedMsg = self.displayTimedMsg(self._sendFinishText, self._sendFinishDuration, self._sendFinishBg, self.PRE_IDLE_STATE)
+                self._timedMsg = self.displayTimedMsg(self._sendFinishText,
+                                                      self._sendFinishDuration,
+                                                      self._sendFinishBg,
+                                                      self.PRE_IDLE_STATE)
                 
             elif newState == self.SHUTDOWN_STATE:
                 self._display.setText(self._shutdownText)
@@ -272,7 +319,7 @@ class Station(IStation):
                 self.setToggleColors(*self._errorBg)
                 self._pushButtonMonitor.stopListening()
             
-            self._ctsState = newState
+            self._returnState = newState
         
         return oldState
         
@@ -287,7 +334,7 @@ class Station(IStation):
             pushButtonName (string): Up, Down, Left, Right, or Enter
         """
         #logger.info('Push button %s pressed.' % (pushButtonName))
-        if self._ctsState == self.IDLE_STATE:
+        if self._returnState == self.IDLE_STATE:
             self.enterState(self.PRE_INPUT_STATE)
         elif pushButtonName == 'Up':
             if self.enterState(self.INPUT_STATE) == self.INPUT_STATE:
@@ -306,20 +353,20 @@ class Station(IStation):
                 self._angle.moveRight(1)
                 self.refreshDisplayedAngle()
         elif pushButtonName == 'Enter':
-            if self._ctsState == self.INPUT_STATE:
+            if self._returnState == self.INPUT_STATE:
                 self.enterState(self.SUBMITTING_STATE)
                 logger.info('1st enter key press received. Waiting for 2nd.')
-            elif self._ctsState == self.SUBMITTING_STATE:
+            elif self._returnState == self.SUBMITTING_STATE:
                 self.enterState(self.SUBMITTED_STATE)
                 logger.info('2nd enter key press received.')
                 
-                #self._ctsState = self.SUBMITTED_STATE
+                #self._returnState = self.SUBMITTED_STATE
         else:
             logger.debug("Invalid pushButtonName received: '{}'".format(pushButtonName))
 
     # --------------------------------------------------------------------------
     def onFailed(self, args):
-        logger.info('CTS transitioned to Failed state with args [%s].' % (args))
+        logger.info('RETURN transitioned to Failed state with args [%s].' % (args))
         theatric_delay, is_correct, challenge_complete = args
         if challenge_complete.lower() == "true":
             self.enterState(self.PRE_FAILED_STATE)
@@ -330,14 +377,14 @@ class Station(IStation):
 
     # --------------------------------------------------------------------------
     def onPassed(self, args):
-        logger.info('CTS transitioned to Passed state with args [%s].' % (args))
+        logger.info('RETURN transitioned to Passed state with args [%s].' % (args))
         self.enterState(self.PRE_PASSED_STATE)
 
         self._pushButtonMonitor.stopListening()
 
     # --------------------------------------------------------------------------
     def onUnexpectedState(self, value):
-        logger.critical('CTS transitioned to Unexpected state %s', value)
+        logger.critical('RETURN transitioned to Unexpected state %s', value)
         self.enterState(self.ERROR_STATE)
 
     # --------------------------------------------------------------------------
@@ -498,19 +545,20 @@ class Angle:
                   3 * alphas[5] + 1 * alphas[1] + 2 * alphas[2] + 2 * alphas[4] + 1 * alphas[3],
                   1 * alphas[0] + 4 * alphas[2] + 1 * alphas[4] + 1 * alphas[1] + 1 * alphas[5] + 1 * alphas[3]]
 
-        # TODO
+        print "Betas: {}".format(betas)
+
         self._wrap = True  # wrap the cursor around
         self._position = 0
-        self._digits = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]  # current state of entered angles
+        self._posPerLine = 6
+        self._digits = [0, 0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0, 0]  # current state of entered angles
         self._sep = " "  # field separator character
         
-        self._targetDigits = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-#        self._targetDigits[0] = value1 / 10 % 10
-#        self._targetDigits[1] = value1 /  1 % 10
-#        self._targetDigits[2] = value2 / 10 % 10
-#        self._targetDigits[3] = value2 /  1 % 10
-#        self._targetDigits[4] = value3 / 10 % 10
-#        self._targetDigits[5] = value3 /  1 % 10
+        self._targetDigits = [0, 0, 0, 0, 0, 0,
+                              0, 0, 0, 0, 0, 0]
+        for index in range(len(betas)):
+            self._targetDigits[2*index+0] = betas[index] / 10 % 10
+            self._targetDigits[2*index+1] = betas[index] /  1 % 10
 
     # --------------------------------------------------------------------------
     def __enter__(self):
@@ -536,10 +584,31 @@ class Angle:
         return self._position
 
     # --------------------------------------------------------------------------
-    def formattedPosition(self):
-        """ Returns:  The cursor position in the formatted angle string.
+    def positionLine(self):
+        """ Returns: the current cursor digit line (1 or 2)
         """
-        return self._position + self._position//2  # one extra char for every 2 digits
+        return (self._position // self._posPerLine)
+
+    # --------------------------------------------------------------------------
+    def positionInLine(self):
+        """ Returns: the current cursor digit position in a line
+        """
+        return (self._position % self._posPerLine)
+
+    # --------------------------------------------------------------------------
+    def formattedPosition(self):
+        """ Returns:  The cursor position in the formatted angle string on the 
+            line positionLine.
+
+            line format:    "1=NN 2=NN 3=NN"
+            position:          12   34   56
+            formatted pos:   01234567890123
+
+            It's easier/faster to have a lookup table than an equation
+        """
+        posMap = [2, 3, 7, 8, 12, 13]
+        posInLine = self.positionInLine()
+        return posMap[posInLine]
 
     # --------------------------------------------------------------------------
     def moveLeft(self, numPlaces=1):
@@ -630,7 +699,7 @@ class Angle:
         Returns:
             A string formatted as "nn:nn:nn" where ":" is the _sep character
         """
-        s = "{}{}:{}{}:{}{}:{}{}:{}{}:{}{}".format(*self._digits[0:12])
+        s = "1={}{}:2={}{}:3={}{}\n4={}{}:5={}{}:6={}{}".format(*self._digits[0:12])
         s = s.replace(":", self._sep)
         #logger.debug('angle value for ({}{}, {}{}, {}{})'.format(*self._digits[0:6]))
         #logger.debug('      as string: "{}"'.format(s))
