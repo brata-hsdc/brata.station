@@ -66,11 +66,11 @@ class DockSim(object):
     INTERVAL_END  = 2  # End of time interval reached
     
     # Final simulation result conditions
-    OUTCOME_DNF = 1
-    OUTCOME_NO_FUEL = 2
-    OUTCOME_TOO_SLOW = 3
-    OUTCOME_TOO_FAST = 4
-    OUTCOME_SUCCESS = 5
+    OUTCOME_DNF      = "OUTCOME_DNF"
+    OUTCOME_NO_FUEL  = "OUTCOME_NO_FUEL"
+    OUTCOME_TOO_SLOW = "OUTCOME_TOO_SLOW"
+    OUTCOME_TOO_FAST = "OUTCOME_TOO_FAST"
+    OUTCOME_SUCCESS  = "OUTCOME_SUCCESS"
     
     def __init__(self, fp):
         """ Store the simulation parameters.
