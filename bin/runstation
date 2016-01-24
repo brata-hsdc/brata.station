@@ -14,7 +14,7 @@
 #  limitations under the License.
 # ------------------------------------------------------------------------------
 """
-usage: runstation [-h] [-c CONFIGFILE] [-m MASTERSERVER] [-t {hmb,cpa,cts}]
+usage: runstation [-h] [-c CONFIGFILE] [-m MASTERSERVER] [-t {dock,secure,rte,hmb,cpa,cts}]
                   [-n STATIONNAME] [--console]
 
 Run the Brata Station application. The app behavior is configured by a
