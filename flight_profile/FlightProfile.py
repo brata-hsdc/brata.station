@@ -246,7 +246,7 @@ class AnimGroup(pygame.sprite.LayeredDirty):
     """
 
     def __init__(self):
-        self.sequences = []  # list of sequences; each seq is a list [curr#, (sprite, sprite, ...)]
+        self.sequences = []  # list of iterators; each iterator sequences through a list of sprites
         super(AnimGroup, self).__init__()
     
     def add(self, seq=None):
@@ -257,7 +257,8 @@ class AnimGroup(pygame.sprite.LayeredDirty):
             # Make all images invisible to start
             for s in seq:
                 s.visible = 0
-                
+            
+            # Add an iterator that cycles through the sequence
             self.sequences.append(itertools.cycle(seq))
             super(AnimGroup, self).add(*seq)
     
@@ -265,18 +266,26 @@ class AnimGroup(pygame.sprite.LayeredDirty):
         """ Activate the next image in each sequence and draw. """
         visibleSprites = []
         
+        # Make the next sprite in each sequence visible
         for s in self.sequences:
             sp = next(s)
             sp.visible = 1
             sp.dirty = 1
             visibleSprites.append(sp)
         
+        # Draw the visible sprites
         rects = super(AnimGroup, self).draw(surface)
         
+        # Make them invisible again
         for sp in visibleSprites:
             sp.visible = 0
         
         return rects
+    
+    def empty(self):
+        """ Clear the list of sprite iterators """
+        super(AnimGroup, self).empty()
+        self.sequences = []
 
 #----------------------------------------------------------------------------
 class FlightProfileApp(object):
@@ -373,6 +382,7 @@ class FlightProfileApp(object):
         # pygame.init()  # initialize all modules
         pygame.display.init()
         pygame.font.init()
+        pygame.mouse.set_visible(False)
         self.frameClock = pygame.time.Clock()
         
         self.timer = Timer()
@@ -637,23 +647,19 @@ class FlightProfileApp(object):
         # If a phase change was detected or the ship ran out of fuel,
         # update the ship graphics to reflect the new state
         if changeDetected:
+            self.animGroup.empty()
             if state.phase == DockSim.ACCEL_PHASE:
-                self.animGroup.empty()
                 if not self.outOfFuel:
                     self.animGroup.add(self.rearFlame)
             elif state.phase == DockSim.DECEL_PHASE:
-                self.animGroup.empty()
                 if not self.outOfFuel:
                     self.animGroup.add(self.frontFlameUp)
                     self.animGroup.add(self.frontFlameDown)
             elif state.phase == DockSim.END_PHASE:
-                self.animGroup.empty()
                 passed = self.dockSim.dockIsSuccessful()
                 msg = self.outcomeMessage(state)
                 self.createPassFailText(passed=passed, msg=msg)
                 self.reportPassFail(passed, state.tEnd, msg)
-            else:
-                self.animGroup.empty()
         
         # Compute the fraction of the total trip distance that has been traversed,
         # and place the ship at that location
