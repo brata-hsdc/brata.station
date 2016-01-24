@@ -246,7 +246,7 @@ class AnimGroup(pygame.sprite.LayeredDirty):
     """
 
     def __init__(self):
-        self.sequences = []  # list of sequences; each seq is a list [curr#, (sprite, sprite, ...)]
+        self.sequences = []  # list of iterators; each iterator sequences through a list of sprites
         super(AnimGroup, self).__init__()
     
     def add(self, seq=None):
@@ -257,7 +257,8 @@ class AnimGroup(pygame.sprite.LayeredDirty):
             # Make all images invisible to start
             for s in seq:
                 s.visible = 0
-                
+            
+            # Add an iterator that cycles through the sequence
             self.sequences.append(itertools.cycle(seq))
             super(AnimGroup, self).add(*seq)
     
@@ -265,18 +266,26 @@ class AnimGroup(pygame.sprite.LayeredDirty):
         """ Activate the next image in each sequence and draw. """
         visibleSprites = []
         
+        # Make the next sprite in each sequence visible
         for s in self.sequences:
             sp = next(s)
             sp.visible = 1
             sp.dirty = 1
             visibleSprites.append(sp)
         
+        # Draw the visible sprites
         rects = super(AnimGroup, self).draw(surface)
         
+        # Make them invisible again
         for sp in visibleSprites:
             sp.visible = 0
         
         return rects
+    
+    def empty(self):
+        """ Clear the list of sprite iterators """
+        super(AnimGroup, self).empty()
+        self.sequences = []
 
 #----------------------------------------------------------------------------
 class FlightProfileApp(object):
@@ -323,6 +332,14 @@ class FlightProfileApp(object):
     FLAME_DOWN_PIVOT  = (11, 16)
     FLAME_DOWN_OFFSET = (-24, 21)
     
+    OUTCOMES = {
+        DockSim.OUTCOME_DNF     : "Destination not reached due to negative forward velocity",
+        DockSim.OUTCOME_NO_FUEL : "Ran out of fuel before achieving proper docking velocity",
+        DockSim.OUTCOME_TOO_SLOW: "Latch failure due to insufficient forward velocity",
+        DockSim.OUTCOME_TOO_FAST: "Latch failure caused by excessive forward velocity",
+        DockSim.OUTCOME_SUCCESS : "Docked successfully.  Nice job!",
+    }
+
     READY_CMD   = "READY"
     WELCOME_CMD = "WELCOME"
     RUN_CMD     = "RUN"
@@ -365,6 +382,7 @@ class FlightProfileApp(object):
         # pygame.init()  # initialize all modules
         pygame.display.init()
         pygame.font.init()
+        pygame.mouse.set_visible(False)
         self.frameClock = pygame.time.Clock()
         
         self.timer = Timer()
@@ -531,7 +549,7 @@ class FlightProfileApp(object):
                     justify=Text.CENTER|Text.MIDDLE)
         self.blinkingTextGroup.add((text, nameText))
         
-    def createPassFailText(self, passed=True):
+    def createPassFailText(self, passed=True, msg=None):
         GIANT_TEXT = 300
         text = Text(self.SCREEN_CENTER,
                     value="SUCCESS!" if passed else "FAIL!",
@@ -540,6 +558,31 @@ class FlightProfileApp(object):
                     justify=Text.CENTER|Text.MIDDLE,
                     intervalsMs=(1000,250))
         self.blinkingTextGroup.add(text)
+        
+        if msg:
+            if len(msg) < 50:
+                msgText = Text((self.SCREEN_CENTER[0], 750),
+                               value=msg,
+                               size=int(GIANT_TEXT * 0.3),
+                               color=Colors.GREEN if passed else Colors.RED,
+                               justify=Text.CENTER|Text.MIDDLE)
+                self.blinkingTextGroup.add(msgText)
+            else: # divide the text into two lines
+                words = msg.split()
+                nWords = len(words)
+                line1 = " ".join(words[:nWords//2])
+                line2 = " ".join(words[nWords//2:])
+                msgText1 = Text((self.SCREEN_CENTER[0], 750),
+                                value=line1,
+                                size=int(GIANT_TEXT * 0.3),
+                                color=Colors.GREEN if passed else Colors.RED,
+                                justify=Text.CENTER|Text.MIDDLE)
+                msgText2 = Text((self.SCREEN_CENTER[0], 850),
+                                value=line2,
+                                size=int(GIANT_TEXT * 0.3),
+                                color=Colors.GREEN if passed else Colors.RED,
+                                justify=Text.CENTER|Text.MIDDLE)
+                self.blinkingTextGroup.add((msgText1, msgText2))
         
     def drawCharts(self):
         pass
@@ -604,22 +647,19 @@ class FlightProfileApp(object):
         # If a phase change was detected or the ship ran out of fuel,
         # update the ship graphics to reflect the new state
         if changeDetected:
+            self.animGroup.empty()
             if state.phase == DockSim.ACCEL_PHASE:
-                self.animGroup.empty()
                 if not self.outOfFuel:
                     self.animGroup.add(self.rearFlame)
             elif state.phase == DockSim.DECEL_PHASE:
-                self.animGroup.empty()
                 if not self.outOfFuel:
                     self.animGroup.add(self.frontFlameUp)
                     self.animGroup.add(self.frontFlameDown)
             elif state.phase == DockSim.END_PHASE:
-                self.animGroup.empty()
                 passed = self.dockSim.dockIsSuccessful()
-                self.createPassFailText(passed=passed)
-                self.reportPassFail(passed, state.tEnd)
-            else:
-                self.animGroup.empty()
+                msg = self.outcomeMessage(state)
+                self.createPassFailText(passed=passed, msg=msg)
+                self.reportPassFail(passed, state.tEnd, msg)
         
         # Compute the fraction of the total trip distance that has been traversed,
         # and place the ship at that location
@@ -692,13 +732,20 @@ class FlightProfileApp(object):
         """ Display an initial greeting screen """
         pass
     
-    def reportPassFail(self, passed, simTime):
+    def outcomeMessage(self, state):
+        result = self.dockSim.outcome(state)
+        return self.OUTCOMES[self.dockSim.outcome(state)]  # get failure (or success) message
+    
+    def reportPassFail(self, passed, simTime, msg):
         """ Report back to the station framework that the sim is finished
             and pass it the pass/fail status and the simulation elapsed time.
+            
+            Returns:
+                A string stating success or the reason for failure
         """
-        self.stationCallbackObj.args = (passed, simTime, "TODO: Replace this Generic Fail Message")
+        self.stationCallbackObj.args = (passed, simTime, msg)
         self.stationCallbackObj.State = State.PROCESSING_COMPLETED
-        
+        return msg
     
     def countDown(self):
         """ Display a 3...2...1 countdown """
