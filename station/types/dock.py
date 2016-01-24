@@ -156,16 +156,13 @@ class Station(IStation):
         logger.debug('Submitted')
 
     # --------------------------------------------------------------------------
-    def onFailed(self,
-                 args):
+    def onFailed(self, args):
         """TODO strictly one-line summary
         """
         logger.info('DOCK transitioned to Failed state with args [%s].' % (args))
-        theatric_delay, is_correct, challenge_complete = args
 
     # --------------------------------------------------------------------------
-    def onPassed(self,
-                 args):
+    def onPassed(self, args):
         """TODO strictly one-line summary
         """
         logger.info('DOCK transitioned to Passed state with args [%s].' % (args))
