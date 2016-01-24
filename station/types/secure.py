@@ -16,6 +16,7 @@
 Provides the definitions needed for the SECURE station type.
 """
 
+from multiprocessing import Process
 import logging
 import logging.handlers
 import sys
@@ -36,6 +37,7 @@ sys.path.append('/user/lib/python2.7/dist-packages')
 import pygame
 
 from station.interfaces import IStation
+from station.state import State  # TODO: get rid of this dependency!!
 
 # ------------------------------------------------------------------------------
 class Station(IStation):
@@ -200,27 +202,18 @@ class Station(IStation):
         """
         logger.info('SECURE transitioned to Processing2 state.' )
         self.tonegen.stop()
-        pibrella.button.clear_events
+        pibrella.button.clear_events()
         self._leds['red'].turnOff()
         self._leds['yellow'].turnOff()
         self._leds['green'].turnOn()
 
-        rc = ReadCode(self._secure_tone_pattern, self._display)
+        rc = ReadCode(self._secure_tone_pattern[0], self._display, self.ConnectionManager._callback)
 
         # wait for a code to be read
-        self._display.display_message("      ", "TRANSMIT")        
-        code, error, error_msg = rc.run()
-        self._error_msg = error_msg
-
-        # check the error
-        if (error>0):
-            isCorrect = "False"
-        else:
-            isCorrect = "True"
-                
-
-        logger.info('Submitting code: {} , match = {}, {}'.format(repr(code), isCorrect, error_msg))
-        self.ConnectionManager.submit(code, isCorrect, error_msg)            
+        self._display.display_message("      ", "TRANSMIT")
+        t = Process(target = rc.run)
+        t.start()
+               
 
     # --------------------------------------------------------------------------
     def onProcessingCompleted(self, args):
@@ -231,17 +224,20 @@ class Station(IStation):
 
         Args:
             isCorrect
-            elapsedTimeSec
-            failMsg
+            Code
+            errorMsg
         """
-        logger.info('DOCK transitioned to ProcessingCompleted state.' )
+        
+        logger.info('SECURE transitioned to ProcessingCompleted state.' )
         logger.info('TODO implement method body.' )
-        isCorrect,elapsedTimeSec,failMsg = args
-        logger.info('Submitting isCorrect: {} , simTimeSec: {}, failMsg: {}'.format(isCorrect, elapsedTimeSec, failMsg))
-        self.ConnectionManager.submit(candidateAnswer=elapsedTimeSec,
-                                      isCorrect=isCorrect,
-                                      failMessage=failMsg)
+        isCorrect,code,error_msg = args
+        self._error_msg = error_msg
+
         logger.debug('Submitted')
+        logger.info('Submitting code: {} , match = {}, {}'.format(repr(code), isCorrect, error_msg))
+        self.ConnectionManager.submit(candidateAnswer=code,
+                                      isCorrect=isCorrect,
+                                      failMessage=error_msg)
 
      
 
@@ -267,15 +263,16 @@ class Station(IStation):
             logger.debug('Challenge complete.')
             self._display.display_message(self._error_msg, "FAILED")
             self._leds['red'].turnOn()
+            self._leds['yellow'].turnOff()
+            self._leds['green'].turnOff()
+            pibrella.output.h.off()
         else:
             logger.debug('Challenge not complete. Turning on red LED')
             self._display.display_message(self._error_msg,"ERROR")
-
-#TODO what state is it supposed to go to on fail            
             self._leds['red'].turnOn()
-            time.sleep(1)
-            logger.debug('Turning off red LED')
-            self._leds['red'].turnOff()
+            self._leds['yellow'].turnOff()
+            self._leds['green'].turnOff()
+            pibrella.output.h.off()
 
 
     # --------------------------------------------------------------------------
@@ -294,8 +291,11 @@ class Station(IStation):
         """
         logger.info('SECURE transitioned to Passed state with args [%s].' % (args))
         self._display.display_message("     ", "PASSED")
-
+        
+        self._leds['red'].turnOff()
+        self._leds['yellow'].turnOff()
         self._leds['green'].turnOn()
+        pibrella.output.h.off()        
 
     # --------------------------------------------------------------------------
     def onUnexpectedState(self, value):
@@ -422,9 +422,10 @@ class ToneGenerator:
         self._f = [44100, 300, 400, 500, 600, 700, 800, 900, 1000]
 
         # challenge tone IDs from MS
-        self._tone_ID = tone_IDs[0]
+        tmp = tone_IDs[0]
+        self._tone_ID = tmp[0:9]
         logger.debug('Challenge tone IDs = %s', self._tone_ID)
-        self._tone_order = tone_IDs[0]
+        self._tone_order = self._tone_ID
         # add the zero frequency (off) to the order list
         self._tone_order.insert(0, -1)
         logger.debug('Challenge tone IDs for list = %s', self._tone_order)
@@ -504,7 +505,7 @@ class ReadCode:
 
 
     # --------------------------------------------------------------------------
-    def __init__(self, tone_IDs, display):
+    def __init__(self, tone_IDs, display, CM):
         """INIT
         """
         self._display = display
@@ -535,7 +536,9 @@ class ReadCode:
         self._ERROR = 0             # error flag
         self._tone_ID = tone_IDs    # expected code
 
-        logger.debug('Constructing Code Reader')
+        self._ConnectionManager = CM # Connection Manager
+
+        logger.debug('Constructing Code Reader with tone_IDs %s' % tone_IDs)
 
     # --------------------------------------------------------------------------
     def __enter__(self):
@@ -571,7 +574,8 @@ class ReadCode:
     def run(self):
         self._stime = time.time()   # start time
         logger.debug('Read in a code transmitted via light in a pulse train')
-
+#        self._display.display_message("      ", "RUN")
+        
         #loop until the number of symbols in a word are received
         #TODO: replace the button read with the submit code QR
         while (pibrella.button.read() != 1 and self._scount<self._nsymbols):
@@ -645,7 +649,20 @@ class ReadCode:
             if (abs(self.check_code()) > 0):
                 self._ERROR = self._ERROR + 32
                 logger.debug('Error: ' + self.parse_secure_error(self._ERROR))
-    
+
+        if (self._ERROR>0):
+            isCorrect = "False"
+        else:
+            isCorrect = "True"
+
+        logger.debug('Pre Connection Manager')
+ 
+        self._ConnectionManager.args = (isCorrect, self._code, self.parse_secure_error(self._ERROR))
+        logger.debug('Post Connection Manager {}'.format(self._ConnectionManager.State))
+
+        self._ConnectionManager.State = State.PROCESSING_COMPLETED
+        logger.debug('State Change Connection Manager {}'.format(self._ConnectionManager.State))
+
         return self._code, self._ERROR, self.parse_secure_error(self._ERROR)
             
 

@@ -516,12 +516,11 @@ class ConnectionManager(IConnectionManager):
         message_timestamp = request.json['message_timestamp'] if 'message_timestamp' in request.json else ""
         theatric_delay_ms = request.json['theatric_delay_ms'] if 'theatric_delay_ms' in request.json else ""
 
-        if 'secure_tone_Pattern' in request.json:
+        if 'secure_tone_pattern' in request.json:
             logger.debug('Received a start_challenge request for SECURE station')
-            secure_tone_pattern = request.json['secure_tone_Pattern']
-            secure_state = request.json['secure_state']
+            secure_tone_pattern = request.json['secure_tone_pattern']
             self._callback.args = [secure_tone_pattern] # The Pulse pattern is not required, since it is in the tone pattern
-            logger.debug('Master server requesting station start_challenge (ver %s) at %s, SECURE Tone pattern %s, SECURE State %s' % (message_version, message_timestamp, secure_tone_pattern, secure_state))
+            logger.debug('Master server requesting station start_challenge (ver %s) at %s, SECURE Tone pattern %s' % (message_version, message_timestamp, secure_tone_pattern))
         elif 'return_guidance_pattern' in request.json:
             logger.debug('Received a start_challenge request for RETURN station')
             return_guidance_pattern = request.json['return_guidance_pattern']
@@ -565,15 +564,15 @@ class ConnectionManager(IConnectionManager):
         message_version = request.json['message_version'] if "message_version" in request.json else ""
         message_timestamp = request.json['message_timestamp'] if "message_timestamp" in request.json else ""
 
-        if 'secure_pulse_Pattern' in request.json:
+        if 'secure_pulse_pattern' in request.json:
             logger.debug('Received a post_challenge request for SECURE station')
-            secure_pulse_pattern = request.json['secure_pulse_Pattern']
-            secure_max_pulse_width = request.json['secure_max_pulse_width']
-            secure_max_gap = request.json['secure_max_gap']
-            secure_min_gap = request.json['secure_min_gap']
+            secure_pulse_pattern = request.json['secure_pulse_pattern']
+            secure_max_pulse_width = int(request.json['secure_max_pulse_width'])
+            secure_max_gap = int(request.json['secure_max_gap'])
+            secure_min_gap = int(request.json['secure_min_gap'])
 
             self._callback.args = [secure_pulse_pattern, secure_max_pulse_width, secure_max_gap, secure_min_gap] # The Pulse pattern is not required, since it is in the tone pattern
-            logger.debug('Master server requesting station post_challenge (ver %s) at %s, SECURE Code pattern %s, Max pulse width %s, Max pulse gap %s, Min pulse gap %s' % (message_version, message_timestamp, secure_pulse_pattern, secure_max_pulse_width, secure_max_gap, secure_min_gap))
+            logger.debug('Master server requesting station post_challenge (ver %s) at %s, SECURE Code pattern %s, Max pulse width %d, Max pulse gap %d, Min pulse gap %d' % (message_version, message_timestamp, repr(secure_pulse_pattern), secure_max_pulse_width, secure_max_gap, secure_min_gap))
         elif 't_aft' in request.json:
             logger.debug('Received a post_challenge request for DOCK station')
             Args = namedtuple("Args", "t_aft, t_coast, t_fore, a_aft, a_fore, r_fuel, q_fuel, dist, v_min, v_max, v_init, t_sim")
@@ -583,7 +582,9 @@ class ConnectionManager(IConnectionManager):
         else:
             logger.critical('Received a post_challenge request for unrecognized station')
 
+	logger.debug('Pre change state')
         self._callback.State = State.PROCESSING2
+	logger.debug('Post change state')
 
         resp = jsonify({})
         resp.status_code = httplib.OK
