@@ -16,8 +16,9 @@
 Provides enumerated types to represent state values.
 """
 
-import logging
-import logging.handlers
+###  Commented out:  logging not needed in this module
+# import logging
+# import logging.handlers
 
 
 # ------------------------------------------------------------------------------
@@ -40,12 +41,13 @@ class HttpMethod:
     GET, PUT, POST, DELETE = range(4)
 
 
-# ------------------------------------------------------------------------------
-# Module Initialization
-# ------------------------------------------------------------------------------
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-handler = logging.handlers.SysLogHandler(address = '/dev/log')
-logger.addHandler(handler)
+###  Commented out:  logging not needed in this module
+# # ------------------------------------------------------------------------------
+# # Module Initialization
+# # ------------------------------------------------------------------------------
+# logger = logging.getLogger(__name__)
+# logger.setLevel(logging.INFO)
+# handler = logging.handlers.SysLogHandler(address = '/dev/log')
+# logger.addHandler(handler)
 
 

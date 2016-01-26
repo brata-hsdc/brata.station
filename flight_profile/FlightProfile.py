@@ -51,12 +51,13 @@ class Text(pygame.sprite.DirtySprite):
     DEFAULT_FONT_SIZE = 100
     
     def __init__(self, pt, value="", size=DEFAULT_FONT_SIZE, font=DEFAULT_FONT,
-                       justify=LEFT|BOTTOM, color=Colors.WHITE, intervalsMs=(1000,0)):
+                       justify=LEFT|BOTTOM, color=Colors.WHITE, intervalsMs=(1000,0), shrinkToWidth=0):
         """ intervalMs is a list of (on, off, on, off, ...) time intervals used to toggle the text visibility """
         super(Text, self).__init__()
         
         self.pos = pt
         self.pointSize = size
+        self.fontName = font
         self.font = pygame.font.Font(font, self.pointSize)
         self.justify = justify
         self.color = color
@@ -65,10 +66,15 @@ class Text(pygame.sprite.DirtySprite):
         self.toggleTimeMs = 0
         self.rect = None  # required by sprite.draw()
         self._value = None
+        self.shrinkToWidth = shrinkToWidth
         self.setValue(value)  # sets _value and image
         
         self.visible=0
         self.update()
+        
+    def lineHeight(self):
+        """ Return the height in pixels of the font text """
+        return self.font.get_linesize()
         
     def value(self):
         """ Return the text string """
@@ -79,7 +85,22 @@ class Text(pygame.sprite.DirtySprite):
         self._value = value
         if color:
             self.color = color
-        self.image = self.font.render(self._value, True, self.color)
+        
+        # Create the text image
+        # If shrinkToWidth > 0, shrink the pointSize until it fits
+        ptSize = self.pointSize
+        font = self.font
+        while True:
+            textWidth = font.size(self._value)[0]
+            if self.shrinkToWidth == 0 or textWidth <= self.shrinkToWidth:
+                break
+#            self.image = font.render(self._value, True, self.color)
+            print("Text width", textWidth)
+            ptSize = int(ptSize * self.shrinkToWidth/textWidth)
+            print("Point size", ptSize)
+            font = pygame.font.Font(self.fontName, ptSize)
+        self.image = font.render(self._value, True, self.color)
+
         self.dirty = 1
 
         self.rect = self.image.get_rect()
@@ -166,7 +187,7 @@ class Clock(Text):
         """ Set the value of the clock in seconds
         """
         tSeconds = float(value)
-        super(Clock, self).setValue("{:02d}:{:02d}:{:02d}".format(int(tSeconds//60), int(tSeconds%60), int((tSeconds%1) * 100)))
+        super(Clock, self).setValue("{:02d}:{:02d}:{:02d}.{:02d}".format(int(tSeconds//3600), int((tSeconds%3600)//60), int(tSeconds%60), int((tSeconds%1) * 100)))
 
 
 #----------------------------------------------------------------------------
@@ -302,7 +323,8 @@ class FlightProfileApp(object):
     TEXT_LAYER  = 2
     SHIP_LAYER  = 3
     
-    SCREEN_CENTER     = (960, 540)
+    SCREEN_SIZE       = (1920, 1080)
+    SCREEN_CENTER     = (SCREEN_SIZE[0]//2, SCREEN_SIZE[1]//2)
     FLIGHT_PATH_START = (400, 600)
     FLIGHT_PATH_END   = (1600, 750)
     
@@ -333,7 +355,7 @@ class FlightProfileApp(object):
     FLAME_DOWN_OFFSET = (-24, 21)
     
     OUTCOMES = {
-        DockSim.OUTCOME_DNF     : "Destination not reached due to negative forward velocity",
+        DockSim.OUTCOME_DNF     : "Destination not reached due to loss of all forward velocity",
         DockSim.OUTCOME_NO_FUEL : "Ran out of fuel before achieving proper docking velocity",
         DockSim.OUTCOME_TOO_SLOW: "Latch failure due to insufficient forward velocity",
         DockSim.OUTCOME_TOO_FAST: "Latch failure caused by excessive forward velocity",
@@ -344,6 +366,7 @@ class FlightProfileApp(object):
     WELCOME_CMD = "WELCOME"
     RUN_CMD     = "RUN"
     QUIT_CMD    = "QUIT"
+    KIOSK_CMD   = "KIOSK"
     
     
     def __init__(self):
@@ -408,6 +431,7 @@ class FlightProfileApp(object):
         self.station.moveTo(self.STATION_POS)
         
     def setupBackgroundDisplay(self):
+        self.staticGroup.empty()
         self.staticGroup.add((self.stars, self.earth), layer=self.BG_LAYER)
     
     def setupMissionTimeDisplay(self):
@@ -546,7 +570,8 @@ class FlightProfileApp(object):
                     value=str(name),
                     size=int(GIANT_TEXT * 0.6),
                     color=Colors.WHITE,
-                    justify=Text.CENTER|Text.MIDDLE)
+                    justify=Text.CENTER|Text.MIDDLE,
+                    shrinkToWidth=int(self.SCREEN_SIZE[0]*0.9))
         self.blinkingTextGroup.add((text, nameText))
         
     def createPassFailText(self, passed=True, msg=None):
@@ -583,7 +608,24 @@ class FlightProfileApp(object):
                                 color=Colors.GREEN if passed else Colors.RED,
                                 justify=Text.CENTER|Text.MIDDLE)
                 self.blinkingTextGroup.add((msgText1, msgText2))
-        
+    
+    def createKioskScreen(self, args):
+        """ Put up some text on the display
+            Args contains a list of tuples.  Each tuple describes a block of
+            text that may span multiple lines.  Each tuple is of the form:
+            (pointsize, color, position, justification, text).  text may contain
+            newline characters to cause the text to be rendered on multiple
+            lines.  Otherwise, the text will remain on one line, and the
+            pointsize will be reduced to make the text fit within the line width.
+        """
+        args = eval(args)
+        for ptsize,color,pos,justify,text in args:
+            pos = list(pos)
+            for t in text.split("\n"):
+                textSprite = Text(pos, t, size=ptsize, color=color, justify=justify)
+                self.blinkingTextGroup.add(textSprite)
+                pos[1] += textSprite.lineHeight()
+            
     def drawCharts(self):
         pass
     
@@ -604,16 +646,18 @@ class FlightProfileApp(object):
         
     def update(self):
         """ Update the simulation """
-        # Update time
+        # Get the current elapsed time
         t = self.timer.elapsedSec()
-        self.simulatedTime.setValue(t)
-        self.actualTime.setValue(t * self.missionTimeScale)
         
-        # Update stats
+        # Compute the simulation state values for the current time
         state = self.dockSim.shipState(t * self.missionTimeScale)
         
+        # Update stats
         if state.phase == DockSim.END_PHASE:
             self.timer.stop()
+
+        self.simulatedTime.setValue(state.tEnd/self.missionTimeScale)
+        self.actualTime.setValue(state.tEnd)
         
         self.maxVelocity = max(self.maxVelocity, state.currVelocity)
         self.distance.setValue("{:0.2f} m".format(self.profile.dist - state.distTraveled))
@@ -657,9 +701,10 @@ class FlightProfileApp(object):
                     self.animGroup.add(self.frontFlameDown)
             elif state.phase == DockSim.END_PHASE:
                 passed = self.dockSim.dockIsSuccessful()
-                msg = self.outcomeMessage(state)
-                self.createPassFailText(passed=passed, msg=msg)
-                self.reportPassFail(passed, state.tEnd, msg)
+#                 msg = self.outcomeMessage(state)
+                result = self.dockSim.outcome(state)
+                self.createPassFailText(passed=passed, msg=self.OUTCOMES[result])
+                self.reportPassFail(passed, state.tEnd, result)
         
         # Compute the fraction of the total trip distance that has been traversed,
         # and place the ship at that location
@@ -669,6 +714,20 @@ class FlightProfileApp(object):
         # Update any text objects that might be animated
         for sp in self.blinkingTextGroup.sprites():
             sp.update()
+    
+    def userQuit(self):
+        # Retrieve queued events from mouse, keyboard, timers
+        highPriorityEvents = pygame.event.get(pygame.QUIT) +\
+                             pygame.event.get(pygame.KEYUP)
+        pygame.event.get()  # flush the rest of the events
+        
+        # Retrieve an event from the event queue
+        if highPriorityEvents:
+            # Process the event
+            #   First check to see whether we should quit
+            event = highPriorityEvents.pop()
+            return event.type == pygame.QUIT or (event.type == pygame.KEYUP and event.key == pygame.K_ESCAPE)
+        return False
         
     def mainLoop(self):
         """ Receive events from the user and/or application objects, and update the display """
@@ -681,6 +740,10 @@ class FlightProfileApp(object):
         self.staticGroup.draw(self.canvas)
         pygame.display.update()
         
+        # Start the simulation time clock
+        self.timer.start()
+        
+        # Run the simulation
         while True: # main game loop
             
             # Retrieve queued events from mouse, keyboard, timers
@@ -710,7 +773,7 @@ class FlightProfileApp(object):
         lastFrameMs = self.frameClock.tick(self.frameRate)
 
     def clearDisplay(self):
-        """ Clear out all the sprite groups """
+        """ Clear out all the sprite groups, but leave the background """
         self.animGroup.empty()
         self.blinkingTextGroup.empty()
         self.movingGroup.empty()
@@ -743,8 +806,9 @@ class FlightProfileApp(object):
             Returns:
                 A string stating success or the reason for failure
         """
-        self.stationCallbackObj.args = (passed, simTime, msg)
-        self.stationCallbackObj.State = State.PROCESSING_COMPLETED
+        if self.stationCallbackObj:
+            self.stationCallbackObj.args = (str(passed), str(simTime), msg)
+            self.stationCallbackObj.State = State.PROCESSING_COMPLETED
         return msg
     
     def countDown(self):
@@ -782,6 +846,7 @@ class FlightProfileApp(object):
         self.loadImageObjects()
         self.setupDisplay()
         self.mainLoop()
+        self.takeDownDisplay()
     
     def updateBlinkingText(self):
         for sp in self.blinkingTextGroup.sprites():
@@ -807,17 +872,20 @@ class FlightProfileApp(object):
             while cmd is None:
                 try:
                     cmd,args = self.workQueue.get_nowait()
-                    print("Got work ({},{})".format(repr(cmd), repr(args)))
+                    #print("Got work ({},{})".format(repr(cmd), repr(args)))
                 except Queue.Empty:
                     pass
                 updateProc()
                 self.draw()
+                if self.userQuit():
+                    cmd = self.QUIT_CMD
+                    break
                 self.frameClock.tick(self.frameRate)
             
+            self.clearDisplay()
             if cmd == self.RUN_CMD:
-                print("RUN_CMD")
-                self.clearDisplay()
-                self.countDown()
+                #print("RUN_CMD")
+                self.countDown()  # blocks for 3 seconds while it counts down
                 self.clearDisplay()
                 self.setFlightProfile(args)
                 self.setupMissionTimeDisplay()
@@ -827,18 +895,18 @@ class FlightProfileApp(object):
                 updateProc = self.update
                 #self.processLoop()  # stay in processLoop() until sim is complete
             elif cmd == self.READY_CMD:
-                print("READY_CMD")
-                self.clearDisplay()
+                #print("READY_CMD")
                 self.createReadyText()
                 updateProc = self.updateBlinkingText
             elif cmd == self.WELCOME_CMD:
-                print("WELCOME_CMD")
-                self.clearDisplay()
-                self.createWelcomeText(name=args[0])
+                #print("WELCOME_CMD")
+                self.createWelcomeText(name=args)
+                updateProc = self.updateBlinkingText
+            elif cmd == self.KIOSK_CMD:
+                self.createKioskScreen(args)
                 updateProc = self.updateBlinkingText
             elif cmd == self.QUIT_CMD:
-                print("QUIT_CMD")
-                self.clearDisplay()
+                #print("QUIT_CMD")
                 self.clearBackground()
                 self.takeDownDisplay()
                 done = True
