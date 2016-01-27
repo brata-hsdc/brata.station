@@ -526,11 +526,13 @@ class ConnectionManager(IConnectionManager):
             return_guidance_pattern = request.json['return_guidance_pattern']
             self._callback.args = return_guidance_pattern
             logger.debug('Master server requesting station start_challenge (ver %s) at %s, RETURN Guidance pattern %s' % (message_version, message_timestamp, return_guidance_pattern))
-        elif 'team_name' in request.json:
+        elif 'team_name' in request.json or 'kiosk_text' in request.json:
             logger.debug('Received a start_challenge request for DOCK station')
-#             Args = namedtuple("Args", "t_aft, t_coast, t_fore, a_aft, a_fore, r_fuel, q_fuel, dist, v_min, v_max, v_init, t_sim")
-#             args = Args._make([request.json[f] for f in Args._fields])
-            self._callback.args = (request.json["team_name"],)
+            self._callback.args = {}
+            if 'team_name' in request.json:
+                self._callback.args['team_name'] = request.json['team_name']
+            if 'kiosk_text' in request.json:
+                self._callback.args['kiosk_text'] = request.json['kiosk_text']
             logger.debug('Master server requesting station start_challenge with args: ' + repr(self._callback.args))
         else:
             logger.critical('Received a start_challenge request for unrecognized station')

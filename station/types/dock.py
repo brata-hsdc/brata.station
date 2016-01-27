@@ -106,7 +106,10 @@ class Station(IStation):
         """ Accept parameters to run the dock simulation, and start the sim. """
         logger.info('DOCK transitioned to Processing state with args {}.'.format(repr(args)))
         if self._simQueue:
-            self._simQueue.put((FlightProfileApp.WELCOME_CMD, args))
+            if "kiosk_text" in args:
+                self._simQueue.put((FlightProfileApp.KIOSK_CMD, args["kiosk_text"]))
+            else:
+                self._simQueue.put((FlightProfileApp.WELCOME_CMD, args["team_name"]))
 
     # --------------------------------------------------------------------------
     def onProcessing2(self, args):
