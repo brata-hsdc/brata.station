@@ -72,6 +72,10 @@ class Text(pygame.sprite.DirtySprite):
         self.visible=0
         self.update()
         
+    def lineHeight(self):
+        """ Return the height in pixels of the font text """
+        return self.font.get_linesize()
+        
     def value(self):
         """ Return the text string """
         return self._value
@@ -183,7 +187,7 @@ class Clock(Text):
         """ Set the value of the clock in seconds
         """
         tSeconds = float(value)
-        super(Clock, self).setValue("{:02d}:{:02d}:{:02d}".format(int(tSeconds//60), int(tSeconds%60), int((tSeconds%1) * 100)))
+        super(Clock, self).setValue("{:02d}:{:02d}:{:02d}.{:02d}".format(int(tSeconds//3600), int((tSeconds%3600)//60), int(tSeconds%60), int((tSeconds%1) * 100)))
 
 
 #----------------------------------------------------------------------------
@@ -362,6 +366,7 @@ class FlightProfileApp(object):
     WELCOME_CMD = "WELCOME"
     RUN_CMD     = "RUN"
     QUIT_CMD    = "QUIT"
+    KIOSK_CMD   = "KIOSK"
     
     
     def __init__(self):
@@ -426,6 +431,7 @@ class FlightProfileApp(object):
         self.station.moveTo(self.STATION_POS)
         
     def setupBackgroundDisplay(self):
+        self.staticGroup.empty()
         self.staticGroup.add((self.stars, self.earth), layer=self.BG_LAYER)
     
     def setupMissionTimeDisplay(self):
@@ -602,7 +608,24 @@ class FlightProfileApp(object):
                                 color=Colors.GREEN if passed else Colors.RED,
                                 justify=Text.CENTER|Text.MIDDLE)
                 self.blinkingTextGroup.add((msgText1, msgText2))
-        
+    
+    def createKioskScreen(self, args):
+        """ Put up some text on the display
+            Args contains a list of tuples.  Each tuple describes a block of
+            text that may span multiple lines.  Each tuple is of the form:
+            (pointsize, color, position, justification, text).  text may contain
+            newline characters to cause the text to be rendered on multiple
+            lines.  Otherwise, the text will remain on one line, and the
+            pointsize will be reduced to make the text fit within the line width.
+        """
+        args = eval(args)
+        for ptsize,color,pos,justify,text in args:
+            pos = list(pos)
+            for t in text.split("\n"):
+                textSprite = Text(pos, t, size=ptsize, color=color, justify=justify)
+                self.blinkingTextGroup.add(textSprite)
+                pos[1] += textSprite.lineHeight()
+            
     def drawCharts(self):
         pass
     
@@ -689,6 +712,20 @@ class FlightProfileApp(object):
         # Update any text objects that might be animated
         for sp in self.blinkingTextGroup.sprites():
             sp.update()
+    
+    def userQuit(self):
+        # Retrieve queued events from mouse, keyboard, timers
+        highPriorityEvents = pygame.event.get(pygame.QUIT) +\
+                             pygame.event.get(pygame.KEYUP)
+        pygame.event.get()  # flush the rest of the events
+        
+        # Retrieve an event from the event queue
+        if highPriorityEvents:
+            # Process the event
+            #   First check to see whether we should quit
+            event = highPriorityEvents.pop()
+            return event.type == pygame.QUIT or (event.type == pygame.KEYUP and event.key == pygame.K_ESCAPE)
+        return False
         
     def mainLoop(self):
         """ Receive events from the user and/or application objects, and update the display """
@@ -730,7 +767,7 @@ class FlightProfileApp(object):
         lastFrameMs = self.frameClock.tick(self.frameRate)
 
     def clearDisplay(self):
-        """ Clear out all the sprite groups """
+        """ Clear out all the sprite groups, but leave the background """
         self.animGroup.empty()
         self.blinkingTextGroup.empty()
         self.movingGroup.empty()
@@ -802,6 +839,7 @@ class FlightProfileApp(object):
         self.loadImageObjects()
         self.setupDisplay()
         self.mainLoop()
+        self.takeDownDisplay()
     
     def updateBlinkingText(self):
         for sp in self.blinkingTextGroup.sprites():
@@ -832,12 +870,15 @@ class FlightProfileApp(object):
                     pass
                 updateProc()
                 self.draw()
+                if self.userQuit():
+                    cmd = self.QUIT_CMD
+                    break
                 self.frameClock.tick(self.frameRate)
             
+            self.clearDisplay()
             if cmd == self.RUN_CMD:
                 #print("RUN_CMD")
-                self.clearDisplay()
-                self.countDown()
+                self.countDown()  # blocks for 3 seconds while it counts down
                 self.clearDisplay()
                 self.setFlightProfile(args)
                 self.setupMissionTimeDisplay()
@@ -848,17 +889,17 @@ class FlightProfileApp(object):
                 #self.processLoop()  # stay in processLoop() until sim is complete
             elif cmd == self.READY_CMD:
                 #print("READY_CMD")
-                self.clearDisplay()
                 self.createReadyText()
                 updateProc = self.updateBlinkingText
             elif cmd == self.WELCOME_CMD:
                 #print("WELCOME_CMD")
-                self.clearDisplay()
-                self.createWelcomeText(name=args[0])
+                self.createWelcomeText(name=args)
+                updateProc = self.updateBlinkingText
+            elif cmd == self.KIOSK_CMD:
+                self.createKioskScreen(args)
                 updateProc = self.updateBlinkingText
             elif cmd == self.QUIT_CMD:
                 #print("QUIT_CMD")
-                self.clearDisplay()
                 self.clearBackground()
                 self.takeDownDisplay()
                 done = True
