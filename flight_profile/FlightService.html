@@ -1,0 +1,47 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1  /DTD/xhtml1-strict.dtd">
+<html>
+<head>
+  <title>Harris Design Challenge 2016 DOCK Simulation Results</title>
+  <style type="text/css">
+  body { font-family: Arial,Sans; }
+  table td.label { text-align: right; font-weight: bold; }
+  </style>
+</head>
+  
+<body>
+  <h3>Harris Design Challenge 2016 DOCK Simulation Results</h3>
+  <form action="http://localhost:8080/dockparams" method="post">
+    <div>
+      <p>Enter your flight profile solution values here.</p>
+      <table>
+        <tr><td class="label">Acceleration Phase (sec):</td><td class="input"><input name="t_aft" type="text" value="0.0" /></td></tr>
+        <tr><td class="label">Coast Phase (sec):</td><td class="input"><input name="t_coast" type="text" value="0.0" /></td></tr>
+        <tr><td class="label">Deceleration Phase (sec):</td><td class="input"><input name="t_fore" type="text" value="0.0" /></td></tr>
+      </table>
+      <br />
+      <p>These values will vary during the competition.  The set(s) of values that you receive during the challenge
+      will be predetermined to allow a variety of successful outcomes.
+      </p>
+      <table>
+        <tr><td class="label">Acceleration Force (m/s<sup>2</sup>):</td><td class="input"><input name="a_aft" type="text" value="0.15" /></td></tr>
+        <tr><td class="label">Deceleration Force (m/s<sup>2</sup>):</td><td class="input"><input name="a_fore" type="text" value="0.09" /></td></tr>
+        <tr><td class="label">Fuel Rate of Consumption (kg/s):</td><td class="input"><input name="r_fuel" type="text" value="0.7" /></td></tr>
+        <tr><td class="label">Fuel Initial Amount (kg):</td><td class="input"><input name="q_fuel" type="text" value="20.0" /></td></tr>
+        <tr><td class="label">Distance to Dock (m):</td><td class="input"><input name="dist" type="text" value="15.0" /></td></tr>
+      </table>
+      <br />
+      <p>These values are fixed for the competition.  You can experiment with them if you wish, but they are set
+      to the official challenge values.
+      </p>
+      <table>
+        <tr><td class="label">Min Docking Velocity (m/s):</td><td class="input"><input name="v_min" type="text" value="0.01" /></td></tr>
+        <tr><td class="label">Max Docking Velocity (m/s):</td><td class="input"><input name="v_max" type="text" value="0.1" /></td></tr>
+        <tr><td class="label">Initial Velocity (m/s):</td><td class="input"><input name="v_init" type="text" value="0.0" /></td></tr>
+        <tr><td class="label">&nbsp;</td><td class="input">&nbsp;</td></tr>
+        <tr><td class="label">&nbsp;</td><td class="input"><input type="submit" value="Test" /></td></tr>
+      </table>
+      <input name="t_sim" type="hidden" value="45" />
+    </div>
+  </form>
+</body>
+</html>

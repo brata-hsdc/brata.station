@@ -1,0 +1,36 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1  /DTD/xhtml1-strict.dtd">
+<html>
+<head>
+  <title>Harris Design Challenge 2016 DOCK Simulation</title>
+  <style type="text/css">
+  body { font-family: Arial,Sans; }
+  table td.label { text-align: right; font-weight: bold; }
+  </style>
+</head>
+  
+<body>
+  <h3>Harris Design Challenge 2016 DOCK Simulation</h3>
+  <form action="http://localhost:8080/dockparams" method="post">
+    <div>
+      <p>Enter your flight profile solution values here.</p>
+      <table>
+        <tr><td class="label">Flight Duration (sec):</td><td class="input"><input name="outcome" type="text" value="{}" /></td></tr>
+        <tr><td class="label">Flight Duration (sec):</td><td class="input"><input name="duration" type="text" value="{}" /></td></tr>
+        <tr><td class="label">Final Velocity (m/s):</td><td class="input"><input name="v_end" type="text" value="{}" /></td></tr>
+        <tr><td class="label">Fuel Remaining (kg):</td><td class="input"><input name="q_fuel" type="text" value="{}" /></td></tr>
+        <tr><td class="label">&nbsp;</td><td class="input">&nbsp;</td></tr>
+        <tr><td class="label">&nbsp;</td><td class="input"><input type="button" onclick="history.back();" value="Try Again" /></td></tr>
+      </table>
+      </div>
+  </form>
+  <br />
+  <p>The outcomes have the following meanings:</p>
+  <table>
+    <tr><td><b>OUTCOME_SUCCESS</b></td><td>The ship docked successfully (velocity within allowable range)</td></tr>
+    <tr><td><b>OUTCOME_DNF</b></td><td>Did Not Finish because the velocity went to zero or went negative</td></tr>
+    <tr><td><b>OUTCOME_NO_FUEL</b></td><td>The fuel ran out and the velocity was not in the acceptable range</td></tr>
+    <tr><td><b>OUTCOME_TOO_FAST</b></td><td>The ship's docking velocity was too large</td></tr>
+    <tr><td><b>OUTCOME_TOO_SLOW</b>&nbsp;&nbsp;</td><td>The ship's docking velocity was too small</td></tr>
+  </table>
+</body>
+</html>
