@@ -646,16 +646,18 @@ class FlightProfileApp(object):
         
     def update(self):
         """ Update the simulation """
-        # Update time
+        # Get the current elapsed time
         t = self.timer.elapsedSec()
-        self.simulatedTime.setValue(t)
-        self.actualTime.setValue(t * self.missionTimeScale)
         
-        # Update stats
+        # Compute the simulation state values for the current time
         state = self.dockSim.shipState(t * self.missionTimeScale)
         
+        # Update stats
         if state.phase == DockSim.END_PHASE:
             self.timer.stop()
+
+        self.simulatedTime.setValue(state.tEnd/self.missionTimeScale)
+        self.actualTime.setValue(state.tEnd)
         
         self.maxVelocity = max(self.maxVelocity, state.currVelocity)
         self.distance.setValue("{:0.2f} m".format(self.profile.dist - state.distTraveled))
@@ -738,6 +740,10 @@ class FlightProfileApp(object):
         self.staticGroup.draw(self.canvas)
         pygame.display.update()
         
+        # Start the simulation time clock
+        self.timer.start()
+        
+        # Run the simulation
         while True: # main game loop
             
             # Retrieve queued events from mouse, keyboard, timers
@@ -800,8 +806,9 @@ class FlightProfileApp(object):
             Returns:
                 A string stating success or the reason for failure
         """
-        self.stationCallbackObj.args = (passed, simTime, msg)
-        self.stationCallbackObj.State = State.PROCESSING_COMPLETED
+        if self.stationCallbackObj:
+            self.stationCallbackObj.args = (passed, simTime, msg)
+            self.stationCallbackObj.State = State.PROCESSING_COMPLETED
         return msg
     
     def countDown(self):

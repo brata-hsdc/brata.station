@@ -6,10 +6,14 @@
 #   Date: Jan 28, 2016
 #
 # Usage:
+#         python FlightService.py
+#  then from another host:
+#         http --json POST http://localhost:8080/dockparams Content-type:application/json Accept:text/plain t_aft=0.1 t_coast=1 t_fore=13.1
 #
 #----------------------------------------------------------------------------
 from __future__ import print_function, division
 
+import sys
 import cgi
 import json
 from DockSim import DockSim, FlightParams
@@ -23,12 +27,20 @@ def wsgiApp(environ, start_response):
         resp = "404 Not Found"
         yield resp.encode("utf-8")
     else:
-#         params = cgi.FieldStorage(environ["wsgi.input"], environ=environ)
-        params = json.loads(environ["wsgi.input"].read())
-        print(repr(params))
-        fp = FlightParams(tAft=params["t_aft"],
-                          tCoast=params["t_coast"],
-                          tFore=params["t_fore"],
+        start_response("200 OK", [("Content-type", "text/plain")])
+
+        try:
+            request_body_size = int(environ.get('CONTENT_LENGTH', 0))
+        except ValueError:
+            request_body_size = 0
+        
+        request_body = environ['wsgi.input'].read(request_body_size)
+        
+        params = json.loads(request_body)
+        
+        fp = FlightParams(tAft=float(params["t_aft"]),
+                          tCoast=float(params["t_coast"]),
+                          tFore=float(params["t_fore"]),
                           aAft=0.15,
                           aFore=0.09,
                           rFuel=0.7,
@@ -40,14 +52,18 @@ def wsgiApp(environ, start_response):
                           tSim=45,
                          )
         ds = DockSim(fp)
-#         
-#         resp = "dockIsSuccessful: {}".format(ds.dockIsSuccessful())
-#         resp += "terminalVelocity: {}".format(ds.terminalVelocity())
-#         resp += "flightDuration: {}".format(ds.flightDuration())
-#         resp += "StateVec: {}".format(ds.shipState(ds.flightDuration()))
-
-        start_response("200 OK", [("Content-type", "text/plain")])
-        resp = "You did not pass" #dockSim.result()
+         
+        finalState = ds.shipState(DockSim.MAX_FLIGHT_DURATION_S)
+#         resp = "dockIsSuccessful: {}\n".format(ds.dockIsSuccessful())
+#         resp += "terminalVelocity: {}\n".format(ds.terminalVelocity())
+#         resp += "flightDuration: {}\n".format(ds.flightDuration())
+#         resp += "outcome: {}\n".format(ds.outcome(ds.shipState(ds.flightDuration())))
+        finalState = ds.shipState(DockSim.MAX_FLIGHT_DURATION_S)
+        resp = "dockIsSuccessful: {}\n".format(str(ds.outcome(finalState) == DockSim.OUTCOME_SUCCESS))
+        resp += "terminalVelocity: {}\n".format(finalState.currVelocity)
+        resp += "flightDuration: {}\n".format(finalState.tEnd)
+        resp += "outcome: {}\n".format(ds.outcome(finalState))
+        resp += "state: {}\n".format(finalState)
         yield resp.encode("utf-8")
     
 
