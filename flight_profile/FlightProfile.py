@@ -807,7 +807,7 @@ class FlightProfileApp(object):
                 A string stating success or the reason for failure
         """
         if self.stationCallbackObj:
-            self.stationCallbackObj.args = (passed, simTime, msg)
+            self.stationCallbackObj.args = (str(passed), str(simTime), msg)
             self.stationCallbackObj.State = State.PROCESSING_COMPLETED
         return msg
     
