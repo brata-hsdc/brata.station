@@ -207,7 +207,8 @@ class Station(IStation):
         self._leds['yellow'].turnOff()
         self._leds['green'].turnOn()
 
-        rc = ReadCode(self._secure_tone_pattern[0], self._display, self.ConnectionManager._callback)
+        self._secure_code = args[0]
+        rc = ReadCode(self._secure_code, self._display, self.ConnectionManager._callback)
 
         # wait for a code to be read
         self._display.display_message("      ", "TRANSMIT")
@@ -569,8 +570,9 @@ class ReadCode:
 
     def check_code(self):
         # the tone IDs of 0, 1, 3, and 4 correspond to the desired code
-        desiredcode = [ self._tone_ID[i] for i in [0, 1, 3, 4]]
+        # desiredcode = [ self._tone_ID[i] for i in [0, 1, 3, 4]]
 
+        desiredcode = self._tone_ID
         return cmp(desiredcode, self._code)
         
     def run(self):
