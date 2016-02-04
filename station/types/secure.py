@@ -339,9 +339,11 @@ class LCDdisplay:
     
         # Raspberry Pi pin configuration:
         self._RST = 22
+        self._address = 0x3C
 
         # driver for 128x32 OLED display via I2C interface
-        self._disp = Adafruit_SSD1306.SSD1306_128_32(rst=self._RST)    
+        # self._disp = Adafruit_SSD1306.SSD1306_128_32(rst=self._RST)
+        self._disp = Adafruit_SSD1306.SSD1306_128_64(rst=self._RST, i2c_address=self._address)
         # Initialize the didplay library.
         self._disp.begin()
 
@@ -381,8 +383,8 @@ class LCDdisplay:
         # Write two lines of text.
         self._draw.rectangle((0,0,self._width,self._height), outline=0, fill=0)
         x = self._padding
-        self._draw.text((x, self._top),    Line1,  font=self._font_top, fill=255)
-        self._draw.text((x, self._top+14), Line2,  font=self._font_bot, fill=255)
+        self._draw.text((x, self._top+7),    Line1,  font=self._font_top, fill=255)
+        self._draw.text((x, self._top+40), Line2,  font=self._font_bot, fill=255)
 
         # Display image.
         self._disp.clear()
