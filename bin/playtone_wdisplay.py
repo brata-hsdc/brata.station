@@ -72,8 +72,8 @@ def display_message(Line1, Line2):
 
     draw.rectangle((0,0,width,height), outline=0, fill=0)
     x = padding
-    draw.text((x, top),    Line1,  font=font_top, fill=255)
-    draw.text((x, top+14), Line2,  font=font_bot, fill=255)
+    draw.text((x, top+7),  Line1,  font=font_top, fill=255)
+    draw.text((x, top+40), Line2,  font=font_bot, fill=255)
 
     # Display image.
     disp.clear()
@@ -100,8 +100,8 @@ disp_msg = ["Tone #0",
 
 # LOCALS
 # 128x32 display with hardware I2C:
-disp = Adafruit_SSD1306.SSD1306_128_32(rst=RST)    
-
+# disp = Adafruit_SSD1306.SSD1306_128_32(rst=RST)    
+disp = Adafruit_SSD1306.SSD1306_128_64(rst=RST, i2c_address=0x3c)
 bits        = 16       # audio resolution
 duration    = 10       # Length of audio playback
 sample_rate = 44100    # sample rate
@@ -151,7 +151,8 @@ draw = ImageDraw.Draw(image)
 font_name = '/usr/share/fonts/truetype/freefont/FreeMono.ttf'
 font_top = ImageFont.truetype(font_name, 12)
 font_bot = ImageFont.truetype(font_name, 20)
-display_message(parse_secure_error(0), disp_msg[tone])
+#display_message(parse_secure_error(0), disp_msg[tone])
+display_message('Top Line', disp_msg[tone])
 
 
 #This will keep the sound playing forever, the quit event handling allows the pygame window to close without crashing
