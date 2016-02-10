@@ -1,11 +1,13 @@
 {
    "request": {
       "method": "POST",
-      "url": "/piservice/submit/",
+      "url": "/piservice/submit/"
+/*
       "bodyPatterns" : [
-         { "equalToJson" : "{ \"is_correct\": \"False\", \"fail_message\": \"abcdef\", \"station_id\": \"secure01\", \"candidate_answer\": \"[]\", \"message_version\": \"0\", \"message_timestamp\": \"1233456\"}", "jsonCompareMode": "LENIENT" },
-         { "equalToJson" : "{ \"is_correct\": \"True\", \"fail_message\": \"\", \"station_id\": \"return06\", \"candidate_answer\": \"[]\", \"message_version\": \"0\", \"message_timestamp\": \"1233456\"}", "jsonCompareMode": "LENIENT" }
-      ]
+{ "equalToJson" : "{ \"is_correct\": \"False\", \"fail_message\": \"abcdef\", \"station_id\": \"secure01\", \"candidate_answer\": \"[]\", \"message_version\": \"0\", \"message_timestamp\": \"1233456\"}", "jsonCompareMode": "LENIENT" },
+{ "equalToJson" : "{ \"is_correct\": \"True\", \"fail_message\": \"\", \"station_id\": \"return06\", \"message_version\": \"0\"}", "jsonCompareMode": "LENIENT" }
+]
+*/
    },
    "response": {
       "status": 200,

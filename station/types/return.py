@@ -31,23 +31,25 @@ class Station(IStation):
     support displaying and obtaining angle values from the user
     to supply to the MS.
     """
-    START_STATE            =  0
-    IDLE_STATE             =  1
-    PRE_INPUT_STATE        =  2
-    INPUT_STATE            =  3
-    SUBMITTING_STATE       =  4
-    SUBMITTED_STATE        =  5
-    PASSED_STATE           =  6
-    FAILED_STATE           =  7
-    SHUTDOWN_STATE         =  8
-    PRE_IDLE_STATE         =  9
-    PRE_PASSED_STATE       = 10
-    PRE_FAILED_STATE       = 11
-    PRE_FAILED_RETRY_STATE = 12
-    FAILED_RETRY_STATE     = 13
-    SEND_RESULT_STATE      = 14
-    SEND_FINISH_STATE      = 15
-    ERROR_STATE            = 99
+    START_STATE             =  0
+    IDLE_STATE              =  1
+    PRE_INPUT_STATE         =  2
+    INPUT_STATE             =  3
+    SUBMITTING_STATE        =  4
+    SUBMITTED_STATE         =  5
+    POST_SUBMITTED_STATE    = 17
+    PASSED_STATE            =  6
+    FAILED_STATE            =  7
+    SHUTDOWN_STATE          =  8
+    PRE_IDLE_STATE          =  9
+    PRE_PASSED_STATE        = 10
+    PRE_FAILED_STATE        = 11
+    PRE_FAILED_RETRY_STATE  = 12
+    POST_FAILED_RETRY_STATE = 13
+    FAILED_RETRY_STATE      = 14
+    SEND_RESULT_STATE       = 15
+    SEND_FINISH_STATE       = 16
+    ERROR_STATE             = 99
     
     # --------------------------------------------------------------------------
     def __init__(self, config, hwModule):
@@ -100,7 +102,9 @@ class Station(IStation):
         self._preIdleDuration    =  5.0  # seconds to display msg
         self._prePassedDuration  =  5.0  # seconds to display msg
         self._preFailedDuration  =  5.0  # seconds to display msg
+        self._postFailedDuration =  4.0  # seconds to display msg
         self._submittedDuration  =  2.0  # seconds to display msg
+        self._postSubmittedDuration  =  30.0  # seconds to display msg
         self._sendFinishDuration = 15.0  # seconds to display msg
         
         
@@ -109,13 +113,14 @@ class Station(IStation):
         self._preIdleBg    = (["CYAN"], 1.0)
         self._prePassedBg  = (["YELLOW", "WHITE"], 0.1)
         self._preFailedBg  = (["YELLOW", "WHITE"], 0.1)
+        self._postFailedBg = (["WHITE"], 1.0)
         self._idleBg       = (["WHITE", "BLUE", "YELLOW", "GREEN", "RED", "CYAN", "MAGENTA"], 0.75)
         self._preInputBg   = (["YELLOW", "YELLOW", "YELLOW", "YELLOW", "RED"], 0.15)
         self._inputBg      = (["CYAN"], 1.0)
         self._submit1Bg    = (["RED", "WHITE"], 0.15)
         self._submit2Bg    = (["WHITE"], 1.0)
+        self._postSubmitBg = (["WHITE"], 1.0)
         self._passedBg     = (["GREEN", "CYAN"], 1.0)
-        #self._failedBg    = (["RED"], 1.0)
         self._failedBg     = (["RED", "RED", "RED", "RED", "RED", "RED", "RED", "RED", "RED", "WHITE"], 0.1)
         self._sendFinishBg = (["YELLOW", "YELLOW", "YELLOW", "YELLOW", "RED"], 0.15)
         self._shutdownBg   = (["BLACK"], 1.0)
@@ -124,17 +129,17 @@ class Station(IStation):
         # Display text for different states
         # TODO: These constants could be moved to runstation.conf
         self._preIdleText         = "  Resetting...\n"
-        self._prePassedText       = "- Trying Your  -\n-    Angles    -"
-        self._preFailedText       = "- Trying Your  -\n-    Angles    -"
+        self._prePassedText       = "- Trying Your  -\n- Parameters   -"
+        self._preFailedText       = "- Trying Your  -\n- Parameters   -"
+        self._postFailedText      = "  Try entering  \nparameters again"
         self._idleText            = "==== RETURN ====\n== TO = EARTH =="
         self._preInputText        = "      HEY!!     \n  Scan QR Code  "
-        self._enterLine1Text      = "Enter Code:"
         self._submittingText      = "2nd ENTER Sends\n  Arrows to edit"
         self._submittedText       = "Sending to\nGuidance..."
-        self._passedText          = "Landing is\nA SUCCESS!"
-        self._failedText          = "You suffered a\nFIERY DEATH!"
-#        self._sendFinishText      = "     Submit\n   Your  Data"
-        self._sendFinishText      = "Design Challenge\n    Complete    "
+        self._postSubmittedText   = "Params Sent     \nScan Return QR  "
+        self._passedText          = "   Landing is   \n   A SUCCESS!   "
+        self._failedText          = "   Bounced off  \n   atmosphere!  "
+        self._sendFinishText      = " Scan Final QR  \n  to Complete   "
         self._shutdownText        = "Shutting down..."
         self._errorText           = "  Malfunction!\n"
 
@@ -221,6 +226,7 @@ class Station(IStation):
                                      self.PRE_FAILED_STATE,
                                      self.PRE_FAILED_RETRY_STATE,
                                      self.FAILED_RETRY_STATE,
+                                     self.POST_FAILED_RETRY_STATE,
                                      self.PASSED_STATE,
                                      self.FAILED_STATE,
                                      self.SUBMITTED_STATE,
@@ -247,7 +253,6 @@ class Station(IStation):
                 self._pushButtonMonitor.stopListening()
                 
             elif newState == self.INPUT_STATE:
-#                self._display.setLine1Text(self._enterLine1Text)
                 self.setToggleColors(*self._inputBg)
                 self.refreshDisplayedAngle()
                 self._pushButtonMonitor.startListening()
@@ -257,8 +262,6 @@ class Station(IStation):
                 self.setToggleColors(*self._submit1Bg)
                 
             elif newState == self.SUBMITTED_STATE:
-#                 self._display.setLine1Text(self._submittedLine1Text)
-#                 self.setToggleColors(*self._submit2Bg)
                 logger.debug("initializing SUBMITTED_STATE")
                 self._timedMsg = self.displayTimedMsg(self._submittedText,
                                                       self._submittedDuration, 
@@ -266,6 +269,12 @@ class Station(IStation):
                                                       self.SEND_RESULT_STATE)
                 self._pushButtonMonitor.stopListening()
                 
+            elif newState == self.POST_SUBMITTED_STATE:
+                self._timedMsg = self.displayTimedMsg(self._postSubmittedText,
+                                                      self._postSubmittedDuration, 
+                                                      self._postSubmitBg,
+                                                      self.IDLE_STATE)
+
             elif newState == self.SEND_RESULT_STATE:
                 # Submit angle to MS
                 self.submitAngles()
@@ -292,6 +301,12 @@ class Station(IStation):
                 self._timedMsg = self.displayTimedMsg(self._failedText, 
                                                       self._failedDuration,
                                                       self._failedBg,
+                                                      self.POST_FAILED_RETRY_STATE)
+                
+            elif newState == self.POST_FAILED_RETRY_STATE:
+                self._timedMsg = self.displayTimedMsg(self._postFailedText,
+                                                      self._postFailedDuration,
+                                                      self._postFailedBg,
                                                       self.INPUT_STATE)
                 
             elif newState == self.PRE_FAILED_STATE:
@@ -370,18 +385,20 @@ class Station(IStation):
     # --------------------------------------------------------------------------
     def onFailed(self, args):
         logger.info('RETURN transitioned to Failed state with args [%s].' % (args))
-        is_correct, challenge_complete = args
-        if challenge_complete.lower() == "true":
-            self.enterState(self.PRE_FAILED_STATE)
-        else:
-            self.enterState(self.PRE_FAILED_RETRY_STATE)
+        self.enterState(self.POST_SUBMITTED_STATE)
+#        is_correct, challenge_complete = args
+#        if challenge_complete.lower() == "true":
+#            self.enterState(self.PRE_FAILED_STATE)
+#        else:
+#            self.enterState(self.PRE_FAILED_RETRY_STATE)
 
         self._pushButtonMonitor.stopListening()
 
     # --------------------------------------------------------------------------
     def onPassed(self, args):
         logger.info('RETURN transitioned to Passed state with args [%s].' % (args))
-        self.enterState(self.PRE_PASSED_STATE)
+#        self.enterState(self.PRE_PASSED_STATE)
+        self.enterState(self.POST_SUBMITTED_STATE)
 
         self._pushButtonMonitor.stopListening()
 
@@ -513,7 +530,7 @@ class Station(IStation):
         isCorrect = self._angle.isMatch()
         
         logger.info('Submitting angle: {} , match = {}'.format(repr(angle), isCorrect))
-        self.ConnectionManager.submit(angle, isCorrect, self._failedText)
+        self.ConnectionManager.submit(angle, str(isCorrect), self._failedText)
 
 
 # ------------------------------------------------------------------------------
@@ -562,8 +579,8 @@ class Angle:
             self._targetDigits[2*index+1] = betas[index] /  1 % 10
 
             # TODO -- remove this!!!
-            # self._digits[2*index+0] = self._targetDigits[2*index+0]
-            # self._digits[2*index+1] = self._targetDigits[2*index+1]
+            self._digits[2*index+0] = self._targetDigits[2*index+0]
+            self._digits[2*index+1] = self._targetDigits[2*index+1]
 
     # --------------------------------------------------------------------------
     def __enter__(self):
