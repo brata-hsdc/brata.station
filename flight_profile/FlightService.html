@@ -5,18 +5,36 @@
   <style type="text/css">
   body { font-family: Arial,Sans; }
   table td.label { text-align: right; font-weight: bold; }
+  .invisible { color: red; }
   </style>
+  <script type="text/javascript" src="/jquery.js"></script>
 </head>
   
 <body>
+  <script type="text/javascript">
+  function validate(name) {
+    var valid = $('#'+name).val().match('^[0-9][0-9][0-9]\.[0-9]$');
+    if (valid) {
+       $('#'+name+'_msg').hide();
+    } else {
+       $('#'+name+'_msg').show();
+    }
+    return valid;
+  };
+  function allValid() {
+    return (validate('t_aft') && validate('t_coast') && validate('t_fore'));
+  };
+  $(document).ready(function (event) { $('#t_aft_msg').hide(); $('#t_coast_msg').hide(); $('#t_fore_msg').hide(); });
+  </script>
+
   <h3>Harris Design Challenge 2016 DOCK Simulation</h3>
   <form action="http://%FLIGHT_SERVICE_HOST%/dockparams" method="post">
     <div>
       <p>Enter your flight profile solution values here.</p>
       <table>
-        <tr><td class="label">Acceleration Phase (sec):</td><td class="input"><input name="t_aft" type="text" value="0.0" /></td></tr>
-        <tr><td class="label">Coast Phase (sec):</td><td class="input"><input name="t_coast" type="text" value="0.0" /></td></tr>
-        <tr><td class="label">Deceleration Phase (sec):</td><td class="input"><input name="t_fore" type="text" value="0.0" /></td></tr>
+        <tr><td class="label">Acceleration Phase (sec):</td><td class="input"><input id="t_aft" name="t_aft" type="text" value="000.0" maxlength="5" onchange="validate('t_aft')" /> <span class="invisible" id="t_aft_msg">Input must be <strong>ddd.d</strong></span></td></tr>
+        <tr><td class="label">Coast Phase (sec):</td><td class="input"><input id="t_coast" name="t_coast" type="text" value="000.0" maxlength="5" onchange="validate('t_coast')" /> <span class="invisible" id="t_coast_msg">Input must be <strong>ddd.d</strong></span></td></tr>
+        <tr><td class="label">Deceleration Phase (sec):</td><td class="input"><input id="t_fore" name="t_fore" type="text" value="000.0" maxlength="5" onchange="validate('t_fore')" /> <span class="invisible" id="t_fore_msg">Input must be <strong>ddd.d</strong></span></td></tr>
       </table>
       <br />
       <p>These values will vary during the competition.  The set(s) of values that you receive during the challenge
@@ -38,7 +56,7 @@
         <tr><td class="label">Max Docking Velocity (m/s):</td><td class="input"><input name="v_max" type="text" value="0.1" /></td></tr>
         <tr><td class="label">Initial Velocity (m/s):</td><td class="input"><input name="v_init" type="text" value="0.0" /></td></tr>
         <tr><td class="label">&nbsp;</td><td class="input">&nbsp;</td></tr>
-        <tr><td class="label">&nbsp;</td><td class="input"><input type="submit" value="Test" /></td></tr>
+        <tr><td class="label">&nbsp;</td><td class="input"><input type="submit" value="Test" onclick="return allValid();") /></td></tr>
       </table>
       <input name="t_sim" type="hidden" value="45" />
     </div>

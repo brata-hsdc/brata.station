@@ -20,6 +20,7 @@ import os.path
 
 from DockSim import DockSim, FlightParams
 
+JQUERY = "jquery.js"
 REQUEST_FORM = "FlightService.html"
 RESPONSE_FORM = "FlightServiceResult.html"
 RESPONSE_TEXT = """Outcome: {}
@@ -39,6 +40,8 @@ def wsgiApp(environ, start_response):
         return handle_dock(environ, start_response)
     elif method == "POST" and path == "/dockparams":
         return handle_dockparams(environ, start_response)
+    elif method == "GET" and path == "/jquery.js":
+        return handle_jquery(environ, start_response)
     else:
         return handle_404(environ, start_response)
 
@@ -114,6 +117,15 @@ def handle_dockparams(environ, start_response):
     start_response("200 OK", [("Content-type", responseType)])
     return resp.encode("utf-8")
 
+#----------------------------------------------------------------------------
+def handle_jquery(environ, start_response):
+    content = ""
+    scriptDir = os.path.dirname(__file__)
+    with open(os.path.join(scriptDir, JQUERY), "r") as jquery:
+        content = jquery.read()
+    start_response("200 OK", [("Content-type", "text/javascript")])
+    return content
+    
 #----------------------------------------------------------------------------
 def handle_404(environ, start_response):
     responseType = "text/html"
