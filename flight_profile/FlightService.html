@@ -7,13 +7,13 @@
   table td.label { text-align: right; font-weight: bold; }
   .invisible { color: red; }
   </style>
-  <script type="text/javascript" src="/jquery.js"></script>
+  <script type="text/javascript" src="/jquery-2.2.1.min.js"></script>
 </head>
   
 <body>
   <script type="text/javascript">
   function validate(name) {
-    var valid = $('#'+name).val().match('^[0-9][0-9][0-9]\.[0-9]$');
+    var valid = $('#'+name).val().match('^[0-9][0-9][0-9]\\.[0-9]$');
     if (valid) {
        $('#'+name+'_msg').hide();
     } else {
@@ -24,7 +24,12 @@
   function allValid() {
     return (validate('t_aft') && validate('t_coast') && validate('t_fore'));
   };
-  $(document).ready(function (event) { $('#t_aft_msg').hide(); $('#t_coast_msg').hide(); $('#t_fore_msg').hide(); });
+  $(document).ready(function () {
+    $('#t_aft').on('input', function () {validate('t_aft');});
+    $('#t_coast').on('input', function () {validate('t_coast');});
+    $('#t_fore').on('input', function () {validate('t_fore');});
+    allValid();
+  });
   </script>
 
   <h3>Harris Design Challenge 2016 DOCK Simulation</h3>

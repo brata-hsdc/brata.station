@@ -20,7 +20,8 @@ import os.path
 
 from DockSim import DockSim, FlightParams
 
-JQUERY = "jquery.js"
+#JQUERY = "jquery.js"
+JQUERY = "jquery-2.2.1.min.js"
 REQUEST_FORM = "FlightService.html"
 RESPONSE_FORM = "FlightServiceResult.html"
 RESPONSE_TEXT = """Outcome: {}
@@ -29,18 +30,24 @@ Final Velocity (m/s): {}
 Fuel Remaining (kg): {}
 """
 
+# Set up a simple page cache to hold static content
+# Note:  This could be easily extended to check the last
+#        modified time, but right now, it does not check.
+# Currently JQUERY is the only cached item.
+pageCache = {}
+
 #----------------------------------------------------------------------------
 def wsgiApp(environ, start_response):
     """ Receive a request and dispatch to the correct handler """
     method = environ["REQUEST_METHOD"]  # GET or POST
     path = environ["PATH_INFO"]  # relative part of the URL
-    thisHost = environ["HTTP_HOST"]  # host used to request this page
+    #thisHost = environ["HTTP_HOST"]  # host used to request this page
 
     if method == "GET" and path == "/dock":
         return handle_dock(environ, start_response)
     elif method == "POST" and path == "/dockparams":
         return handle_dockparams(environ, start_response)
-    elif method == "GET" and path == "/jquery.js":
+    elif method == "GET" and path == "/" + JQUERY:
         return handle_jquery(environ, start_response)
     else:
         return handle_404(environ, start_response)
@@ -60,12 +67,14 @@ def handle_dock(environ, start_response):
     
 #----------------------------------------------------------------------------
 def handle_dockparams(environ, start_response):
+    """ Receive the POST message, extract the params, do the sim, and return some values """
     try:
         request_body_size = int(environ.get('CONTENT_LENGTH', 0))
     except ValueError:
         request_body_size = 0
     
     if environ.get('CONTENT_TYPE') == "application/json":
+        # Content is JSON-encoded
         request_body = environ['wsgi.input'].read(request_body_size)
         params = json.loads(request_body)
         fp = FlightParams(tAft=float(params["t_aft"] if "t_aft" in params else 0.0),
@@ -82,6 +91,7 @@ def handle_dockparams(environ, start_response):
                           tSim=int(params["t_sim"] if "t_sim" in params else 45),
                          )
     else: # CONTENT-TYPE == "x-www-form-urlencoded"
+        # Content is URL-encoded
         params = cgi.FieldStorage(environ['wsgi.input'], environ=environ)
         fp = FlightParams(tAft=float(params["t_aft"].value if "t_aft" in params else 0.0),
                           tCoast=float(params["t_coast"].value if "t_coast" in params else 0.0),
@@ -96,9 +106,12 @@ def handle_dockparams(environ, start_response):
                           vInit=float(params["v_init"].value if "v_init" in params else 0.0),
                           tSim=int(params["t_sim"].value if "t_sim" in params else 45),
                          )
+    
+    # Compute the simulation and get the final state
     ds = DockSim(fp)
     finalState = ds.shipState(DockSim.MAX_FLIGHT_DURATION_S)
     
+    # Format the response and insert the values into the response web page
     responseType = "text/html"
     if responseType in environ.get("HTTP_ACCEPT"):
         scriptDir = os.path.dirname(__file__)
@@ -114,17 +127,21 @@ def handle_dockparams(environ, start_response):
         responseType = "text/plain"
         resp = RESPONSE_TEXT.format(ds.outcome(finalState), finalState.tEnd, finalState.currVelocity, finalState.fuelRemaining)
 
+    # Return the web page response
     start_response("200 OK", [("Content-type", responseType)])
     return resp.encode("utf-8")
 
 #----------------------------------------------------------------------------
 def handle_jquery(environ, start_response):
-    content = ""
+    """ Return the jQuery content from the pageCache """
     scriptDir = os.path.dirname(__file__)
-    with open(os.path.join(scriptDir, JQUERY), "r") as jquery:
-        content = jquery.read()
+    pagePath = os.path.join(scriptDir, JQUERY)
+    if pagePath not in pageCache:
+        # Read and cache the content
+        with open(pagePath, "r") as jquery:
+            pageCache[pagePath] = jquery.read()
     start_response("200 OK", [("Content-type", "text/javascript")])
-    return content
+    return pageCache[pagePath]
     
 #----------------------------------------------------------------------------
 def handle_404(environ, start_response):
