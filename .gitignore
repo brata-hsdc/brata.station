@@ -49,3 +49,6 @@ Thumbs.db
 *.bak
 .project
 .pydevproject
+
+# output from nohup used to start flightservice in the background
+nohup.out
