@@ -66,16 +66,16 @@ while (pibrella.button.read() != 1 and scount<nsymbols):
                                 pulse_width = pulse_period/2.0
                                 # check pulse width size
                                 if (pulse_width < pulserange[0]):
-                                        #print "Pulse width %f ms" % (pulse_width*1000)
+                                        print "Pulse width %f ms" % (pulse_width*1000)
                                         ERROR = ERROR + 2
                                 elif (pulse_width > pulserange[1]):
                                         ERROR = ERROR + 4
-                                        #print "Pulse width %f ms" % (pulse_width*1000)
+                                        print "Pulse width %f ms" % (pulse_width*1000)
                         else:
                                 count = count + 1
                         light_on = 1
                         pulse_start = pulse_start + 1
-                        # print "pulse start %d" % pulse_start
+                        print "pulse start %d" % pulse_start
 
 	else:
                 # get the current time
@@ -90,9 +90,9 @@ while (pibrella.button.read() != 1 and scount<nsymbols):
                         if (pulse_start >= 2):                              
                                 # if off time is greater than the number of stop bits
                                 if ((ctime-ttime) > (pulse_width*stoprange[0]+pulse_width)):
-                                        #print "stop gap = %f ms" % ((ctime-ttime)*1000)
-                                        #print "stoprange = %f ms" % (pulse_width*stoprange[0]*1000)
-                                        # print "The Pulse count is %d" % count
+                                        print "stop gap = %f ms" % ((ctime-ttime)*1000)
+                                        print "stoprange = %f ms" % (pulse_width*stoprange[0]*1000)
+                                        print "The Pulse count is %d" % count
                                         # error if the symbol is out of range
                                         if count > maxcount:
                                                 ERROR = ERROR + 8

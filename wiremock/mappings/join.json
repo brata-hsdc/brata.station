@@ -1,10 +1,13 @@
 {
    "request": {
       "method": "POST",
-      "url": "/piservice/join/",
+      "url": "/piservice/join/"
+/*
       "bodyPatterns" : [
-         { "equalToJson" : "{ \"station_type\": \"DOCK\", \"station_serial\": \"1234\", \"station_id\": \"dock01\", \"station_url\": \"http://192.168.9.206:5000/rpi\" }", "jsonCompareMode": "LENIENT" }
+         { "equalToJson" : "{ \"station_type\": \"DOCK\", \"station_serial\": \"1234\", \"station_id\": \"dock01\", \"station_url\": \"http://192.168.9.206:5000/rpi\" }", "jsonCompareMode": "LENIENT" },
+         { "equalToJson" : "{ \"station_type\": \"RETURN\", \"station_id\": \"return06\", \"station_url\": \"http://192.168.4.59:5000/rpi\" }", "jsonCompareMode": "LENIENT" }
       ]
+*/
    },
    "response": {
       "status": 200,
