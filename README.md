@@ -9,33 +9,52 @@ proceeding with this document.
 
 This is a Python application. So far, there is nothing to build.
 
-
 #---
 # Install
 #---
 
+Start by following the install for the master server up to but not including the
+"Install Python dev to enable mod_wsgi install" section. 
+TODO if we don't end up putting QR Codes in the station display for dock setup of the pi can stop after git is installed.
+
+```sh
+$ sudo raspi-config
+```
+go to advanced enable I2C
+Finish which will restart
+
+```sh
+$ sudo pip install pibrella
+$ sudo pip install python-dbus
+```
+
 You should be able to set this up on a Raspberry Pi station by following
 the steps in the Pi Setup document. To get the code from the repository
 into a standard location, run the following
-
-   $ sudo mkdir /opt/designchallenge2015
-   $ sudo chown pi:pi /opt/designchallenge2015
-   $ cd /opt/designchallenge2015
-   $ git clone https://code.google.com/p/brata.station/
-
+```sh
+$ sudo mkdir /opt/designchallenge2016
+$ sudo chown pi:pi /opt/designchallenge2016
+$ cd /opt/designchallenge2016
+$ git clone https://github.com/brata-hsdc/brata.station.git
+```
 
 #---
 # Run
 #---
+To run the station: 
+```sh
+$ cd /opt/desognchallenge2016/brata.station/bin/
+$ python ./runstation -m ipofserver:port -n stationname -t type
+```
 
 To run unit tests:
-
-   $ cd /opt/designchallenge2015/brata.station/sve/bin
-   $ ./runtests
-
+```sh
+$ cd /opt/designchallenge2016/brata.station/sve/bin
+$ ./runtests
+```
 To run the SVE application for the HMB:
 
-   $ cd /opt/designchallenge2015/brata.station/sve/bin
+   $ cd /opt/designchallenge2016/brata.station/sve/bin
    $ ./sve
 
 To monitor SVE log output in another terminal window:
