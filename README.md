@@ -25,7 +25,19 @@ Finish which will restart
 
 ```sh
 $ sudo pip install pibrella
+$ sudo pip install mido
+$ sudo pip install enum
 $ sudo pip install python-dbus
+$ sudo pi install Flask
+$ sudo pip install tornado
+$ sudo apt-get install build-essential python-dev python-smbus python-pip
+$ cd ~
+$ git clone https://github.com/adafruit/Adafruit_Python_CharLCD.git
+$ cd Adafruit_Python_CharLCD
+$ sudo python setup.py install
+$ sudo mkdir /opt/designchallenge2015
+$ cd /opt/designchallenge2015
+$ sudo git clone https://github.com/adafruit/Adafruit-Raspberry-Pi-Python-Code
 ```
 
 You should be able to set this up on a Raspberry Pi station by following
@@ -41,10 +53,14 @@ $ git clone https://github.com/brata-hsdc/brata.station.git
 #---
 # Run
 #---
-To run the station: 
+NOTE stations require secific hw for this year
+return needs an adafruit 16x2 LCC color display
+dock needs a Pi 2 and monitor that supports 1080p
+secure requires the pibrella running the light sensor hw from 2015 cpa as well as an audio cable(s) that can direct the speaker output of the py to the mic input of an android phone 
+To run a station: 
 ```sh
 $ cd /opt/desognchallenge2016/brata.station/bin/
-$ python ./runstation -m ipofserver:port -n stationname -t type
+$ ./runstation -m ipofmasterserver:port -n stationname -t type
 ```
 
 To run unit tests:
