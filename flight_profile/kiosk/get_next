@@ -1,0 +1,22 @@
+#!/bin/bash
+
+
+# Get the number of cmds in the queue
+ncmds=`wc -l < cmds`
+
+# Get the index of the next command to return
+#n=`cat next_cmd`
+n=$(< next_cmd)
+
+# Wrap around when we've gone too far
+if ((n > ncmds)); then ((n=1)); fi
+
+# Retrieve the next cmd
+cmd=`head -n $n < cmds | tail -n 1`
+
+# Advance the index
+(( n++ ))
+echo $n > next_cmd
+
+# Output the cmd text
+echo ${cmd}
