@@ -18,6 +18,7 @@ import pygame.image
 import pygame.font
 import pygame.time
 import Queue
+import qrcode
 
 from station.state import State  # TODO: get rid of this dependency!!
 
@@ -193,12 +194,16 @@ class Clock(Text):
 #----------------------------------------------------------------------------
 class ImgObj(pygame.sprite.DirtySprite):
     
-    def __init__(self, path, canvas=None, alpha=False, pivot=(0,0)):
+    def __init__(self, path=None, image=None, canvas=None, alpha=False, pivot=(0,0)):
+        """ Create a sprite given an image file, or a pygame image object """
         # Call the parent class (Sprite) constructor
         super(ImgObj, self).__init__()
        
         # Load an image, creating a Surface.
-        self.image = pygame.image.load(path)
+        if path:
+            self.image = pygame.image.load(path)
+        if image:
+            self.image = image
         if alpha:
             self.image = self.image.convert_alpha()
         else:
@@ -334,6 +339,9 @@ class FlightProfileApp(object):
     EARTH_BG_IMG = "img/earth_cropped.png"
     EARTH_BG_POS = (0, 800)
     
+#     QR_POS = (50, 1000)
+    QR_POS = (500, 500)
+    
     STATION_IMG   = "img/station_2.png"
     STATION_PIVOT = (16, 225)  # docking port
     STATION_POS   = FLIGHT_PATH_END
@@ -412,6 +420,7 @@ class FlightProfileApp(object):
         self.timer.start()
     
     def loadImageObjects(self):
+        """ Load sprite images from files, and dynamically create QR code images """
         scriptDir = os.path.dirname(__file__)
         self.stars = ImgObj(os.path.join(scriptDir, self.STARS_BG_IMG), alpha=False)
         self.stars.moveTo(self.STARS_BG_POS)
@@ -430,9 +439,46 @@ class FlightProfileApp(object):
         self.station = ImgObj(os.path.join(scriptDir, self.STATION_IMG), alpha=True, pivot=self.STATION_PIVOT)
         self.station.moveTo(self.STATION_POS)
         
+        # Generate the Arrive, Dock, and Latch QR codes to display in the corner of the screen
+        self.createQrCodes()
+    
+    def createQrCodes(self):
+        """ Dynamically create some QR codes.
+        
+        They will contain the address of this station, so they have to
+        be generated at runtime.
+        """
+        self.arriveQr = ImgObj(image=self.makeQrCode("http://<ms>/piservice/start_challenge/<stationid>"))
+        self.arriveQr.moveTo(self.QR_POS)
+        
+        self.dockQr = ImgObj(image=self.makeQrCode("http://<ms>/piservice/dock/<stationid>"))
+        self.dockQr.moveTo(self.QR_POS)
+
+        self.latchQr = ImgObj(image=self.makeQrCode("http://<ms>/piservice/latch/<stationid>"))
+        self.latchQr.moveTo(self.QR_POS)
+        
+    def makeQrCode(self, qrText):
+        """ Generate a QR code image, and return it as a pygame image object """
+#         qr = qrcode.QRCode(
+#             version=None,
+#             error_correction=qrcode.constants.ERROR_CORRECT_L,
+#             box_size=10,
+#             border=4,
+#         )
+#         qr.add_data(qrText)
+#         qr.make(fit=True)
+        
+        # Return a PIL image object
+#         img = qr.make_image().convert("P")
+        img = qrcode.make(qrText).convert("RGB")
+        print("size: ",img.size)
+        print("format: ", img.mode)
+        return pygame.image.fromstring(img.tostring(), img.size, img.mode)
+        
     def setupBackgroundDisplay(self):
         self.staticGroup.empty()
         self.staticGroup.add((self.stars, self.earth), layer=self.BG_LAYER)
+        self.staticGroup.add(self.arriveQr, layer=self.BG_LAYER)
     
     def setupMissionTimeDisplay(self):
         X = 100
