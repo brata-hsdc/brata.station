@@ -220,6 +220,8 @@ class ImgObj(pygame.sprite.DirtySprite):
     
     def x(self): return self.rect.x
     def y(self): return self.rect.y
+    def w(self): return self.image.get_width()
+    def h(self): return self.image.get_height()
     def pos(self): return (self.x(), self.y())
     def pivotX(self): return self.rect.x + self.pivot[0]
     def pivotY(self): return self.rect.y + self.pivot[1]
@@ -264,6 +266,36 @@ class TetheredImgObj(ImgObj):
         """ Move to offset relative to parent specified by delta """
         super(TetheredImgObj, self).moveTo((self.parent.pivotX() + self.offset[0], self.parent.pivotY() + self.offset[1]))
     
+#----------------------------------------------------------------------------
+class QrImgObj(ImgObj):
+    """ An ImgObj that displays a QR code """
+    QR_BOX_SIZE_PX = 5
+    QR_BORDER_PX = 2
+    
+    def __init__(self, qrText, canvas=None, alpha=False, pivot=(0,0)):
+        """ Create a QR code image containing the string qrText """
+        super(QrImgObj, self).__init__(image=self.makeQrCode(qrText),
+                                       canvas=canvas,
+                                       alpha=alpha,
+                                       pivot=pivot)
+
+    @staticmethod
+    def makeQrCode(qrText):
+        """ Generate a QR code image, and return it as a pygame image object """
+        qr = qrcode.QRCode(
+            version=None,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=QrImgObj.QR_BOX_SIZE_PX,
+            border=QrImgObj.QR_BORDER_PX,
+        )
+        qr.add_data(qrText)
+        qr.make(fit=True)
+         
+        # Return a PIL image object
+        img = qr.make_image().convert("RGB")
+#         img = qrcode.make(qrText).convert("RGB")
+        return pygame.image.fromstring(img.tostring(), img.size, img.mode)
+        
 #----------------------------------------------------------------------------
 class AnimGroup(pygame.sprite.LayeredDirty):
     """ A Group that can sequence through multi-image sprites.
@@ -339,8 +371,10 @@ class FlightProfileApp(object):
     EARTH_BG_IMG = "img/earth_cropped.png"
     EARTH_BG_POS = (0, 800)
     
-#     QR_POS = (50, 1000)
-    QR_POS = (500, 500)
+    QR_POS = (50, 900)
+#     QR_POS = (500, 500)
+    QR_LABEL_POS = (50, 1050)
+    QR_LABEL_SIZE = 30
     
     STATION_IMG   = "img/station_2.png"
     STATION_PIVOT = (16, 225)  # docking port
@@ -445,40 +479,31 @@ class FlightProfileApp(object):
     def createQrCodes(self):
         """ Dynamically create some QR codes.
         
-        They will contain the address of this station, so they have to
-        be generated at runtime.
+            They will contain the address of this station, so they have to
+            be generated at runtime.
         """
-        self.arriveQr = ImgObj(image=self.makeQrCode("http://<ms>/piservice/start_challenge/<stationid>"))
+        self.arriveQr = QrImgObj("http://<ms>/piservice/start_challenge/<stationid>")
         self.arriveQr.moveTo(self.QR_POS)
         
-        self.dockQr = ImgObj(image=self.makeQrCode("http://<ms>/piservice/dock/<stationid>"))
+        self.dockQr = QrImgObj("http://<ms>/piservice/dock/<stationid>")
         self.dockQr.moveTo(self.QR_POS)
 
-        self.latchQr = ImgObj(image=self.makeQrCode("http://<ms>/piservice/latch/<stationid>"))
+        self.latchQr = QrImgObj("http://<ms>/piservice/latch/<stationid>")
         self.latchQr.moveTo(self.QR_POS)
+    
+    def displayQrCode(self, qrCodeImg, label=None):
+        """ Display a QrImgObj with a text label """
+        self.staticGroup.add(qrCodeImg)
         
-    def makeQrCode(self, qrText):
-        """ Generate a QR code image, and return it as a pygame image object """
-#         qr = qrcode.QRCode(
-#             version=None,
-#             error_correction=qrcode.constants.ERROR_CORRECT_L,
-#             box_size=10,
-#             border=4,
-#         )
-#         qr.add_data(qrText)
-#         qr.make(fit=True)
-        
-        # Return a PIL image object
-#         img = qr.make_image().convert("P")
-        img = qrcode.make(qrText).convert("RGB")
-        print("size: ",img.size)
-        print("format: ", img.mode)
-        return pygame.image.fromstring(img.tostring(), img.size, img.mode)
+        if label:
+#             text = Text((self.QR_POS[0] + qrCodeImg.w(), self.QR_POS[1]), value=label, size=self.QR_LABEL_SIZE, color=Colors.WHITE)
+            text = Text((self.QR_POS[0], self.QR_POS[1] - self.QR_LABEL_SIZE/2), value=label, size=self.QR_LABEL_SIZE, color=Colors.WHITE)
+            self.staticGroup.add(text)
         
     def setupBackgroundDisplay(self):
         self.staticGroup.empty()
         self.staticGroup.add((self.stars, self.earth), layer=self.BG_LAYER)
-        self.staticGroup.add(self.arriveQr, layer=self.BG_LAYER)
+#         self.staticGroup.add(self.arriveQr, layer=self.BG_LAYER)
     
     def setupMissionTimeDisplay(self):
         X = 100
@@ -654,6 +679,8 @@ class FlightProfileApp(object):
                                 color=Colors.GREEN if passed else Colors.RED,
                                 justify=Text.CENTER|Text.MIDDLE)
                 self.blinkingTextGroup.add((msgText1, msgText2))
+        
+        self.displayQrCode(self.latchQr, label="Scan to Activate Docking Latch")
     
     def createKioskScreen(self, args):
         """ Put up some text on the display
@@ -839,8 +866,14 @@ class FlightProfileApp(object):
         
     def showReadyScreen(self):
         """ Display an initial greeting screen """
-        pass
+        self.createReadyText()
+        self.displayQrCode(self.arriveQr, "Scan to Start Challenge")
     
+    def showWelcomeScreen(self, teamName):
+        """ Display the team welcome screen """
+        self.createWelcomeText(name=teamName)
+        self.displayQrCode(self.dockQr, "Scan to Initiate Dock Procedure")
+        
     def outcomeMessage(self, state):
         result = self.dockSim.outcome(state)
         return self.OUTCOMES[self.dockSim.outcome(state)]  # get failure (or success) message
@@ -908,7 +941,8 @@ class FlightProfileApp(object):
         self.initScreen()
         self.loadImageObjects()
         self.setupBackgroundDisplay()
-        self.createReadyText()
+#         self.createReadyText()
+        self.showReadyScreen()
 
         updateProc = self.updateBlinkingText
         
@@ -942,11 +976,13 @@ class FlightProfileApp(object):
                 #self.processLoop()  # stay in processLoop() until sim is complete
             elif cmd == self.READY_CMD:
                 #print("READY_CMD")
-                self.createReadyText()
+#                 self.createReadyText()
+                self.showReadyScreen()
                 updateProc = self.updateBlinkingText
             elif cmd == self.WELCOME_CMD:
                 #print("WELCOME_CMD")
-                self.createWelcomeText(name=args)
+#                 self.createWelcomeText(name=args)
+                self.showWelcomeScreen(teamName=args)
                 updateProc = self.updateBlinkingText
             elif cmd == self.KIOSK_CMD:
                 self.createKioskScreen(args)
