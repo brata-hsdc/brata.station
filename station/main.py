@@ -31,23 +31,15 @@ class StationLoader(object):
     """
 
     # --------------------------------------------------------------------------
-    def __init__(self,
-                 config):
-        """TODO strictly one-line summary
+    def __init__(self, config):
+        """ Dynamically instantiate connection, hardware, and station objects. 
 
-        TODO Detailed multi-line description if
-        necessary.
+        First, extract module names and class names from the config object.
+        Next, dynamically import the Python modules containing the target classes.
+        Finally, instantiate the objects.
 
         Args:
-            arg1 (type1): TODO describe arg, valid values, etc.
-            arg2 (type2): TODO describe arg, valid values, etc.
-            arg3 (type3): TODO describe arg, valid values, etc.
-        Returns:
-            TODO describe the return type and details
-        Raises:
-            TodoError1: if TODO.
-            TodoError2: if TODO.
-
+            config (Config):  the config object from runstation.conf
         """
         logger.debug('Constructing StationLoader')
 
