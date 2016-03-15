@@ -37,19 +37,21 @@ class Station(IStation):
     """
     
     # --------------------------------------------------------------------------
-    def __init__(self,
-                 config,
-                 hwModule):
+    def __init__(self, config, hwModule):
         """ Initialize the graphical display and the simulation engine
 
-        The Dock simulation uses pygame to drive the display.
+        The Dock simulation is computed and displayed by the FlightProfileApp
+        object (which uses pygame to drive the display).  The Station object
+        (this object) runs the simulation and display as a Challenge station,
+        responding to events (messages) from the Master Server. 
 
         Args:
             config:    a Config object containing properties to configure station characteristics
             hwModule:  python module object that defines hardware interfaces
+                       (no hardware module is needed by the Dock station)
         """
         logger.debug('Constructing DOCK')
-        self.ConnectionManager = None
+        self.ConnectionManager = None  # This gets set by the caller after creating the Station object
 
         self._flightSim = FlightProfileApp()
         self._flightSim.fullscreen = True
@@ -76,6 +78,9 @@ class Station(IStation):
         # Spawn sim process
         logger.info("ConnectionManager._callback is {}".format(repr(self.ConnectionManager._callback)))
         self._flightSim.stationCallbackObj = self.ConnectionManager._callback
+        self._flightSim.setQrUrls(self.ConnectionManager._arriveUrl,
+                                  self.ConnectionManager._dockDockUrl,
+                                  self.ConnectionManager._dockLatchUrl)
 
         if self._simQueue is None:
             self._simQueue = Queue()

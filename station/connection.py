@@ -65,7 +65,9 @@ class ConnectionManager(IConnectionManager):
         Args:
             station (Station): station class
             stationTypeId (type): ID for station
-            config (Config): Configuration parameters
+            config (Config): Configuration parameters (the ConnectionManager
+                             portion of the Config object created in
+                             runstation.conf)
         """
 
         # TODO?
@@ -89,6 +91,9 @@ class ConnectionManager(IConnectionManager):
         self._leaveUrl = config.LeaveUrl
         self._timeExpiredUrl = config.TimeExpiredUrl
         self._submitUrl = config.SubmitUrl
+        self._arriveUrl = config.ArriveUrl
+        self._dockDockUrl = config.DockUrl   # just for the Dock station
+        self._dockLatchUrl = config.LatchUrl # just for the Dock station
         self._stationType = stationTypeId
         self._stationId = config.StationId
         self._resetPin = config.ResetPIN

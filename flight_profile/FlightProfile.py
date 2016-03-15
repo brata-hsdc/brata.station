@@ -371,9 +371,9 @@ class FlightProfileApp(object):
     EARTH_BG_IMG = "img/earth_cropped.png"
     EARTH_BG_POS = (0, 800)
     
-    QR_POS = (50, 900)
+    QR_POS = (50, 1050) # loc of bottom left corner
 #     QR_POS = (500, 500)
-    QR_LABEL_POS = (50, 1050)
+    QR_LABEL_OFFSET = (10, -120) # offset from bottom right corner
     QR_LABEL_SIZE = 30
     
     STATION_IMG   = "img/station_2.png"
@@ -429,6 +429,10 @@ class FlightProfileApp(object):
         self.frameClock = None
         self.fullscreen = self.FULLSCREEN
         
+        self.arriveUrl = ""
+        self.dockUrl = ""
+        self.latchUrl = ""
+        
         self.maxVelocity = 0.0
         self.simPhase = DockSim.START_PHASE
         self.outOfFuel = False
@@ -476,20 +480,26 @@ class FlightProfileApp(object):
         # Generate the Arrive, Dock, and Latch QR codes to display in the corner of the screen
         self.createQrCodes()
     
+    def setQrUrls(self, arriveUrl, dockUrl, latchUrl):
+        """ Set the URLs that will be turned into QR codes and displayed """
+        self.arriveUrl = arriveUrl
+        self.dockUrl = dockUrl
+        self.latchUrl = latchUrl
+    
     def createQrCodes(self):
         """ Dynamically create some QR codes.
         
             They will contain the address of this station, so they have to
             be generated at runtime.
         """
-        self.arriveQr = QrImgObj("http://<ms>/piservice/start_challenge/<stationid>")
-        self.arriveQr.moveTo(self.QR_POS)
+        self.arriveQr = QrImgObj(self.arriveUrl)
+        self.arriveQr.moveTo((self.QR_POS[0], self.QR_POS[1] - self.arriveQr.h()))
         
-        self.dockQr = QrImgObj("http://<ms>/piservice/dock/<stationid>")
-        self.dockQr.moveTo(self.QR_POS)
+        self.dockQr = QrImgObj(self.dockUrl)
+        self.dockQr.moveTo((self.QR_POS[0], self.QR_POS[1] - self.dockQr.h()))
 
-        self.latchQr = QrImgObj("http://<ms>/piservice/latch/<stationid>")
-        self.latchQr.moveTo(self.QR_POS)
+        self.latchQr = QrImgObj(self.latchUrl)
+        self.latchQr.moveTo((self.QR_POS[0], self.QR_POS[1] - self.latchQr.h()))
     
     def displayQrCode(self, qrCodeImg, label=None):
         """ Display a QrImgObj with a text label """
@@ -497,7 +507,9 @@ class FlightProfileApp(object):
         
         if label:
 #             text = Text((self.QR_POS[0] + qrCodeImg.w(), self.QR_POS[1]), value=label, size=self.QR_LABEL_SIZE, color=Colors.WHITE)
-            text = Text((self.QR_POS[0], self.QR_POS[1] - self.QR_LABEL_SIZE/2), value=label, size=self.QR_LABEL_SIZE, color=Colors.WHITE)
+            pos = (self.QR_POS[0] + qrCodeImg.w() + self.QR_LABEL_OFFSET[0],
+                   self.QR_POS[1] + self.QR_LABEL_OFFSET[1])
+            text = Text(pos, value=label, size=self.QR_LABEL_SIZE, color=Colors.WHITE)
             self.staticGroup.add(text)
         
     def setupBackgroundDisplay(self):
