@@ -1,0 +1,6 @@
+#!/bin/sh
+
+angles='[9, 18, 27, 36, 45, 54]'
+angles='[84, 40, 29, 13, 75, 69]'
+
+curl -X POST --header 'Content-Type: application/json' --data '{"message_version": 0, "message_timestamp": "2014-09-15 14:08:59", "theatric_delay_ms": "2000", "return_guidance_pattern": [9, 18, 27, 36, 45, 54]}' 'http://localhost:5000/rpi/start_challenge'

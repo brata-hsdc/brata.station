@@ -1,0 +1,4 @@
+#!/bin/sh
+
+exec java -jar /opt/wiremock/wiremock-1.48-standalone.jar --root-dir /opt/designchallenge2016/brata.station/wiremock --no-request-journal "$@"
+

@@ -1,0 +1,5 @@
+#!/bin/sh
+
+sudo /opt/designchallenge2016/brata.station/bin/runstation -t return -n return06 -m localhost:8080
+# sudo /opt/designchallenge2016/brata.station/bin/runstation -t return -n return06 -m 192.168.1.7:80
+# sudo /opt/designchallenge2016/brata.station/bin/runstation -t return -n return06 -m 192.168.4.37:80
