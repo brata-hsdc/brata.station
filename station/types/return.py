@@ -175,7 +175,6 @@ class Station(IStation):
         logger.info('RETURN transitioned to Processing state with args [%s].' % (args))
 
         self._angle = Angle(self._cheatMode, *args)
-        # self._angle._cheatMode = self._cheatMode;
         self.refreshDisplayedAngle()
         self.enterState(self.INPUT_STATE)
 
