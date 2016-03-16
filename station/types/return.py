@@ -95,6 +95,7 @@ class Station(IStation):
         self._timedMsg = None  # generator
         self._timedMsgNextState = self.IDLE_STATE
         self._colorToggle = None  # generator
+        self._cheatMode = config.CheatMode
         
         self._preInputDuration   =  6.0  # seconds to display msg
         self._passedDuration     =  7.5  # seconds to display msg
@@ -173,7 +174,8 @@ class Station(IStation):
     def onProcessing(self, args):
         logger.info('RETURN transitioned to Processing state with args [%s].' % (args))
 
-        self._angle = Angle(*args)
+        self._angle = Angle(self._cheatMode, *args)
+        # self._angle._cheatMode = self._cheatMode;
         self.refreshDisplayedAngle()
         self.enterState(self.INPUT_STATE)
 
@@ -540,7 +542,7 @@ class Angle:
     """
 
     # --------------------------------------------------------------------------
-    def __init__(self,
+    def __init__(self, cheatMode,
                  theta1, theta2, theta3,
                  theta4, theta5, theta6):
         """ Initialize resulting angles to 12 digits, 2 in each value
@@ -578,9 +580,9 @@ class Angle:
             self._targetDigits[2*index+0] = betas[index] / 10 % 10
             self._targetDigits[2*index+1] = betas[index] /  1 % 10
 
-            # TODO -- remove this!!!
-            self._digits[2*index+0] = self._targetDigits[2*index+0]
-            self._digits[2*index+1] = self._targetDigits[2*index+1]
+            if cheatMode:
+                self._digits[2*index+0] = self._targetDigits[2*index+0]
+                self._digits[2*index+1] = self._targetDigits[2*index+1]
 
     # --------------------------------------------------------------------------
     def __enter__(self):
