@@ -89,18 +89,16 @@ class Text(pygame.sprite.DirtySprite):
         
         # Create the text image
         # If shrinkToWidth > 0, shrink the pointSize until it fits
-        ptSize = self.pointSize
-        font = self.font
         while True:
-            textWidth = font.size(self._value)[0]
+            textWidth = self.font.size(self._value)[0]
             if self.shrinkToWidth == 0 or textWidth <= self.shrinkToWidth:
                 break
-#            self.image = font.render(self._value, True, self.color)
-            print("Text width", textWidth)
-            ptSize = int(ptSize * self.shrinkToWidth/textWidth)
-            print("Point size", ptSize)
-            font = pygame.font.Font(self.fontName, ptSize)
-        self.image = font.render(self._value, True, self.color)
+#            self.image = self.font.render(self._value, True, self.color)
+#             print("Text width", textWidth)
+            self.pointSize = int(self.pointSize * self.shrinkToWidth/textWidth)
+#             print("Point size", self.pointSize)
+            self.font = pygame.font.Font(self.fontName, self.pointSize)
+        self.image = self.font.render(self._value, True, self.color)
 
         self.dirty = 1
 
@@ -115,7 +113,7 @@ class Text(pygame.sprite.DirtySprite):
     
         if self.justify & self.BOTTOM:
             self.rect.bottom = self.pos[1]
-        elif self.justify & self.CENTER:
+        elif self.justify & self.MIDDLE:
             self.rect.centery = self.pos[1]
         else: # self.TOP
             self.rect.top = self.pos[1]
@@ -644,16 +642,16 @@ class FlightProfileApp(object):
         
     def createWelcomeText(self, name):
         GIANT_TEXT = 300
-        text = Text((self.SCREEN_CENTER[0], 300),
+        text = Text(self.SCREEN_CENTER, #(self.SCREEN_CENTER[0], 300),
                     value="Welcome",
                     size=GIANT_TEXT,
                     color=Colors.ORANGE,
-                    justify=Text.CENTER|Text.TOP)
+                    justify=Text.CENTER|Text.BOTTOM)
         nameText = Text(self.SCREEN_CENTER,
                     value=str(name),
                     size=int(GIANT_TEXT * 0.6),
                     color=Colors.WHITE,
-                    justify=Text.CENTER|Text.MIDDLE,
+                    justify=Text.CENTER|Text.TOP,
                     shrinkToWidth=int(self.SCREEN_SIZE[0]*0.9))
         self.blinkingTextGroup.add((text, nameText))
         
@@ -706,10 +704,30 @@ class FlightProfileApp(object):
         args = eval(args)
         for ptsize,color,pos,justify,text in args:
             pos = list(pos)
-            for t in text.split("\n"):
-                textSprite = Text(pos, t, size=ptsize, color=color, justify=justify)
+            splitChar = "\n" if "\n" in text else "|"
+            
+            # Create all the lines, shrinking to fit the screen
+            textSprites = []
+            for t in text.split(splitChar):
+                textSprites.append(Text(pos, t, size=ptsize, color=color, justify=justify,
+                                        shrinkToWidth=int(self.SCREEN_SIZE[0]*0.9)))
+            
+            # Figure out what size to make the text
+            smallestPtSize = min([t.pointSize for t in textSprites])
+            smallestLineHeight = min([t.lineHeight() for t in textSprites])
+            numLines = len(textSprites)
+            del textSprites
+            
+            if justify & Text.BOTTOM:
+                pos[1] -= smallestLineHeight * (numLines - 1)
+            elif justify & Text.MIDDLE:
+                pos[1] -= int(smallestLineHeight * numLines/2)
+                
+            # Now remake all the lines at the smallest point size
+            for t in text.split(splitChar):
+                textSprite = Text(pos, t, size=smallestPtSize, color=color, justify=justify)
                 self.blinkingTextGroup.add(textSprite)
-                pos[1] += textSprite.lineHeight()
+                pos[1] += smallestLineHeight
             
     def drawCharts(self):
         pass
