@@ -7,6 +7,11 @@ startSleep=10
 simSleep=$(($simTime + 10))
 resetSleep=3
 
+# Commands used
+station_ws=/opt/designchallenge2016/brata.station
+show_text=$station_ws/station/test/show_text.sh
+run_flight=$station_ws/station/test/run_flight.sh
+
 java -jar /opt/wiremock/wiremock-1.48-standalone.jar --root-dir /opt/designchallenge2016/brata.station/wiremock --no-request-journal &
 wiremock_pid=$!
 trap "kill -9 $wiremock_pid $$" 2
@@ -21,12 +26,12 @@ while true; do
    # echo "Send start_challenge"
    # http --json POST http://localhost:5000/rpi/start_challenge Content-type:application/json Accept:application/json kiosk_text='((100, Colors.WHITE, (960,100), Text.CENTER|Text.MIDDLE, "Welcome\\nto the 2016"),(200, Colors.RED, (960,500), Text.CENTER|Text.MIDDLE, "HARRIS\\nDesign\\nChallenge"))'
    # sleep 5
-   show_text.sh 'Welcome|to the 2016|Harris|Design|Challenge' 5 RED 200
+   $show_text 'Welcome|to the 2016|Harris|Design|Challenge' 5 RED 200
 
    # echo "Send start_challenge"
    # http --json POST http://localhost:5000/rpi/start_challenge Content-type:application/json Accept:application/json kiosk_text='((70, Colors.ORANGE, (960,300), Text.CENTER|Text.MIDDLE, "This monitor is displaying sample runs of\\nthe Docking Simulation that is one\\nof the four challenges the teams must\\npass during the competition.\\n \\nGood luck, teams!!"),)'
    # sleep 10
-   show_text.sh 'This monitor is displaying sample runs of|the Docking Simulation that is one|of the four challenges the teams must|pass during the competition.||Good luck, teams!!' 10 ORANGE 70
+   $show_text 'This monitor is displaying sample runs of|the Docking Simulation that is one|of the four challenges the teams must|pass during the competition.||Good luck, teams!!' 10 ORANGE 70
 
    # echo "Send start_challenge"
    # http --json POST http://localhost:5000/rpi/start_challenge Content-type:application/json Accept:application/json team_name="Space Team"
@@ -36,12 +41,12 @@ while true; do
    # sleep $simSleep
    # http --json GET http://localhost:5000/rpi/reset/31415 Content-type:text/html
    # sleep $resetSleep
-   run_flight.sh 8.2 1 13.1 'Space Team' $simTime
+   $run_flight 8.2 1 13.1 'Space Team' $simTime
    
    # echo "Send start_challenge"
    # http --json POST http://localhost:5000/rpi/start_challenge Content-type:application/json Accept:application/json kiosk_text='((100, Colors.ORANGE, (960,540), Text.CENTER|Text.MIDDLE, "This next one will fail"),)'
    # sleep 10
-   show_text.sh 'This next one will fail' 10 ORANGE 100
+   $show_text 'This next one will fail' 10 ORANGE 100
    
    # echo "Send start_challenge"
    # http --json POST http://localhost:5000/rpi/start_challenge Content-type:application/json Accept:application/json team_name="Space Racers"
@@ -51,7 +56,7 @@ while true; do
    # sleep $simSleep
    # http --json GET http://localhost:5000/rpi/reset/31415 Content-type:text/html
    # sleep $resetSleep
-   run_flight.sh 10.2 1 13.1 'Space Racers' $simTime
+   $run_flight 10.2 1 13.1 'Space Racers' $simTime
    
    # echo "Send start_challenge"
    # http --json POST http://localhost:5000/rpi/start_challenge Content-type:application/json Accept:application/json team_name="Snail Space Team"
@@ -61,7 +66,7 @@ while true; do
    # sleep $simSleep
    # http --json GET http://localhost:5000/rpi/reset/31415 Content-type:text/html
    # sleep $resetSleep
-   run_flight.sh 8.2 1 13.6 'Snail Space Team' $simTime
+   $run_flight 8.2 1 13.6 'Snail Space Team' $simTime
    
    # echo "Send start_challenge"
    # http --json POST http://localhost:5000/rpi/start_challenge Content-type:application/json Accept:application/json team_name="Hydrazine Hogs"
@@ -71,7 +76,7 @@ while true; do
    # sleep $simSleep
    # http --json GET http://localhost:5000/rpi/reset/31415 Content-type:text/html
    # sleep $resetSleep
-   run_flight.sh 8.2 1 13.1 'Hydrazine Hogs' $simTime --q_fuel=5
+   $run_flight 8.2 1 13.1 'Hydrazine Hogs' $simTime --q_fuel=5
    
    # echo "Send start_challenge"
    # http --json POST http://localhost:5000/rpi/start_challenge Content-type:application/json Accept:application/json team_name="Retro Rockettes"
@@ -81,7 +86,7 @@ while true; do
    # sleep $simSleep
    # http --json GET http://localhost:5000/rpi/reset/31415 Content-type:text/html
    # sleep $resetSleep
-   run_flight.sh 2 45 13.1 'Retro Rockettes' $simTime
+   $run_flight 2 45 13.1 'Retro Rockettes' $simTime
    
    # echo "Send start_challenge"
    # http --json POST http://localhost:5000/rpi/start_challenge Content-type:application/json Accept:application/json team_name="Team Whose Name Takes Up a Lot of Space"
@@ -91,7 +96,7 @@ while true; do
    # sleep $simSleep
    # http --json GET http://localhost:5000/rpi/reset/31415 Content-type:text/html
    # sleep $resetSleep
-   run_flight.sh 3 8 13.1 'Team Whose Name Takes Up a Lot of Space' $simTime --q_fuel=5
+   $run_flight 3 8 13.1 'Team Whose Name Takes Up a Lot of Space' $simTime --q_fuel=5
 
    # echo "Send start_challenge"
    # http --json POST http://localhost:5000/rpi/start_challenge Content-type:application/json Accept:application/json team_name="Open the Pod Bay Doors Please, HAL"
@@ -101,7 +106,7 @@ while true; do
    # sleep $simSleep
    # http --json GET http://localhost:5000/rpi/reset/31415 Content-type:text/html
    # sleep $resetSleep
-   run_flight.sh 4 12 13.1 'Open the Pod Bay Doors Please, HAL' $simTime --q_fuel=5
+   $run_flight 4 12 13.1 'Open the Pod Bay Doors Please, HAL' $simTime --q_fuel=5
 
    # echo "Send start_challenge"
    # http --json POST http://localhost:5000/rpi/start_challenge Content-type:application/json Accept:application/json team_name="Team Whose Name is Designed Solely to Test the Limits of the Font Scaling Feature Built into This Screen Layout Function"
@@ -111,7 +116,7 @@ while true; do
    # sleep $simSleep
    # http --json GET http://localhost:5000/rpi/reset/31415 Content-type:text/html
    # sleep $resetSleep
-   run_flight.sh 4 12 13.1 'Team Whose Name is Designed Solely to Test the Limits of the Font Scaling Feature Built into This Screen Layout Function' $simTime --q_fuel=5
+   $run_flight 4 12 13.1 'Team Whose Name is Designed Solely to Test the Limits of the Font Scaling Feature Built into This Screen Layout Function' $simTime --q_fuel=5
    
    # echo "Send start_challenge"
    # http --json POST http://localhost:5000/rpi/start_challenge Content-type:application/json Accept:application/json team_name="Team Whose Name is Designed Solely to Test the Limits of the Automatic Font Scaling Feature Built into This Screen Layout Function, Whose Purpose is to Make Sure the Team Name Fits on the Screen Without Getting Clipped"
@@ -121,6 +126,6 @@ while true; do
    # sleep $simSleep
    # http --json GET http://localhost:5000/rpi/reset/31415 Content-type:text/html
    # sleep $resetSleep
-   run_flight.sh 0.1 0 0 'Team Whose Name is Designed Solely to Test the Limits of the Automatic Font Scaling Feature Built into This Screen Layout Function, Whose Purpose is to Make Sure the Team Name Fits on the Screen Without Getting Clipped' $simTime
+   $run_flight 0.1 0 0 'Team Whose Name is Designed Solely to Test the Limits of the Automatic Font Scaling Feature Built into This Screen Layout Function, Whose Purpose is to Make Sure the Team Name Fits on the Screen Without Getting Clipped' $simTime
 
 done

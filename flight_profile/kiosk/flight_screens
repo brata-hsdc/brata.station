@@ -1,0 +1,12 @@
+# Lines in this file will be executed round-robin
+# Blank lines and lines beginning with # will be skipped
+
+/opt/designchallenge2016/brata.station/flight_profile/kiosk/run_flight.sh 8.2 1 13.1 'Space Team' $simTime
+/opt/designchallenge2016/brata.station/flight_profile/kiosk/show_text.sh 'This next one will fail' 6 ORANGE 100 && /opt/designchallenge2016/brata.station/flight_profile/kiosk/run_flight.sh 10.2 1 13.1 'Space Racers' $simTime
+/opt/designchallenge2016/brata.station/flight_profile/kiosk/run_flight.sh 8.2 1 13.6 'Snail Space Team' $simTime
+/opt/designchallenge2016/brata.station/flight_profile/kiosk/run_flight.sh 8.2 1 13.1 'Hydrazine Hogs' $simTime --q_fuel=5
+/opt/designchallenge2016/brata.station/flight_profile/kiosk/run_flight.sh 2 45 13.1 'Retro Rockettes' $simTime
+/opt/designchallenge2016/brata.station/flight_profile/kiosk/run_flight.sh 3 8 13.1 'Team Whose Name Takes Up a Lot of Space' $simTime --q_fuel=5
+/opt/designchallenge2016/brata.station/flight_profile/kiosk/run_flight.sh 4 12 13.1 'Open the Pod Bay Doors Please, HAL' $simTime --q_fuel=5
+/opt/designchallenge2016/brata.station/flight_profile/kiosk/run_flight.sh 4 12 13.1 'Team Whose Name is Designed Solely to Test the Limits of the Font Scaling Feature Built into This Screen Layout Function' $simTime --q_fuel=5
+/opt/designchallenge2016/brata.station/flight_profile/kiosk/run_flight.sh 0.1 0 0 'Team Whose Name is Designed Solely to Test the Limits of the Automatic Font Scaling Feature Built into This Screen Layout Function, Whose Purpose is to Make Sure the Team Name Fits on the Screen Without Getting Clipped' $simTime
