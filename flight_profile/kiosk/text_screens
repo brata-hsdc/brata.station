@@ -5,9 +5,30 @@
 # Blank lines and lines beginning with # will be skipped
 
 ### Intro text
-#/opt/designchallenge2016/brata.station/flight_profile/kiosk/show_text.sh 'Welcome|to the' 3 ORANGE 200 && /opt/designchallenge2016/brata.station/flight_profile/kiosk/show_text.sh '2016|Harris|Design Challenge' 7 RED 200 && /opt/designchallenge2016/brata.station/flight_profile/kiosk/show_text.sh 'This monitor is displaying sample runs of|the Docking Simulation that is one|of the four challenges the teams must|pass during the competition.||Good luck, teams!!' 10 ORANGE 200
+#$show_text 'Welcome|to the' 3 ORANGE 200 && $show_text '2016|Harris|Design Challenge' 7 RED 200 && $show_text 'This monitor is displaying sample runs of|the Docking Simulation that is one|of the four challenges the teams must|pass during the competition.||Good luck, teams!!' 10 ORANGE 200
 
-#/opt/designchallenge2016/brata.station/flight_profile/kiosk/show_text.sh 'This monitor is displaying sample runs of|the Docking Simulation that is one|of the four challenges the teams must|pass during the competition.||Good luck, teams!!' 10 ORANGE 200
+####### Multi-line message
+### Use vertical bar to separate lines of text in a message
+###
+#$show_text 'This monitor is displaying sample runs of|the Docking Simulation that is one|of the four challenges the teams must|pass during the competition.||Good luck, teams!!' 10 ORANGE 200
 
-### Pizza message
-/opt/designchallenge2016/brata.station/flight_profile/kiosk/show_text.sh 'Time for' 2 YELLOW 500 && /opt/designchallenge2016/brata.station/flight_profile/kiosk/show_text.sh '|PIZZA!' 5 RED 500 && /opt/designchallenge2016/brata.station/flight_profile/kiosk/show_text.sh 'No more than two slices per person|until everyone has been served' 5 GREEN 500 && /opt/designchallenge2016/brata.station/flight_profile/kiosk/show_text.sh 'Thank you.||        --The Management' 2 YELLOW 500
+####### Pizza message
+### Sequence multiple screens by separating multiple commands
+### with &&
+###
+#$show_text 'Time for' 2 YELLOW 500 && $show_text 'PIZZA!' 5 RED 500 && $show_text 'No more than two slices per person|until everyone has been served' 5 GREEN 500
+
+####### Tall test message
+### Tall messages will be scaled to fit within the screen
+###
+#$show_text 'This|message|has|many|short|lines|but|should|still|fit' 2 YELLOW 500
+
+####### Wide test message
+### Wide messages will be scaled to fit within the screen
+###
+$show_text 'This message|has one extremely ... looooooooooooooooooooooooooong ... line ... and two|short lines' 2 YELLOW 500
+
+### Leading spaces test message
+###   Multiple spaces must be escaped with backslashes
+###   or they get condensed to a single space
+#$show_text '||Thank you.||||\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ --The Management' 2 YELLOW 500
