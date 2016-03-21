@@ -93,12 +93,10 @@ class Text(pygame.sprite.DirtySprite):
             textWidth = self.font.size(self._value)[0]
             if self.shrinkToWidth == 0 or textWidth <= self.shrinkToWidth:
                 break
-#            self.image = self.font.render(self._value, True, self.color)
-#             print("Text width", textWidth)
             self.pointSize = int(self.pointSize * self.shrinkToWidth/textWidth)
-#             print("Point size", self.pointSize)
             self.font = pygame.font.Font(self.fontName, self.pointSize)
         self.image = self.font.render(self._value, True, self.color)
+        #print("Text.value: '{}'".format(self._value))
 
         self.dirty = 1
 
@@ -706,22 +704,31 @@ class FlightProfileApp(object):
             pos = list(pos)
             splitChar = "\n" if "\n" in text else "|"
             
-            # Create all the lines, shrinking to fit the screen
+            # Create all the lines, shrinking to fit the screen width (with a little margin)
             textSprites = []
             for t in text.split(splitChar):
                 textSprites.append(Text(pos, t, size=ptsize, color=color, justify=justify,
                                         shrinkToWidth=int(self.SCREEN_SIZE[0]*0.9)))
             
-            # Figure out what size to make the text
+            # If the lines don't fit vertically, shrink them more until they do
+            numLines = len(textSprites)
             smallestPtSize = min([t.pointSize for t in textSprites])
             smallestLineHeight = min([t.lineHeight() for t in textSprites])
-            numLines = len(textSprites)
+            totalHeight = smallestLineHeight * numLines
+            vertSize = int(self.SCREEN_SIZE[1]*0.9)
+            if totalHeight > vertSize:
+                # Assume that everything scales proportionally
+                smallestPtSize = int(smallestPtSize * vertSize/totalHeight)
+                smallestLineHeight = int(smallestLineHeight * vertSize/totalHeight)
+            
+#             # Figure out what size to make the text
+#             smallestLineHeight = min([t.lineHeight() for t in textSprites])
             del textSprites
             
             if justify & Text.BOTTOM:
                 pos[1] -= smallestLineHeight * (numLines - 1)
             elif justify & Text.MIDDLE:
-                pos[1] -= int(smallestLineHeight * numLines/2)
+                pos[1] -= int(smallestLineHeight * (numLines - 1)/2)
                 
             # Now remake all the lines at the smallest point size
             for t in text.split(splitChar):

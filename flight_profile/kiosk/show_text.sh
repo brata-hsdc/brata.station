@@ -20,5 +20,5 @@ size=${4:-100}
 pos=${5:-(960,540)}
 
 # Send message to display the text, then wait for the specified duration
-http --json POST $station_addr Content-type:application/json Accept:application/json kiosk_text="(($size, Colors.$color, $pos, Text.CENTER|Text.MIDDLE, \"$text\"),)" > /dev/null
+http --json POST $station_addr Content-type:application/json Accept:application/json kiosk_text="(($size, Colors.$color, $pos, Text.CENTER|Text.MIDDLE, \'$text\'),)" > /dev/null
 sleep $duration_s

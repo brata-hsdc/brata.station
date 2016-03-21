@@ -2,7 +2,7 @@
 
 # Run a canned flight simulation
 #
-# Usage: run_flight.sh t_aft t_coast t_fore team_name [sim_duration]
+# Usage: show_flight.sh t_aft t_coast t_fore team_name [sim_duration]
 
 station_addr=http://localhost:5000/rpi
 
@@ -28,5 +28,5 @@ http --json POST $station_addr/post_challenge Content-type:application/json Acce
 sleep $sim_sleep_s
 
 # Send reset:  go to Ready screen
-http --json GET $station_addr/reset/31415 Content-type:text/html > /dev/null
-sleep $reset_sleep_s
+#http --json GET $station_addr/reset/31415 Content-type:text/html > /dev/null
+#sleep $reset_sleep_s
