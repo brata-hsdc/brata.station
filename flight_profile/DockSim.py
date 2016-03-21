@@ -8,25 +8,45 @@
 from __future__ import print_function, division
 
 from collections import namedtuple
-from math import sqrt
+from math import sqrt, trunc
 
-
-# An object to hold the flight profile parameters
-#   tAft    is the duration of the acceleration burn, in seconds
-#   tCoast  is the duration of the coast phase, in seconds
-#   tFore   is the duration of the deceleration burn, in seconds
-#   aAft    is the force of acceleration, in m/sec^2
-#   aFore   is the force of deceleration, in m/sec^2
-#   rFuel   is the rate of fuel consumption in kg/sec
-#   qFuel   is the initial amount of fuel, in kg
-#   dist    is the initial distance to the dock, in m
-#   vMin    is the minimum sucessful docking velocity, in m/s
-#   vMax    is the maximum sucessful docking velocity, in m/s
-#   vInit   is the ship's initial velocity, in m/s
-#   tSim    is the maximum duration of the simulation in seconds (an int)
-FlightParams = namedtuple('FlightParams', 'tAft tCoast tFore aAft aFore rFuel qFuel dist vMin vMax vInit tSim')
 
 StateVec = namedtuple('StateVec', 'phase distTraveled currVelocity fuelRemaining tEnd')
+
+#----------------------------------------------------------------------------
+class FlightParams(object):
+    """ An object to hold the flight profile parameters
+           tAft    is the duration of the acceleration burn, in seconds
+           tCoast  is the duration of the coast phase, in seconds
+           tFore   is the duration of the deceleration burn, in seconds
+           aAft    is the force of acceleration, in m/sec^2
+           aFore   is the force of deceleration, in m/sec^2
+           rFuel   is the rate of fuel consumption in kg/sec
+           qFuel   is the initial amount of fuel, in kg
+           dist    is the initial distance to the dock, in m
+           vMin    is the minimum sucessful docking velocity, in m/s
+           vMax    is the maximum sucessful docking velocity, in m/s
+           vInit   is the ship's initial velocity, in m/s
+           tSim    is the maximum duration of the simulation in seconds (an int)
+           
+        The user flight profile parameters: tAft, tCoast, and tFore, are 
+        forced to be values representable as ddd.d.  tSim is forced to
+        be an int.
+    """
+    def __init__(self, tAft, tCoast, tFore, aAft, aFore,
+                       rFuel, qFuel, dist, vMin, vMax, vInit, tSim):
+        self.tAft   = (trunc(tAft * 10) % 10000)/10.0
+        self.tCoast = (trunc(tCoast * 10) % 10000)/10.0
+        self.tFore  = (trunc(tFore * 10) % 10000)/10.0
+        self.aAft   = aAft
+        self.aFore  = aFore
+        self.rFuel  = rFuel
+        self.qFuel  = qFuel
+        self.dist   = dist
+        self.vMin   = vMin
+        self.vMax   = vMax
+        self.vInit  = vInit
+        self.tSim   = int(tSim)
 
 #----------------------------------------------------------------------------
 class DockSim(object):

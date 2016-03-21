@@ -26,7 +26,7 @@
 ####### Wide test message
 ### Wide messages will be scaled to fit within the screen
 ###
-$show_text 'This message|has one extremely ... looooooooooooooooooooooooooong ... line ... and two|short lines' 2 YELLOW 500
+#$show_text 'This message|has one extremely ... looooooooooooooooooooooooooong ... line ... and two|short lines' 2 YELLOW 500
 
 ### Leading spaces test message
 ###   Multiple spaces must be escaped with backslashes
