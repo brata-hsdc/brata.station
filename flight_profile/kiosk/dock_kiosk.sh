@@ -25,6 +25,7 @@ sleep 10
 echo $wiremock_pid
 
 echo -n "Starting Dock station... "
+#DISPLAY=:0.0 python /opt/designchallenge2016/brata.station/bin/runstation -n dock01 &
 DISPLAY=:0.0 python /opt/designchallenge2016/brata.station/bin/runstation -n dock01 >/dev/null 2>&1 &
 runstation_pid=$!
 trap "kill -9 $wiremock_pid $runstation_pid $$" 2

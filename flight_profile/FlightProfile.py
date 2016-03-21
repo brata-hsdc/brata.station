@@ -12,6 +12,7 @@ from __future__ import print_function, division
 #from collections import namedtuple
 import sys
 import os.path
+import math
 import itertools
 import pygame.sprite
 import pygame.image
@@ -529,6 +530,16 @@ class FlightProfileApp(object):
         self.compressionLabel = Text((X+TAB1, int(Y+LINE_SPACE*2.7)), value="Time Compression:", color=Colors.ORANGE, size=TINY_TEXT, justify=Text.RIGHT|Text.BOTTOM)
         self.staticGroup.add((self.missionTimeLabel, self.simulatedLabel, self.actualLabel, self.compressionLabel), layer=self.LABEL_LAYER)
         
+        self.userLabel   = Text((X, int(Y+LINE_SPACE*4.5)), value="Flight Parameters", size=BIG_TEXT, color=Colors.ORANGE)
+        self.tAftLabel   = Text((X+50, int(Y+LINE_SPACE*5.2)), value="tAft:",   size=TINY_TEXT, color=Colors.ORANGE, justify=Text.LEFT|Text.BOTTOM)
+        self.tAftVal     = Text((self.tAftLabel.rect.right+15,   int(Y+LINE_SPACE*5.2)), value="{:05.1f}".format(self.profile.tAft),   size=TINY_TEXT, color=Colors.CYAN, justify=Text.LEFT|Text.BOTTOM)
+        self.tCoastLabel = Text((self.tAftVal.rect.right+50,     int(Y+LINE_SPACE*5.2)), value="tCoast:", size=TINY_TEXT, color=Colors.ORANGE, justify=Text.LEFT|Text.BOTTOM)
+        self.tCoastVal   = Text((self.tCoastLabel.rect.right+15, int(Y+LINE_SPACE*5.2)), value="{:05.1f}".format(self.profile.tCoast), size=TINY_TEXT, color=Colors.CYAN, justify=Text.LEFT|Text.BOTTOM)
+        self.tForeLabel  = Text((self.tCoastVal.rect.right+50,   int(Y+LINE_SPACE*5.2)), value="tFore:",  size=TINY_TEXT, color=Colors.ORANGE, justify=Text.LEFT|Text.BOTTOM)
+        self.tForeVal    = Text((self.tForeLabel.rect.right+15,  int(Y+LINE_SPACE*5.2)), value="{:05.1f}".format(self.profile.tFore),  size=TINY_TEXT, color=Colors.CYAN, justify=Text.LEFT|Text.BOTTOM)
+        self.staticGroup.add((self.userLabel, self.tAftLabel, self.tCoastLabel, self.tForeLabel,), layer=self.LABEL_LAYER)
+        self.staticGroup.add((self.tAftVal, self.tCoastVal, self.tForeVal,), layer=self.LABEL_LAYER)
+        
         self.simulatedTime    = Clock((X+TAB2, Y+LINE_SPACE), size=SMALL_TEXT)
         self.actualTime       = Clock((X+TAB2, Y+LINE_SPACE*2), size=SMALL_TEXT)
         self.compression      = Text((X+TAB2, int(Y+LINE_SPACE*2.7)), value="1 sim = {:0.2f} actual sec".format(self.missionTimeScale), size=TINY_TEXT)
@@ -536,7 +547,7 @@ class FlightProfileApp(object):
         self.staticGroup.add((self.compression), layer=self.LABEL_LAYER)
     
     def setupStatsDisplay(self):
-        X = 900
+        X = 1000
         Y = 100
         LINE_SPACE = 60
         BIG_TEXT = 80
@@ -544,7 +555,7 @@ class FlightProfileApp(object):
         TAB1 = 450
         TAB2 = TAB1 + 40
         
-        self.paramsLabel = Text((X, Y), value="Flight Profile Parameters", size=BIG_TEXT, color=Colors.ORANGE)
+        self.paramsLabel = Text((X, Y), value="Flight Performance", size=BIG_TEXT, color=Colors.ORANGE)
         self.distLabel   = Text((X+TAB1, Y + LINE_SPACE), value="Closing Distance:", size=SMALL_TEXT, color=Colors.ORANGE, justify=Text.RIGHT|Text.BOTTOM)
         self.velLabel    = Text((X+TAB1, Y + LINE_SPACE*2), value="Relative Velocity:", size=SMALL_TEXT, color=Colors.ORANGE, justify=Text.RIGHT|Text.BOTTOM)
         self.vmaxLabel   = Text((X+TAB1, Y + LINE_SPACE*3), value="Max Rel Velocity:", size=SMALL_TEXT, color=Colors.ORANGE, justify=Text.RIGHT|Text.BOTTOM)
@@ -604,6 +615,11 @@ class FlightProfileApp(object):
                                         vInit=0.0,
                                         tSim=self.MAX_SIM_DURATION_S,
                                        )
+        
+        # Make sure the user parameters are ddd.d format
+        self.profile.tAft = (math.trunc(self.profile.tAft * 10) % 10000)/10.0
+        self.profile.tCoast = (math.trunc(self.profile.tCoast * 10) % 10000)/10.0
+        self.profile.tFore = (math.trunc(self.profile.tFore * 10) % 10000)/10.0
         
         # Create a simulation object initialized with the flight profile
         self.dockSim = DockSim(self.profile)
@@ -843,7 +859,7 @@ class FlightProfileApp(object):
         """ Receive events from the user and/or application objects, and update the display """
         highPriorityEvents = []
         
-        lastFrameMs = 0
+        lastFrameMs = 0  # @UnusedVariable
         
         # Draw the whole background once
 #         self.draw()
@@ -873,14 +889,14 @@ class FlightProfileApp(object):
             # Refresh the display
             self.update()
             self.draw()
-            lastFrameMs = self.frameClock.tick(self.frameRate)
+            lastFrameMs = self.frameClock.tick(self.frameRate)  # @UnusedVariable
 
     def processLoop(self):
         """ Update the display """
         # Refresh the display
         self.update()
         self.draw()
-        lastFrameMs = self.frameClock.tick(self.frameRate)
+        lastFrameMs = self.frameClock.tick(self.frameRate)  # @UnusedVariable
 
     def clearDisplay(self):
         """ Clear out all the sprite groups, but leave the background """
@@ -912,7 +928,6 @@ class FlightProfileApp(object):
         self.displayQrCode(self.dockQr, "Scan to Initiate Dock Procedure")
         
     def outcomeMessage(self, state):
-        result = self.dockSim.outcome(state)
         return self.OUTCOMES[self.dockSim.outcome(state)]  # get failure (or success) message
     
     def reportPassFail(self, passed, simTime, msg):

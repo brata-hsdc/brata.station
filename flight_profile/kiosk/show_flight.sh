@@ -2,16 +2,16 @@
 
 # Run a canned flight simulation
 #
-# Usage: show_flight.sh t_aft t_coast t_fore team_name [sim_duration]
+# Usage: show_flight.sh t_aft t_coast t_fore team_name [sim_duration [welcome_duration [result_duration [reset_duration]]]]
 
 station_addr=http://localhost:5000/rpi
 
 # Simulation runtime (default 10 sec)
 # and sleep times between sending the commands
 sim_duration=${5:-10}
-start_sleep_s=10
-sim_sleep_s=$(($sim_duration + 10))
-reset_sleep_s=3
+start_sleep_s=${6:-10}
+sim_sleep_s=$(($sim_duration + ${7:-10}))
+reset_sleep_s=${8:-0}
 
 # Command line args
 t_aft=$1
@@ -28,5 +28,7 @@ http --json POST $station_addr/post_challenge Content-type:application/json Acce
 sleep $sim_sleep_s
 
 # Send reset:  go to Ready screen
-#http --json GET $station_addr/reset/31415 Content-type:text/html > /dev/null
-#sleep $reset_sleep_s
+if [[ $reset_sleep_s -ne 0 ]]; then
+   http --json GET $station_addr/reset/31415 Content-type:text/html > /dev/null
+   sleep $reset_sleep_s
+fi

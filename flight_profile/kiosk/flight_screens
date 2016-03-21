@@ -4,9 +4,9 @@
 # Lines in this file will be executed round-robin
 # Blank lines and lines beginning with # will be skipped
 
-$show_flight 8.2 1 13.1 'Space Team' $simTime
-$show_text 'This next one will fail' 6 ORANGE 100 && $show_flight 10.2 1 13.1 'Space Racers' $simTime
-#$show_flight 8.2 1 13.6 'Snail Space Team' $simTime
+#$show_flight 8.2 1 13.1 'Space Team' $simTime 1 15
+#$show_text 'This next one will fail' 3 ORANGE 100 && $show_flight 10.2 1 13.1 'Space Racers' $simTime
+$show_flight 8.2 1 13.6 'Snail Space Team' $simTime
 #$show_flight 8.2 1 13.1 'Hydrazine Hogs' $simTime --q_fuel=5
 #$show_flight 2 45 13.1 'Retro Rockettes' $simTime
 #$show_flight 3 8 13.1 'Team Whose Name Takes Up a Lot of Space' $simTime --q_fuel=5

@@ -8,7 +8,7 @@
 # COLOR       must be WHITE, BLACK, RED, GREEN, BLUE, YELLOW,
 #                CYAN, MAGENTA, ORANGE, LIGHT_ORANGE; defaults to WHITE
 # size        is the height of a capital letter in pixels; defaults to 100
-# (x,y)       is the position of the center of the text; defaults to (960,500)
+# (x,y)       is the position of the center of the text; defaults to (960,540)
 
 station_addr=http://localhost:5000/rpi/start_challenge
 
