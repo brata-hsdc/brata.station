@@ -347,6 +347,10 @@ class LCDdisplay:
         self._disp = Adafruit_SSD1306.SSD1306_128_64(rst=self._RST, i2c_address=self._address)
         # Initialize the didplay library.
         self._disp.begin()
+        # Non-Invert display
+        self._disp.command(0xA6)
+        # Invert display
+        #self._disp.command(0xA7)
 
         # Clear display.
         self._disp.clear()
@@ -390,7 +394,7 @@ class LCDdisplay:
         # Display image.
         self._disp.clear()
         self._disp.display()
-        self._disp.image(self._image)
+        self._disp.image(self._image.rotate(180))
         self._disp.display()
 
 
@@ -602,16 +606,16 @@ class ReadCode:
                         self._pulse_width = self._pulse_period/2.0
                         # check pulse width size
                         if (self._pulse_width < self._pulserange[0]):
-                            #print "Pulse width %f ms" % (self._pulse_width*1000)
+                            logger.debug("Pulse width %f ms" % (self._pulse_width*1000))
                             self._ERROR = self._ERROR + 2
                         elif (self._pulse_width > self._pulserange[1]):
                             self._ERROR = self._ERROR + 4
-                            #print "Pulse width %f ms" % (self._pulse_width*1000)
+                            logger.debug("Pulse width %f ms" % (self._pulse_width*1000))
                     else:
                         self._count = self._count + 1
                     self._light_on = 1
                     self._pulse_start = self._pulse_start + 1
-                    # print "pulse start %d" % self._pulse_start
+                    logger.debug("pulse start %d" % self._pulse_start)
 
             else:
                 # get the current time
@@ -626,9 +630,9 @@ class ReadCode:
                     if (self._pulse_start >= 2):                              
                         # if off time is greater than the number of stop bits
                         if ((self._ctime-self._ttime) > (self._pulse_width*self._stoprange[0]+self._pulse_width)):
-                            #print "stop gap = %f ms" % ((self._ctime-self._ttime)*1000)
-                            #print "stoprange = %f ms" % (self._pulse_width*self._stoprange[0]*1000)
-                            # print "The Pulse count is %d" % self._count
+                            logger.debug("stop gap = %f ms" % ((self._ctime-self._ttime)*1000))
+                            logger.debug("stoprange = %f ms" % (self._pulse_width*self._stoprange[0]*1000))
+                            logger.debug("The Pulse count is %d" % self._count)
                             # error if the symbol is out of range
                             if self._count > self._maxcount:
                                     self._ERROR = self._ERROR + 8
