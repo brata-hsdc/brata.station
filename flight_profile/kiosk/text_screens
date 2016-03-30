@@ -5,7 +5,7 @@
 # Blank lines and lines beginning with # will be skipped
 
 ### Intro text
-#$show_text 'Welcome|to the' 3 ORANGE 200 && $show_text '2016|Harris|Design Challenge' 7 RED 200 && $show_text 'This monitor is displaying sample runs of|the Docking Simulation that is one|of the four challenges the teams must|pass during the competition.||Good luck, teams!!' 10 ORANGE 200
+#$show_text 'Welcome|to the' 3 ORANGE 200 && $show_text '2016|Harris|Design Challenge|' 7 RED 200 && $show_text 'This monitor is displaying sample runs of|the Docking Simulation that is one|of the four challenges the teams must|pass during the competition.||Good luck, teams!!' 10 ORANGE 200
 
 ####### Multi-line message
 ### Use vertical bar to separate lines of text in a message
@@ -32,3 +32,22 @@ $show_text 'This message|has one extremely ... looooooooooooooooooooooooooong ..
 ###   Multiple spaces must be escaped with backslashes
 ###   or they get condensed to a single space
 #$show_text '||Thank you.||||\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ --The Management' 2 YELLOW 500
+
+######## Mike's Messages
+#$show_text 'Reminder:|No photographs are allowed|anywhere on campus!' 2 YELLOW 500
+
+#$show_text 'If you are reading this,|stand up and|rub your tummy and|pat your head' 2 YELLOW 500
+
+#$show_text 'Be sure to|Charge Your Phone|before the Competition' 2 YELLOW 500
+
+#$show_text 'Launch Markers are on|Color Coded|Red, Green, and Blue backgrounds' 2 YELLOW 500
+
+#$show_text 'If you are reading this,|stand up and|rub your head and|pat your tummy' 2 YELLOW 500
+
+#$show_text 'The Return Prop angles|are measured relative to|the Base of the Prop' 2 YELLOW 500
+
+#$show_text 'Running is NOT necessary:|Your times Start and Stop|with each Challenge' 2 YELLOW 500
+
+$show_text 'If you are reading this,|shout|"Free Professor Aardvark"' 2 YELLOW 500
+
+#$show_text 'Tip:|You can use|pen and paper|to write down values|if necessary' 2 YELLOW 500
