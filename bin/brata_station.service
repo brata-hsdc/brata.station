@@ -1,0 +1,12 @@
+[Unit]
+Description=Brata Station Service
+After=multi-user.target
+
+[Service]
+Type=idle
+#ExecStart=/opt/designchallenge2016/brata.station/bin/runstation -m ipofmasterserver:port -t type
+StandardOutput=null
+
+[Install]
+WantedBy=multi-user.target
+Alias=brata_station.service
