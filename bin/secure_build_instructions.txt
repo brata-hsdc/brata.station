@@ -1,0 +1,65 @@
+Raspberry Pi Station Setup for Jessie
+
+INSTALL:
+$ sudo raspi-config
+Go to advanced enable I2C Finish which will restart
+
+$ sudo pip install pibrella
+$ sudo pip install mido
+$ sudo pip install enum
+$ sudo pip install python-dbus (Not found. “sudo pip install dbus-python” failed too)
+$ sudo pi install Flask
+$ sudo pip install tornado
+$ sudo apt-get install build-essential python-dev python-smbus python-pip
+$ sudo apt-get update
+$ sudo apt-get install python-dbus (Loaded this instead of via pip)
+$ sudo pip install RPi.GPIO (already installed via apt-get)
+$ sudo apt-get install python-imaging
+$ sudo apt-get install git
+$ git clonehttps://github.com/adafruit/Adafruit_Python_SSD1306.git
+$ cd Adafruit_Python_SSD1306
+$ sudo python setup.py install
+$ cd ~
+$ git clone https://github.com/adafruit/Adafruit_Python_CharLCD.git
+$ cd Adafruit_Python_CharLCD
+$ sudo python setup.py install
+$ sudo mkdir /opt/designchallenge2016
+$ cd /opt/designchallenge2016
+$ sudo git clone https://github.com/adafruit/Adafruit-Raspberry-Pi-Python-Code
+cd /opt/designchallenge2016/brata.station/station
+cp ../../Adafruit-Raspberry-Pi-Python-Code/Adafruit_I2C/Adafruit_I2C.py .
+
+You should be able to set this up on a Raspberry Pi station by following the steps in the Pi Setup document. To get the code from the repository into a standard location, run the following:
+
+$ sudo mkdir /opt/designchallenge2016
+$ sudo chown pi:pi /opt/designchallenge2016
+$ cd /opt/designchallenge2016
+$ git clone https://github.com/brata-hsdc/brata.station.git
+
+Set Station Name:
+$sudo echo “hostname” > /etc/hostname (For example: sudo echo “secure01” > /etc/hostname
+
+
+Setup Systemd Service:
+Copy the default service file to the systemd directory.
+
+$sudo cp /opt/designchallenge2016/brata.station/bin/brata_station.service /lib/systemd/system/brata_station.service
+$ sudo chmod 644 /lib/systemd/system/myscript.service
+
+Edit the file.
+$sudo nano /lib/systemd/system/brata_station.service 
+
+Change the ipofmasterserver:port and type.
+ExecStart=/opt/designchallenge2016/brata.station/bin/runstation -m ipofmasterserver:port -t type
+
+Start the service
+$ sudo systemctl daemon-reload
+$ sudo systemctl enable brata_station.service
+Reboot the Pi and your custom service should run :
+$sudo reboot
+
+To stop the service
+$ sudo systemctl stop brata_station.service
+
+To start the service
+$ sudo systemctl start brata_station.service
