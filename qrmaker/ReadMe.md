@@ -4,6 +4,23 @@ Stand-alone command line tool that creates signs in PDF format.  Each sign has
 a background image, a QR code, and two pieces of text, in a fixed layout.
 The layout is currently hardcoded to match a specific background image.
 
+## Dependencies
+
+Uses the following packages, which may need to be installed:
+
+```
+pillow
+qrcode
+reportlab
+```
+
+Install as follows:
+
+```shell
+% sudo apt-get install python-dev
+% sudo pip install pillow qrcode reportlab
+```
+
 ## Usage
 '''
 Usage: qrmaker.py [-h] -i IMAGE [-s SMALLTEXT] [-b BIGTEXT] [-q QRCODE]
