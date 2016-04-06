@@ -22,7 +22,7 @@ Install as follows:
 ```
 
 ## Usage
-'''
+```
 Usage: qrmaker.py [-h] -i IMAGE [-s SMALLTEXT] [-b BIGTEXT] [-q QRCODE]
                   [-f CSVFILE]
                   outFile
@@ -52,14 +52,14 @@ Args for multiple page PDF document:
   -f CSVFILE, --csvFile CSVFILE
                         A CSV file containing lines of
                         qrText,bigText,smallText
-'''
+```
 
 ## Examples
 
-'''shell
+```shell
 % python ..\qrmaker.py -f TestSignInput.csv -i QRTemplate.png TestSigns.pdf
-'''
+```
 
-'''shell
+```shell
 % python ..\qrmaker.py -q "This is not a qrcode" -b Arrival -s dock01 -i QRTemplate.png test.pdf
-'''
+```
