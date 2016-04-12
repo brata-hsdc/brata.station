@@ -84,6 +84,7 @@ class Station(IStation):
 #        urgencyLedClass = getattr(hwModule, urgencyLedClassName)
 
         self.ConnectionManager = None
+        self.tonegen = None
  
     # --------------------------------------------------------------------------
     @property
@@ -184,10 +185,13 @@ class Station(IStation):
         self._leds['green'].turnOff()
 
         self._secure_tone_pattern = args
-        self.tonegen = ToneGenerator(self._secure_tone_pattern, self._display)
+        if self.tonegen is None:
+           self.tonegen = ToneGenerator(self._secure_tone_pattern, self._display)
+           pibrella.button.pressed(self.tonegen.button_pressed)
+        else:
+            self.tonegen.stop()
+            self.tonegen.reinit(self._secure_tone_pattern)
         logger.info('SECURE tonegen initialized')
-        pibrella.button.pressed(self.tonegen.button_pressed)
- 
 
     def onProcessing2(self, args):
         """Transition station to the Processing2 state
@@ -202,7 +206,7 @@ class Station(IStation):
         """
         logger.info('SECURE transitioned to Processing2 state.' )
         self.tonegen.stop()
-        pibrella.button.clear_events()
+        #pibrella.button.clear_events()
         self._leds['red'].turnOff()
         self._leds['yellow'].turnOff()
         self._leds['green'].turnOn()
@@ -444,7 +448,7 @@ class ToneGenerator:
 
         #initialize the tones
         self._slist = [self.generate_sound(self._f[count]) for count in range(len(self._f))]
-        self._slist[self._tone].play(loops = -1)
+        #self._slist[self._tone].play(loops = -1)
         
         self._display = lcdDisplay
         self._display.display_message("      ", self._disp_msg[self._tone])
@@ -467,6 +471,19 @@ class ToneGenerator:
 #        while _running:
 #            pibrella.button.pressed.(self.button_pressed)
 #            # TODO set _running to false if station state changes
+
+    # --------------------------------------------------------------------------
+    def reinit(self, tone_IDs):
+        # challenge tone IDs from MS
+        tmp = tone_IDs[0]
+        self._tone_ID = tmp[0:9]
+        logger.debug('Challenge tone IDs = %s', self._tone_ID)
+        self._tone_order = self._tone_ID
+        # add the zero frequency (off) to the order list
+        self._tone_order.insert(0, -1)
+        logger.debug('Challenge tone IDs for list = %s', self._tone_order)
+        self._display.display_message("      ", self._disp_msg[self._tone])
+        logger.debug('Constructing Tone Generator')
 
 
     def generate_sound(self, freq):
